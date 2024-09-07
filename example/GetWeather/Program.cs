@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using StepWise.Core;
 
-var workflow = new GetWeatherWorkflow();
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
 
+var workflow = new GetWeatherWorkflow(logger: loggerFactory.CreateLogger<WorkflowEngine>());
 var weathers = await workflow.ExecuteGetWeather(["Seattle", "Redmond"]);
 
 foreach (var weather in weathers)
@@ -52,10 +55,10 @@ public partial class GetWeatherWorkflow
     /// <summary>
     /// Allow user to override the default constructor
     /// </summary>
-    public GetWeatherWorkflow()
+    public GetWeatherWorkflow(ILogger<WorkflowEngine>? logger = null)
     {
         _workflow = Workflow.CreateFromType(this);
-        _workflowEngine = new WorkflowEngine(_workflow);
+        _workflowEngine = new WorkflowEngine(_workflow, logger: logger);
     }
 
     public async Task<Weather[]> ExecuteGetWeather(

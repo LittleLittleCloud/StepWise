@@ -1,0 +1,88 @@
+﻿using FluentAssertions;
+using Xunit;
+
+namespace StepWise.Core.Tests;
+
+/// <summary>
+/// This workflow test the parallel execution of steps.
+/// </summary>
+public class PrepareDinnerWorkflowTest
+{
+    [Step]
+    public async Task<string> ChopVegetables(string[] vegetables)
+    {
+        await Task.Delay(3000);
+
+        return $"Chopped {string.Join(", ", vegetables)}";
+    }
+
+    [Step]
+    public async Task<string> BoilWater()
+    {
+        await Task.Delay(2000);
+
+        return "Boiled water";
+    }
+
+    [Step]
+    public async Task<string> CookPasta()
+    {
+        await Task.Delay(5000);
+
+        return "Cooked pasta";
+    }
+
+    [Step]
+    public async Task<string> CookSauce()
+    {
+        await Task.Delay(4000);
+
+        return "Cooked sauce";
+    }
+
+    [Step]
+    public async Task<string> ServeDinner(
+        [FromStep(nameof(ChopVegetables))] string[] vegetables,
+        [FromStep(nameof(BoilWater))] string water,
+        [FromStep(nameof(CookPasta))] string pasta,
+        [FromStep(nameof(CookSauce))] string sauce)
+    {
+        return $"Dinner ready!";
+    }
+
+    [Fact]
+    public async Task ItPrepareDinnerConcurrentlyAsync()
+    {
+        var workflow = Workflow.CreateFromType(this);
+        var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, object>
+        {
+            [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
+        });
+
+        stopwatch.Stop();
+
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
+        result.Should().Be("Dinner ready!");
+    }
+
+    [Fact]
+    public async Task ItPrepareDinnerStepByStepAsync()
+    {
+        var workflow = Workflow.CreateFromType(this);
+        var engine = new WorkflowEngine(workflow, maxConcurrency: 1);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, object>
+        {
+            [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
+        });
+
+        stopwatch.Stop();
+
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(15000);
+        result.Should().Be("Dinner ready!");
+    }
+}

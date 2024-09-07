@@ -8,12 +8,13 @@ namespace StepWise.Core;
 
 public class Parameter
 {
-    public Parameter(string name, Type type, string? sourceStep, bool hasDefaultValue)
+    public Parameter(string name, Type type, string? sourceStep, bool hasDefaultValue, object? defaultValue = null)
     {
         Name = name;
         Type = type;
         SourceStep = sourceStep;
         HasDefaultValue = hasDefaultValue;
+        DefaultValue = defaultValue;
     }
 
     public string Name { get; set; }
@@ -23,4 +24,6 @@ public class Parameter
     public string? SourceStep { get; set; }
 
     public bool HasDefaultValue { get; set; }
+
+    public object? DefaultValue { get; set; }
 }

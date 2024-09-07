@@ -38,7 +38,7 @@ public class Step
         {
             var sourceStep = param.GetCustomAttribute<FromStepAttribute>()?.Name;
             var hasDefaultValue = param.HasDefaultValue;
-            inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep, hasDefaultValue));
+            inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep, hasDefaultValue, param.DefaultValue));
 
             if (sourceStep != null)
             {
@@ -55,6 +55,24 @@ public class Step
     public List<string> Dependencies { get; set; }
     public Delegate StepMethod { get; set; }
 
+    public bool IsExecuctionConditionSatisfied(Dictionary<string, object> inputs)
+    {
+        foreach (var param in InputParameters)
+        {
+            if (param.HasDefaultValue)
+            {
+                continue;
+            }
+
+            if (!inputs.ContainsKey(param.SourceStep ?? param.Name))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Execute the step method. Return null if the step is not ready to run because of missing dependencies/inputs.
     /// </summary>
@@ -67,25 +85,23 @@ public class Step
         inputs ??= new Dictionary<string, object>();
 
         // check if all dependencies are met
-        foreach (var param in InputParameters)
+        if (!IsExecuctionConditionSatisfied(inputs))
         {
-            // continue if param has default value
-            if (param.HasDefaultValue)
-            {
-                continue;
-            }
-
-            if (!inputs.ContainsKey(param.SourceStep ?? param.Name))
-            {
-                return null;
-            }
+            return null;
         }
+
         // get parameters from the inputs
-        var parameters = new object[InputParameters.Count];
+        var parameters = new object?[InputParameters.Count];
         for (int i = 0; i < InputParameters.Count; i++)
         {
-            var input = inputs[InputParameters[i].SourceStep ?? InputParameters[i].Name];
-            parameters[i] = Convert.ChangeType(input, InputParameters[i].Type);
+            var key = InputParameters[i].SourceStep ?? InputParameters[i].Name;
+            var input = key switch
+            {
+                _ when inputs.ContainsKey(key) => inputs[key],
+                _ when !inputs.ContainsKey(key) && InputParameters[i].HasDefaultValue => InputParameters[i].DefaultValue,
+                _ => throw new InvalidOperationException($"The input parameter '{key}' is missing.")
+            };
+            parameters[i] = input;
         }
 
         // execute the step method
@@ -96,7 +112,7 @@ public class Step
         {
             await task;
             var property = task.GetType().GetProperty("Result");
-            return property?.GetValue(task) ?? throw new InvalidOperationException("The step method must return a value.");
+            return property?.GetValue(task);
         }
 
         throw new InvalidOperationException("The step method must return a Task<T>.");
