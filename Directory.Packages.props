@@ -1,0 +1,45 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <AutoGenVersion>0.2.0</AutoGenVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="JsonSchema.Net.Generation" Version="4.3.0.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.Routing" Version="2.2.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.6" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Moq" Version="4.20.70" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageVersion Include="Spectre.Console" Version="0.48.0" />
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.48.0" />
+    <PackageVersion Include="Spectre.Console.ImageSharp" Version="0.48.0" />
+    <PackageVersion Include="Spectre.Console.Testing" Version="0.48.0" />
+    <PackageVersion Include="Microsoft.Orleans.Sdk" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Orleans.Streaming" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Orleans.Server" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="8.0.0" />
+    <PackageVersion Include="AutoGen" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="AutoGen.SemanticKernel" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="AutoGen.OpenAI" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="AutoGen.Core" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="AutoGen.SourceGenerator" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.10.0-alpha" />
+    <PackageVersion Include="Microsoft.PowerShell.SDK" Version="7.4.2" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Version="8.0.0" />
+    <PackageVersion Include="ApprovalTests" Version="6.0.0" />
+    <PackageVersion Include="FluentAssertions" Version="6.8.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.7.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.Swagger" Version="6.6.2" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.6.2" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.6.2" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.console" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.2" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="5.0.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageVersion Include="Octokit" Version="11.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.App" Version="8.0.4" />
+  </ItemGroup>
+</Project>

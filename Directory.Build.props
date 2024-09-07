@@ -1,0 +1,42 @@
+<Project>
+  <Import Project="./eng/MetaInfo.props" />
+  <Import Project="./eng/Sign.props" />
+  <PropertyGroup>
+    <!-- Enable .NET code analysis (this is necessary for projects that target 3.1 or earlier). -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <CSNoWarn>CS1998;CS1591</CSNoWarn>
+    <NoWarn>$(NoWarn);$(CSNoWarn);NU5104</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsTestProject>false</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <LangVersion>preview</LangVersion>
+    <StepWiseTargetFrameworks>netstandard2.0;net8.0</StepWiseTargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="ApprovalTests" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.console" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Spectre.Console.Testing" />
+  </ItemGroup>
+
+  <ItemGroup  Condition="'$(IsTestProject)' == 'true'">
+    <Content Include="$(RepoRoot)\schema\**\*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>Schema\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+    <Content Include="$(RepoRoot)\template\**\*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>template\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+</Project>
