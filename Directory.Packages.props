@@ -24,6 +24,7 @@
     <PackageVersion Include="AutoGen.SemanticKernel" Version="$(AutoGenVersion)" />
     <PackageVersion Include="AutoGen.OpenAI" Version="$(AutoGenVersion)" />
     <PackageVersion Include="AutoGen.Core" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="AutoGen.DotnetInteractive" Version="$(AutoGenVersion)" />
     <PackageVersion Include="AutoGen.SourceGenerator" Version="$(AutoGenVersion)" />
     <PackageVersion Include="Microsoft.SemanticKernel.Plugins.Web" Version="1.10.0-alpha" />
     <PackageVersion Include="Microsoft.PowerShell.SDK" Version="7.4.2" />
