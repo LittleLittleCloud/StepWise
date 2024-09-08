@@ -15,6 +15,7 @@
     <PackageReference Include="AutoGen" />
     <PackageReference Include="AutoGen.DotnetInteractive" />
     <PackageReference Include="AutoGen.SourceGenerator" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
 </Project>

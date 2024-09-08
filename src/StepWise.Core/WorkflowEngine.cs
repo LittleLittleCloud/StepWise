@@ -86,12 +86,17 @@ public class WorkflowEngine
         {
             if (s.IsExecuctionConditionSatisfied(_context.ToDictionary(x => x.Key, x => x.Value.Item1)))
             {
+                _logger?.LogInformation($"Adding initial step '{s.Name}' to the task queue.");
                 _stepsTaskQueue.Add((s, 0));
             }
         }
 
+        _logger?.LogInformation($"Starting the workflow engine with max concurrency {_maxConcurrency}.");
+
         // execute steps
-        await Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(_ => ExecuteSingleStepAsync(step, ct)));
+        await Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i => ExecuteSingleStepAsync(i, step, ct)));
+
+        _logger?.LogInformation($"Workflow engine has completed.");
 
         _stepsTaskQueue.CompleteAdding();
 
@@ -103,7 +108,7 @@ public class WorkflowEngine
         throw new Exception($"Step '{step.Name}' did not return the expected result.");
     }
 
-    private async Task ExecuteSingleStepAsync(Step finalStep, CancellationToken ct = default)
+    private async Task ExecuteSingleStepAsync(int runnerId, Step finalStep, CancellationToken ct = default)
     {
         foreach (var (step, generation) in _stepsTaskQueue.GetConsumingEnumerable(ct))
         {
@@ -114,29 +119,31 @@ public class WorkflowEngine
             // skip the step
             if (_context.TryGetValue(step.Name, out var value) && value.Item2 >= generation)
             {
-                _logger?.LogDebug($"Step '{step.Name}' with generation `{generation}` has already been executed.");
+                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has already been executed.");
                 continue;
             }
 
             if (_stepsTaskQueue.Any(x => x.Item1.Name == step.Name && x.Item2 > generation))
             {
-                _logger?.LogDebug($"Step '{step.Name}' with generation `{generation}` has a newer version in the task queue.");
+                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has a newer version in the task queue.");
                 continue;
             }
 
             // scenario 2
             // run the step by calling the step.ExecuteAsync method
             // the step.ExecuteAsync will short-circuit if the dependencies are not met
+            _logger?.LogInformation($"[Runner {runnerId}]: Running step '{step.Name}' with generation `{generation}`.");
             var res = await step.ExecuteAsync(_context.ToDictionary(x => x.Key, x => x.Value.Item1), ct);
 
             // if res is null, it means the step is not ready to run, or not producing any result
             // maybe the dependencies are not met, maybe the executor function returns null.
             if (res == null)
             {
-                _logger?.LogInformation($"Step '{step.Name}' with generation `{generation}` is not ready to run.");
+                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` returns null. Skipping.");
             }
             else
             {
+                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has been executed.");
                 // update the context with the result
                 // the generation will be {parameter_max_generation} + 1
                 var contextGeneration = step.Dependencies switch
@@ -153,6 +160,8 @@ public class WorkflowEngine
                     _ => 0,
                 };
 
+                _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of step '{step.Name}' with generation `{contextGeneration}`.");
+                _logger?.LogInformation($"[Runner {runnerId}]: result of step '{step.Name}' is '{res}'.");
                 _context[step.Name] = (res, contextGeneration);
 
                 // update task queue with the next steps
@@ -161,6 +170,7 @@ public class WorkflowEngine
 
                 foreach (var nextStep in nextSteps)
                 {
+                    _logger?.LogInformation($"[Runner {runnerId}]: Adding step '{nextStep.Name}' with generation `{contextGeneration}` to the task queue.");
                     _stepsTaskQueue.Add((nextStep, contextGeneration));
                 }
             }
@@ -168,6 +178,7 @@ public class WorkflowEngine
             // if the final step result is already in the context, stop the execution
             if (_context.ContainsKey(finalStep.Name))
             {
+                _logger?.LogInformation($"[Runner {runnerId}]: The final step '{finalStep.Name}' has been executed. Early stopping.");
                 _stepsTaskQueue.CompleteAdding();
                 return;
             }
@@ -175,6 +186,7 @@ public class WorkflowEngine
             // if the task queue is empty and busy task runners are 1, stop the execution
             if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 1)
             {
+                _logger?.LogInformation($"[Runner {runnerId}]: The task queue is empty and there is only one busy task runner (which is me). Setting the task queue as complete.");
                 _stepsTaskQueue.CompleteAdding();
                 return;
             }

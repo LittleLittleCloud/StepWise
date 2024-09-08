@@ -5,9 +5,16 @@ using AutoGen.DotnetInteractive.Extension;
 using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
 using Microsoft.DotNet.Interactive;
+using Microsoft.Extensions.Logging;
 using OpenAI;
 using StepWise.Core;
 
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
+
+var logger = loggerFactory.CreateLogger<WorkflowEngine>();
 using var kernel = DotnetInteractiveKernelBuilder
     .CreateDefaultInProcessKernelBuilder()
     .AddPowershellKernel()
@@ -26,9 +33,9 @@ var agent = new OpenAIChatAgent(
 
 var codeInterpreter = new CodeInterpreter(agent, kernel);
 var workflow = Workflow.CreateFromType(codeInterpreter);
-var engine = new WorkflowEngine(workflow, maxConcurrency: 3);
+var engine = new WorkflowEngine(workflow, maxConcurrency: 3, logger);
 
-var task = "use python to switch my system to light mode";
+var task = "use python to switch my system to dark mode";
 var result = await engine.ExecuteStepAsync<string>(nameof(codeInterpreter.GenerateReply), new Dictionary<string, object>
 {
     ["task"] = task
@@ -58,7 +65,8 @@ public class CodeInterpreter
         [FromStep(nameof(InputTask))] string task,
         [FromStep(nameof(IsTask))] bool isCodingTask,
         [FromStep(nameof(WriteCode))] string? existingCode = null,
-        [FromStep(nameof(RunCode))] string? codeResult = null)
+        [FromStep(nameof(RunCode))] string? codeResult = null,
+        [FromStep(nameof(ReviewCode))] string? review = null)
     {
         if (!isCodingTask)
         {
@@ -103,15 +111,12 @@ public class CodeInterpreter
         {
             // determine if the code result has error or not
             var prompt = $"""
-                # Task
-                {task}
-
                 # Execute Result
                 ```
                 {codeResult}
                 ```
 
-                Does the code execution result solve the task? If yes, say 'succeed'. Otherwise, say 'fail'.
+                Does the code run successfully? If yes, say 'succeed'. Otherwise, say 'fail'.
                 """;
 
             var reply = await _agent.SendAsync(prompt);
@@ -146,9 +151,72 @@ public class CodeInterpreter
             }
         }
 
+        if (review != null && existingCode != null)
+        {
+            if (review == "approved")
+            {
+                return null;
+            }
+
+            // fix the code from review
+            var prompt = $"""
+                # Task
+                {task}
+
+                # Existing Code
+                ```
+                {existingCode}
+                ```
+
+                # Review
+                {review}
+
+                Fix the code according to the review.
+                """;
+
+            var reply = await _agent.SendAsync(prompt);
+
+            return reply.GetContent();
+        }
+
         throw new Exception("Invalid code execution result.");
     }
 
+    [Step]
+    public async Task<string> ReviewCode(
+        [FromStep(nameof(WriteCode))] string code)
+    {
+        var prompt = $"""
+            # Code Review
+            ```python
+            {code}
+            ```
+
+            Please review the code. If you approve the code, say 'approve'. Otherwise, leave a feedback.
+            """;
+
+        // print to console
+        Console.WriteLine(prompt);
+
+        // receive input from user
+        var reply = Console.ReadLine();
+
+        var approve = reply?.ToLower() == "approve";
+
+        if (approve)
+        {
+            Console.WriteLine("You approve the code");
+
+            return "approved";
+        }
+        else
+        {
+            Console.WriteLine("You disapprove the code");
+
+            return reply ?? "disapproved";
+        }
+    }
+    
     [Step]
     public async Task<bool> IsTask(
         [FromStep(nameof(InputTask))] string task)
@@ -166,9 +234,15 @@ public class CodeInterpreter
     }
 
     [Step]
-    public async Task<string> RunCode(
-        [FromStep(nameof(WriteCode))] string code)
+    public async Task<string?> RunCode(
+        [FromStep(nameof(WriteCode))] string code,
+        [FromStep(nameof(ReviewCode))] string review)
     {
+        if (review != "approved")
+        {
+            return null;
+        }
+
         var sb = new StringBuilder();
         var codeMessage = new TextMessage(Role.Assistant, code);
         // process python block
@@ -251,15 +325,12 @@ public class CodeInterpreter
 
         // determine if the code result has error or not
         var prompt = $"""
-                # Task
-                {task}
-
                 # Execute Result
                 ```
                 {codeResult}
                 ```
 
-                Does the code execution result solve the task? If yes, say 'succeed'. Otherwise, say 'fail'.
+                Does the code execution successfully? If yes, say 'succeed'. Otherwise, say 'fail'.
                 """;
 
         var reply = await _agent.SendAsync(prompt);
