@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
 namespace StepWise.Core;
 
-public class WorkflowEngine
+public class WorkflowEngine : IWorkflowEngine
 {
     private readonly Workflow _workflow;
     private readonly ILogger? _logger = null;
     private readonly int _maxConcurrency = 1;
-    private readonly BlockingCollection<(Step, int)> _stepsTaskQueue = new BlockingCollection<(Step, int)>();
+    private BlockingCollection<(Step, int)> _stepsTaskQueue = new BlockingCollection<(Step, int)>();
     private int _busyTaskRunners = 0;
-    private readonly ConcurrentDictionary<string, (object, int)> _context = new ConcurrentDictionary<string, (object, int)>();
+    private ConcurrentDictionary<string, (object, int)> _context = new ConcurrentDictionary<string, (object, int)>();
+    private BlockingCollection<(string, object)> _stepResultQueue = new BlockingCollection<(string, object)>();
 
     public WorkflowEngine(Workflow workflow, int maxConcurrency = 1, ILogger? logger = null)
     {
@@ -24,18 +26,28 @@ public class WorkflowEngine
 
     public async Task<TResult> ExecuteStepAsync<TResult>(string stepName, Dictionary<string, object>? inputs = null)
     {
-        inputs ??= new Dictionary<string, object>();
-        var step = _workflow.Steps[stepName] ?? throw new Exception($"Step '{stepName}' not found in the workflow.");
-
-        var result = await ExecuteStepAsync(step, inputs);
-
-        if (result is TResult finalResult)
+        var context = new Dictionary<string, object>();
+        await foreach (var (name, result) in ExecuteStepAsync(stepName, inputs))
         {
-            return finalResult;
+            context[name] = result;
+        }
+
+        if (context.TryGetValue(stepName, out var finalResult) && finalResult is TResult)
+        {
+            return (TResult)finalResult;
         }
 
         throw new Exception($"Step '{stepName}' did not return the expected result type.");
     }
+
+    public IAsyncEnumerable<(string, object)> ExecuteStepAsync(string targetStep, Dictionary<string, object>? inputs = null)
+    {
+        inputs ??= new Dictionary<string, object>();
+        var step = _workflow.Steps[targetStep] ?? throw new Exception($"Step '{targetStep}' not found in the workflow.");
+
+        return ExecuteStepAsync(step, inputs);
+    }
+
 
     // retrieve all the steps that need to be executed in order to reach the target step
     private List<Step> ResolveDependencies(string targetStepName)
@@ -69,10 +81,16 @@ public class WorkflowEngine
         return executionPlan;
     }
 
-    private async Task<object> ExecuteStepAsync(Step step, Dictionary<string, object> inputs, CancellationToken ct = default)
+    private async IAsyncEnumerable<(string, object)> ExecuteStepAsync(
+        Step step,
+        Dictionary<string, object> inputs,
+        [EnumeratorCancellation]
+        CancellationToken ct = default)
     {
         _context.Clear();
         _busyTaskRunners = 0;
+        _stepsTaskQueue = new BlockingCollection<(Step, int)>();
+        _stepResultQueue = new BlockingCollection<(string, object)>();
 
         // add inputs to context
         foreach (var input in inputs)
@@ -94,40 +112,51 @@ public class WorkflowEngine
         _logger?.LogInformation($"Starting the workflow engine with max concurrency {_maxConcurrency}.");
 
         // execute steps
-        await Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i => ExecuteSingleStepAsync(i, step, ct)));
+        var executeStepTask = Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i => ExecuteSingleStepAsync(i, step, ct)));
 
-        _logger?.LogInformation($"Workflow engine has completed.");
-
-        _stepsTaskQueue.CompleteAdding();
-
-        if (_context.TryGetValue(step.Name, out var value))
+        foreach (var (name, result) in _stepResultQueue.GetConsumingEnumerable(ct))
         {
-            return value.Item1;
+            yield return (name, result);
         }
 
-        throw new Exception($"Step '{step.Name}' did not return the expected result.");
+
+        _logger?.LogInformation($"Workflow engine has completed.");
+        _stepsTaskQueue.CompleteAdding();
+        await executeStepTask;
     }
 
-    private async Task ExecuteSingleStepAsync(int runnerId, Step finalStep, CancellationToken ct = default)
+    private async Task ExecuteSingleStepAsync(
+        int runnerId,
+        Step finalStep,
+        CancellationToken ct = default)
     {
         foreach (var (step, generation) in _stepsTaskQueue.GetConsumingEnumerable(ct))
         {
             Interlocked.Increment(ref _busyTaskRunners);
+            // exit if early stop
+            if (_stepResultQueue.IsAddingCompleted || _stepsTaskQueue.IsAddingCompleted)
+            {
+                Interlocked.Decrement(ref _busyTaskRunners);
+                return;
+            }
 
             // scenario 1
             // if the step has already been executed, or there is a newer version of the step in the task queue
             // skip the step
-            if (_context.TryGetValue(step.Name, out var value) && value.Item2 >= generation)
+            if (_context.TryGetValue(step.Name, out var value) && value.Item2 > generation)
             {
                 _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has already been executed.");
+
+                Interlocked.Decrement(ref _busyTaskRunners);
                 continue;
             }
 
-            if (_stepsTaskQueue.Any(x => x.Item1.Name == step.Name && x.Item2 > generation))
-            {
-                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has a newer version in the task queue.");
-                continue;
-            }
+            //if (_stepsTaskQueue.Any(x => x.Item1.Name == step.Name && x.Item2 > generation))
+            //{
+            //    _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has a newer version in the task queue.");
+
+            //    continue;
+            //}
 
             // scenario 2
             // run the step by calling the step.ExecuteAsync method
@@ -163,6 +192,7 @@ public class WorkflowEngine
                 _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of step '{step.Name}' with generation `{contextGeneration}`.");
                 _logger?.LogInformation($"[Runner {runnerId}]: result of step '{step.Name}' is '{res}'.");
                 _context[step.Name] = (res, contextGeneration);
+                _stepResultQueue.Add((step.Name, res));
 
                 // update task queue with the next steps
                 // find all steps that directly depend on the current step
@@ -175,25 +205,28 @@ public class WorkflowEngine
                 }
             }
 
+            Interlocked.Decrement(ref _busyTaskRunners);
+
             // if the final step result is already in the context, stop the execution
-            if (_context.ContainsKey(finalStep.Name))
+            if (_context.ContainsKey(finalStep.Name) && _busyTaskRunners == 0)
             {
                 _logger?.LogInformation($"[Runner {runnerId}]: The final step '{finalStep.Name}' has been executed. Early stopping.");
                 _stepsTaskQueue.CompleteAdding();
+                _stepResultQueue.CompleteAdding();
+
                 return;
             }
 
-            // if the task queue is empty and busy task runners are 1, stop the execution
-            if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 1)
+            // if the task queue is empty and busy task runners are 0, stop the execution
+            if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 0)
             {
-                _logger?.LogInformation($"[Runner {runnerId}]: The task queue is empty and there is only one busy task runner (which is me). Setting the task queue as complete.");
+                _logger?.LogInformation($"[Runner {runnerId}]: The task queue is empty and there is only no busy task runner. Setting the task queue as complete.");
                 _stepsTaskQueue.CompleteAdding();
+                _stepResultQueue.CompleteAdding();
+
                 return;
-            }
-            else
-            {
-                Interlocked.Decrement(ref _busyTaskRunners);
             }
         }
     }
+
 }

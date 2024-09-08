@@ -69,12 +69,22 @@ public class GuessNumberWorkflowTest
         var workflow = Workflow.CreateFromType(this);
         var engine = new WorkflowEngine(workflow);
 
-        var result = await engine.ExecuteStepAsync<string>(nameof(FinalResult), new Dictionary<string, object>
+        var context = new Dictionary<string, object>()
         {
             [nameof(InputNumber)] = 5,
-        });
+        };
 
-        result.Should().Be("The number was 5!");
+        await foreach (var (name, result) in engine.ExecuteStepAsync(nameof(FinalResult), context))
+        {
+            context[name] = result;
+
+            if (name == nameof(FinalResult) && result is string finalResult)
+            {
+                break;
+            }
+        }
+
+        context[nameof(FinalResult)].Should().Be("The number was 5!");
     }
 
     [Fact]
