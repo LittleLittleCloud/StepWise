@@ -58,8 +58,15 @@ public class WorkflowEngine : IWorkflowEngine
 
         void DFS(Step step)
         {
-            if (visited.Contains(step.Name) || visiting.Contains(step.Name))
+            if (visited.Contains(step.Name))
+            {
                 return;
+            }
+
+            if (visiting.Contains(step.Name))
+            {
+                throw new Exception($"Circular dependency detected in step '{step.Name}'.");
+            }
 
             visiting.Add(step.Name);
 
@@ -102,11 +109,23 @@ public class WorkflowEngine : IWorkflowEngine
         var steps = this.ResolveDependencies(step.Name);
         foreach (var s in steps)
         {
+            // continue if step's name already exists in the context
+            if (_context.ContainsKey(s.Name))
+            {
+                continue;
+            }
+
             if (s.IsExecuctionConditionSatisfied(_context.ToDictionary(x => x.Key, x => x.Value.Item1)))
             {
                 _logger?.LogInformation($"Adding initial step '{s.Name}' to the task queue.");
                 _stepsTaskQueue.Add((s, 0));
             }
+        }
+
+        if (_stepsTaskQueue.Count == 0)
+        {
+            _logger?.LogInformation($"No steps to execute. Exiting.");
+            yield break;
         }
 
         _logger?.LogInformation($"Starting the workflow engine with max concurrency {_maxConcurrency}.");
@@ -136,6 +155,7 @@ public class WorkflowEngine : IWorkflowEngine
             // exit if early stop
             if (_stepResultQueue.IsAddingCompleted || _stepsTaskQueue.IsAddingCompleted)
             {
+                _logger?.LogInformation($"[Runner {runnerId}]: Early stopping the runner with step '{step.Name}' and generation `{generation}`.");
                 Interlocked.Decrement(ref _busyTaskRunners);
                 return;
             }
@@ -148,69 +168,93 @@ public class WorkflowEngine : IWorkflowEngine
                 _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has already been executed.");
 
                 Interlocked.Decrement(ref _busyTaskRunners);
-                continue;
-            }
-
-            //if (_stepsTaskQueue.Any(x => x.Item1.Name == step.Name && x.Item2 > generation))
-            //{
-            //    _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has a newer version in the task queue.");
-
-            //    continue;
-            //}
-
-            // scenario 2
-            // run the step by calling the step.ExecuteAsync method
-            // the step.ExecuteAsync will short-circuit if the dependencies are not met
-            _logger?.LogInformation($"[Runner {runnerId}]: Running step '{step.Name}' with generation `{generation}`.");
-            var res = await step.ExecuteAsync(_context.ToDictionary(x => x.Key, x => x.Value.Item1), ct);
-
-            // if res is null, it means the step is not ready to run, or not producing any result
-            // maybe the dependencies are not met, maybe the executor function returns null.
-            if (res == null)
-            {
-                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` returns null. Skipping.");
             }
             else
             {
-                _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` has been executed.");
-                // update the context with the result
-                // the generation will be {parameter_max_generation} + 1
-                var contextGeneration = step.Dependencies switch
+                // scenario 2
+                // run the step by calling the step.ExecuteAsync method
+                // the step.ExecuteAsync will short-circuit if the dependencies are not met
+                _logger?.LogInformation($"[Runner {runnerId}]: Running step '{step.Name}' with generation `{generation}`.");
+                try
                 {
-                    { Capacity: > 0 } => step.Dependencies.Select(x =>
+                    var res = await step.ExecuteAsync(_context.ToDictionary(x => x.Key, x => x.Value.Item1), ct);
+                    // if res is null, it means the step is not ready to run, or not producing any result
+                    // maybe the dependencies are not met, maybe the executor function returns null.
+                    if (res == null)
                     {
-                        if (_context.TryGetValue(x, out var value))
+                        _logger?.LogInformation($"[Runner {runnerId}]: Step '{step.Name}' with generation `{generation}` returns null. Skipping.");
+                    }
+                    else
+                    {
+                        // update the context with the result
+                        // the generation will be {parameter_max_generation} + 1
+                        //var contextGeneration = step.InputParameters switch
+                        //{
+                        //    { Capacity: > 0 } => step.InputParameters.Select(x =>
+                        //    {
+                        //        var name = x.SourceStep ?? x.Name;
+                        //        if (_context.TryGetValue(name, out var value))
+                        //        {
+                        //            return value.Item2;
+                        //        }
+
+                        //        return 0;
+                        //    }).Max() + 1,
+                        //    _ => 0,
+                        //};
+                        var contextGeneration = generation + 1;
+
+                        _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of step '{step.Name}' with generation `{generation}`.");
+                        _logger?.LogInformation($"[Runner {runnerId}]: result of step '{step.Name}' with generateion `{generation}` is '{res}'.");
+                        _context[step.Name] = (res, generation);
+                        _stepResultQueue.Add((step.Name, res));
+
+                        var dependSteps = _workflow.GetAllDependSteps(step);
+
+                        // remove the variables that depend on the current step
+                        var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value.Item1);
+
+                        // update task queue with the next steps
+                        // find all steps that takes the result as input
+                        var nextSteps = _workflow.Steps.Values.Where(x => x.InputParameters.Any(p => p.SourceStep == step.Name)).ToList();
+
+                        foreach (var nextStep in nextSteps)
                         {
-                            return value.Item2;
+                            if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
+                            {
+                                _logger?.LogInformation($"[Runner {runnerId}]: Skipping step '{nextStep.Name}' with generation `{contextGeneration}` because of missing prerequisites.");
+                                continue;
+                            }
+
+                            // check if the step has already been executed
+                            if (_context.TryGetValue(nextStep.Name, out var nextValue) && nextValue.Item2 >= contextGeneration)
+                            {
+                                _logger?.LogInformation($"[Runner {runnerId}]: Step '{nextStep.Name}' with generation `{contextGeneration}` has already been executed.");
+                                continue;
+                            }
+
+                            _logger?.LogInformation($"[Runner {runnerId}]: Adding step '{nextStep.Name}' with generation `{contextGeneration}` to the task queue.");
+                            _stepsTaskQueue.Add((nextStep, contextGeneration));
                         }
-
-                        return 0;
-                    }).Max() + 1,
-                    _ => 0,
-                };
-
-                _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of step '{step.Name}' with generation `{contextGeneration}`.");
-                _logger?.LogInformation($"[Runner {runnerId}]: result of step '{step.Name}' is '{res}'.");
-                _context[step.Name] = (res, contextGeneration);
-                _stepResultQueue.Add((step.Name, res));
-
-                // update task queue with the next steps
-                // find all steps that directly depend on the current step
-                var nextSteps = _workflow.Steps.Values.Where(x => x.Dependencies.Contains(step.Name));
-
-                foreach (var nextStep in nextSteps)
+                    }
+                }
+                catch (Exception ex)
                 {
-                    _logger?.LogInformation($"[Runner {runnerId}]: Adding step '{nextStep.Name}' with generation `{contextGeneration}` to the task queue.");
-                    _stepsTaskQueue.Add((nextStep, contextGeneration));
+                    _logger?.LogError(ex, $"[Runner {runnerId}]: Error running step '{step.Name}' with generation `{generation}`.");
+
+                    throw;
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref _busyTaskRunners);
                 }
             }
-
-            Interlocked.Decrement(ref _busyTaskRunners);
 
             // if the final step result is already in the context, stop the execution
             if (_context.ContainsKey(finalStep.Name) && _busyTaskRunners == 0)
             {
-                _logger?.LogInformation($"[Runner {runnerId}]: The final step '{finalStep.Name}' has been executed. Early stopping.");
+                var (finalResult, finalResultGeneration) = _context[finalStep.Name];
+                _logger?.LogInformation($"[Runner {runnerId}]: The final step '{finalStep.Name}' with generation `{finalResultGeneration}` has been executed. Early stopping.");
                 _stepsTaskQueue.CompleteAdding();
                 _stepResultQueue.CompleteAdding();
 

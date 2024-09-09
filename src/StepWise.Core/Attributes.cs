@@ -17,6 +17,17 @@ public class StepAttribute : Attribute
     public string Name { get; set; }
 }
 
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public class DependOnAttribute : Attribute
+{
+    public DependOnAttribute(string stepName)
+    {
+        Name = stepName;
+    }
+
+    public string Name { get; set; }
+}
+
 [AttributeUsage(AttributeTargets.Parameter)]
 public class FromStepAttribute : Attribute
 {

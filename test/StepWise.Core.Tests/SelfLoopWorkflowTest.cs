@@ -4,12 +4,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Meziantou.Extensions.Logging.Xunit;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace StepWise.Core.Tests;
 
 public class SelfLoopWorkflowTest
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+    private readonly ILogger _logger;
+
+    public SelfLoopWorkflowTest(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+        _logger = new XUnitLoggerProvider(testOutputHelper)
+            .CreateLogger(nameof(SelfLoopWorkflowTest));
+    }
+
     [Step]
     public async Task<int> Start()
     {
@@ -17,6 +30,7 @@ public class SelfLoopWorkflowTest
     }
 
     [Step]
+    [DependOn(nameof(Start))]
     public async Task<int> AddNumberByOne(
         [FromStep(nameof(Start))] int start,
         [FromStep(nameof(AddNumberByOne))] int? current = null)
@@ -30,6 +44,7 @@ public class SelfLoopWorkflowTest
     }
 
     [Step]
+    [DependOn(nameof(AddNumberByOne))]
     public async Task<string?> End(
         [FromStep(nameof(AddNumberByOne))] int current)
     {
@@ -44,8 +59,11 @@ public class SelfLoopWorkflowTest
     [Fact]
     public async Task ItAddNumberFromOneToFiveTest()
     {
-        var workflow = Workflow.CreateFromType(this);
-        var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
+        var workflow = Workflow.CreateFromInstance(this);
+        var startStep = workflow.Steps[nameof(Start)];
+        var dependStartSteps = workflow.GetAllDependSteps(startStep);
+        dependStartSteps.Count().Should().Be(2);
+        var engine = new WorkflowEngine(workflow, maxConcurrency: 10, _logger);
 
         var stepAndResult = new List<(string, object)>();
         await foreach (var (step, result) in engine.ExecuteStepAsync(nameof(End)))

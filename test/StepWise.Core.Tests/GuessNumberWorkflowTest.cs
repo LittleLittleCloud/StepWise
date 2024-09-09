@@ -4,7 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Meziantou.Extensions.Logging.Xunit;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace StepWise.Core.Tests;
 
@@ -13,6 +16,16 @@ namespace StepWise.Core.Tests;
 /// </summary>
 public class GuessNumberWorkflowTest
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+    private readonly ILogger _logger;
+
+    public GuessNumberWorkflowTest(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+        _logger = new XUnitLoggerProvider(testOutputHelper)
+            .CreateLogger(nameof(GuessNumberWorkflowTest));
+    }
+
     [Step]
     public async Task<int> InputNumber(int number)
     {
@@ -34,6 +47,8 @@ public class GuessNumberWorkflowTest
     }
 
     [Step]
+    [DependOn(nameof(InputNumber))]
+    [DependOn(nameof(GuessNumber))]
     public async Task<string> CheckGuess(
         [FromStep(nameof(InputNumber))] int randomNumber,
         [FromStep(nameof(GuessNumber))] int guess)
@@ -49,6 +64,8 @@ public class GuessNumberWorkflowTest
     }
 
     [Step]
+    [DependOn(nameof(CheckGuess))]
+    [DependOn(nameof(GuessNumber))]
     public async Task<string?> FinalResult(
         [FromStep(nameof(CheckGuess))] string message,
         [FromStep(nameof(GuessNumber))] int? guess = null)
@@ -66,14 +83,13 @@ public class GuessNumberWorkflowTest
     [Fact]
     public async Task ItGuessNumber()
     {
-        var workflow = Workflow.CreateFromType(this);
-        var engine = new WorkflowEngine(workflow);
+        var workflow = Workflow.CreateFromInstance(this);
+        var engine = new WorkflowEngine(workflow, logger: _logger);
 
         var context = new Dictionary<string, object>()
         {
             [nameof(InputNumber)] = 5,
         };
-
         await foreach (var (name, result) in engine.ExecuteStepAsync(nameof(FinalResult), context))
         {
             context[name] = result;
@@ -90,7 +106,7 @@ public class GuessNumberWorkflowTest
     [Fact]
     public async Task ItThrowExceptionWhenNumberIsNotProvided()
     {
-        var workflow = Workflow.CreateFromType(this);
+        var workflow = Workflow.CreateFromInstance(this);
         var engine = new WorkflowEngine(workflow);
 
         Func<Task> action = async () => await engine.ExecuteStepAsync<string>(nameof(FinalResult));

@@ -41,6 +41,10 @@ public class PrepareDinnerWorkflowTest
     }
 
     [Step]
+    [DependOn(nameof(ChopVegetables))]
+    [DependOn(nameof(BoilWater))]
+    [DependOn(nameof(CookPasta))]
+    [DependOn(nameof(CookSauce))]
     public async Task<string> ServeDinner(
         [FromStep(nameof(ChopVegetables))] string[] vegetables,
         [FromStep(nameof(BoilWater))] string water,
@@ -53,7 +57,7 @@ public class PrepareDinnerWorkflowTest
     [Fact]
     public async Task ItPrepareDinnerConcurrentlyAsync()
     {
-        var workflow = Workflow.CreateFromType(this);
+        var workflow = Workflow.CreateFromInstance(this);
         var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -71,7 +75,7 @@ public class PrepareDinnerWorkflowTest
     [Fact]
     public async Task ItPrepareDinnerStepByStepAsync()
     {
-        var workflow = Workflow.CreateFromType(this);
+        var workflow = Workflow.CreateFromInstance(this);
         var engine = new WorkflowEngine(workflow, maxConcurrency: 1);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();

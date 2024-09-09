@@ -34,16 +34,18 @@ public class Step
             throw new ArgumentException("The input parameters of the step method can't be ref or out.");
         }
 
+        // get DependOnAttribute
+        var dependOnAttributes = stepMethod.Method.GetCustomAttributes<DependOnAttribute>();
+        foreach (var attr in dependOnAttributes)
+        {
+            dependencies.Add(attr.Name);
+        }
+
         foreach ( var param in parameters )
         {
             var sourceStep = param.GetCustomAttribute<FromStepAttribute>()?.Name;
             var hasDefaultValue = param.HasDefaultValue;
             inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep, hasDefaultValue, param.DefaultValue));
-
-            if (sourceStep != null)
-            {
-                dependencies.Add(sourceStep);
-            }
         }
 
         return new Step(name, inputParameters, outputType, dependencies, stepMethod);
@@ -116,5 +118,39 @@ public class Step
         }
 
         throw new InvalidOperationException("The step method must return a Task<T>.");
+    }
+
+    public override string ToString()
+    {
+        return Name;
+    }
+}
+
+public class StepBean
+{
+    private readonly Step _step;
+    private readonly int _generation = 0;
+    private readonly Dictionary<string, object> _inputs = new();
+
+    private StepBean(Step step, int generation, Dictionary<string, object> inputs)
+    {
+        _step = step;
+        _generation = generation;
+        _inputs = inputs;
+    }
+
+    public static StepBean Create(Step step, int generation, Dictionary<string, object>? inputs = null)
+    {
+        return new StepBean(step, generation, inputs ?? new Dictionary<string, object>());
+    }
+
+    public async Task<object?> ExecuteAsync(CancellationToken ct = default)
+    {
+        return await _step.ExecuteAsync(_inputs, ct);
+    }
+
+    public override string ToString()
+    {
+        return $"{_step.Name} (gen: {_generation})";
     }
 }

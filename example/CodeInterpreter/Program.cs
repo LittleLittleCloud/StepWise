@@ -32,8 +32,8 @@ var agent = new OpenAIChatAgent(
     .RegisterPrintMessage();
 
 var codeInterpreter = new CodeInterpreter(agent, kernel);
-var workflow = Workflow.CreateFromType(codeInterpreter);
-var engine = new WorkflowEngine(workflow, maxConcurrency: 3, logger);
+var workflow = Workflow.CreateFromInstance(codeInterpreter);
+var engine = new WorkflowEngine(workflow, maxConcurrency: 1, logger);
 
 var task = "use python to switch my system to dark mode";
 var result = await engine.ExecuteStepAsync<string>(nameof(codeInterpreter.GenerateReply), new Dictionary<string, object>
@@ -179,7 +179,7 @@ public class CodeInterpreter
             return reply.GetContent();
         }
 
-        throw new Exception("Invalid code execution result.");
+        return null;
     }
 
     [Step]

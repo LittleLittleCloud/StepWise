@@ -25,6 +25,7 @@ public class StepAndWorkflowTests
     }
 
     [Step]
+    [DependOn(nameof(GetCurrentDateAsync))]
     public async Task<string> GetWeather(
         [FromStep(nameof(GetCurrentDateAsync))] DateTime date,
         string city)
@@ -35,7 +36,7 @@ public class StepAndWorkflowTests
     [Fact]
     public async Task ItCreateWorkflow()
     {
-        var workflow = Workflow.CreateFromType(this);
+        var workflow = Workflow.CreateFromInstance(this);
 
         workflow.Steps.Should().HaveCount(2);
         workflow.Steps.Should().ContainKey(nameof(GetCurrentDateAsync));

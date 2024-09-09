@@ -57,7 +57,7 @@ public partial class GetWeatherWorkflow
     /// </summary>
     public GetWeatherWorkflow(ILogger<WorkflowEngine>? logger = null)
     {
-        _workflow = Workflow.CreateFromType(this);
+        _workflow = Workflow.CreateFromInstance(this);
         _workflowEngine = new WorkflowEngine(_workflow, logger: logger);
     }
 
