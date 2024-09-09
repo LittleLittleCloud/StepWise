@@ -61,19 +61,20 @@ public class CodeInterpreter
     }
 
     [Step]
+    [DependOn(nameof(InputTask))]
+    [DependOn(nameof(IsTask))]
     public async Task<string?> WriteCode(
         [FromStep(nameof(InputTask))] string task,
         [FromStep(nameof(IsTask))] bool isCodingTask,
-        [FromStep(nameof(WriteCode))] string? existingCode = null,
-        [FromStep(nameof(RunCode))] string? codeResult = null,
-        [FromStep(nameof(ReviewCode))] string? review = null)
+        [FromStep(nameof(RunCode))] (string, string)? codeResult = null,
+        [FromStep(nameof(ReviewCode))] (string, string)? review = null)
     {
         if (!isCodingTask)
         {
             return null;
         }
 
-        if (existingCode == null && codeResult == null)
+        if (codeResult == null && review == null)
         {
             // the first time writing code
             var prompt = $"""
@@ -106,14 +107,13 @@ public class CodeInterpreter
 
             return reply.GetContent();
         }
-
-        if (existingCode != null && codeResult != null)
+        else if (codeResult != null)
         {
             // determine if the code result has error or not
             var prompt = $"""
                 # Execute Result
                 ```
-                {codeResult}
+                {codeResult.Value.Item1}
                 ```
 
                 Does the code run successfully? If yes, say 'succeed'. Otherwise, say 'fail'.
@@ -134,12 +134,12 @@ public class CodeInterpreter
 
                     # Existing Code
                     ```
-                    {existingCode}
+                    {codeResult.Value.Item1}
                     ```
 
                     # Execute Result
                     ```
-                    {codeResult}
+                    {codeResult.Value.Item2}
                     ```
 
                     Fix the error
@@ -150,10 +150,9 @@ public class CodeInterpreter
                 return reply.GetContent();
             }
         }
-
-        if (review != null && existingCode != null)
+        else if (review != null)
         {
-            if (review == "approved")
+            if (review.Value.Item2 == "approved")
             {
                 return null;
             }
@@ -165,7 +164,7 @@ public class CodeInterpreter
 
                 # Existing Code
                 ```
-                {existingCode}
+                {review.Value.Item1}
                 ```
 
                 # Review
@@ -178,12 +177,13 @@ public class CodeInterpreter
 
             return reply.GetContent();
         }
-
+        
         return null;
     }
 
     [Step]
-    public async Task<string> ReviewCode(
+    [DependOn(nameof(WriteCode))]
+    public async Task<(string, string)> ReviewCode(
         [FromStep(nameof(WriteCode))] string code)
     {
         var prompt = $"""
@@ -207,17 +207,18 @@ public class CodeInterpreter
         {
             Console.WriteLine("You approve the code");
 
-            return "approved";
+            return (code, "approved");
         }
         else
         {
             Console.WriteLine("You disapprove the code");
 
-            return reply ?? "disapproved";
+            return reply is not null ? (code, reply) : (code, "disapproved");
         }
     }
     
     [Step]
+    [DependOn(nameof(InputTask))]
     public async Task<bool> IsTask(
         [FromStep(nameof(InputTask))] string task)
     {
@@ -234,15 +235,17 @@ public class CodeInterpreter
     }
 
     [Step]
-    public async Task<string?> RunCode(
-        [FromStep(nameof(WriteCode))] string code,
-        [FromStep(nameof(ReviewCode))] string review)
+    [DependOn(nameof(WriteCode))]
+    [DependOn(nameof(ReviewCode))]
+    public async Task<(string, string)?> RunCode(
+        [FromStep(nameof(ReviewCode))] (string, string) review)
     {
-        if (review != "approved")
+        if (review.Item2 != "approved")
         {
             return null;
         }
 
+        var code = review.Item1;
         var sb = new StringBuilder();
         var codeMessage = new TextMessage(Role.Assistant, code);
         // process python block
@@ -303,14 +306,17 @@ public class CodeInterpreter
         Console.WriteLine(sb.ToString());
         var codeExecutionResult = sb.ToString();
 
-        return codeExecutionResult;
+        return (code, codeExecutionResult);
     }
 
     [Step]
+    [DependOn(nameof(InputTask))]
+    [DependOn(nameof(IsTask))]
+    [DependOn(nameof(RunCode))]
     public async Task<string?> GenerateReply(
         [FromStep(nameof(InputTask))] string task,
         [FromStep(nameof(IsTask))] bool isCodingTask,
-        [FromStep(nameof(RunCode))] string? codeResult = null)
+        [FromStep(nameof(RunCode))] (string, string)? codeResult = null)
     {
         if (!isCodingTask)
         {
@@ -327,7 +333,7 @@ public class CodeInterpreter
         var prompt = $"""
                 # Execute Result
                 ```
-                {codeResult}
+                {codeResult.Value.Item2}
                 ```
 
                 Does the code execution successfully? If yes, say 'succeed'. Otherwise, say 'fail'.
@@ -343,7 +349,7 @@ public class CodeInterpreter
 
                 # Execute Result
                 ```
-                {codeResult}
+                {codeResult.Value.Item2}
                 ```
 
                 Please generate the final reply according to the task and the code execution result.
