@@ -11,6 +11,79 @@ StepWise is a powerful and flexible C# library for defining and executing workfl
 - Flexible input and output handling for each step
 - Built-in error handling and custom exceptions
 
+## Quick Start
+
+Here's a simple example of how to define a workflow to prepare dinner. The workflow consists of several steps, such as chopping vegetables, boiling water, cooking pasta, and cooking sauce. The final step is to serve dinner, which depends on all the previous steps. When executed, the workflow will automatically resolve the dependencies between steps and execute them in the parallel if possible.
+
+```csharp
+using StepWise;
+
+public class PrepareDinner
+{
+    [Step]
+    public async Task<string> ChopVegetables(string[] vegetables)
+    {
+        await Task.Delay(3000);
+
+        return $"Chopped {string.Join(", ", vegetables)}";
+    }
+
+    [Step]
+    public async Task<string> BoilWater()
+    {
+        await Task.Delay(2000);
+
+        return "Boiled water";
+    }
+
+    [Step]
+    public async Task<string> CookPasta()
+    {
+        await Task.Delay(5000);
+
+        return "Cooked pasta";
+    }
+
+    [Step]
+    public async Task<string> CookSauce()
+    {
+        await Task.Delay(4000);
+
+        return "Cooked sauce";
+    }
+
+    [Step]
+    [DependOn(nameof(ChopVegetables))]
+    [DependOn(nameof(BoilWater))]
+    [DependOn(nameof(CookPasta))]
+    [DependOn(nameof(CookSauce))]
+    public async Task<string> ServeDinner(
+        [FromStep(nameof(ChopVegetables))] string[] vegetables,
+        [FromStep(nameof(BoilWater))] string water,
+        [FromStep(nameof(CookPasta))] string pasta,
+        [FromStep(nameof(CookSauce))] string sauce)
+    {
+        return $"Dinner ready!";
+    }
+}
+
+// Usage
+var prepareDinner = new PrepareDinner();
+var workflow = Workflow.CreateFromInstance(prepareDinner);
+var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
+var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, object>
+{
+    [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
+});
+stopwatch.Stop();
+stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
+```
+
+## More Examples
+You can find more examples in the [examples](./example) directory.
+
+
 ## Primitives
 
 StepWise is built around two main primitives:
@@ -24,10 +97,12 @@ A Step is the smallest unit of work in StepWise. It represents a single task or 
   - Name: A unique identifier for the step.
   - Input Parameters: The data required by the step to perform its task.
   - Output: The result produced by the step (if any).
-  - Dependencies: Other steps that must be executed before this step.
+  - Dependencies: Other steps that must be executed before this step. This is specified using the `[DependsOn]` attribute.
 - **Usage**: 
   ```csharp
   [Step(Name = "GetData")]
+  [DependsOn(nameof(OtherStep))]
+  [DependsOn(nameof(AnotherStep))]
   public Data GetData(int id)
   {
       // Implementation
@@ -39,9 +114,6 @@ A Step is the smallest unit of work in StepWise. It represents a single task or 
 A Workflow is a collection of Steps that together accomplish a larger task.
 
 - **Definition**: A Workflow is typically represented by a class containing multiple Step methods.
-- **Properties**:
-  - Name: A identifier for the workflow.
-  - Steps: The collection of Steps that make up the workflow.
 - **Usage**: 
   ```csharp
   public class DataProcessingWorkflow
@@ -50,118 +122,31 @@ A Workflow is a collection of Steps that together accomplish a larger task.
       public Data GetData(int id) { /* ... */ }
 
       [Step(Name = "ProcessData")]
-      public Result ProcessData([From(SourceStep = "GetData")] Data data) { /* ... */ }
+      [DependsOn(nameof(GetData))]
+      public Result ProcessData([FromStep("GetData")] Data data) { /* ... */ }
 
       [Step(Name = "SaveResult")]
-      public void SaveResult([From(SourceStep = "ProcessData")] Result result) { /* ... */ }
+        [DependsOn(nameof(ProcessData))]
+      public void SaveResult([FromStep("ProcessData")] Result result) { /* ... */ }
   }
   ```
 
-### Dependency Management
+## Dependency Management
+
+> [!Note]
+> `[FromStep]` attribute doesn't affect the dependency between steps. It is used to pass the output of one step as input to another step.
+
+> [!Note]
+> Prevent circular dependencies between steps, otherwise, the workflow engine will remind you with an exception.
 
 StepWise automatically manages dependencies between Steps:
-
-- Use the `[From]` attribute to specify that a Step requires output from another Step.
+- Use the `[DependsOn]` attribute to specify dependencies between Steps.
 - The WorkflowEngine resolves these dependencies and ensures Steps are executed in the correct order.
 
-Example:
-```csharp
-[Step(Name = "CombineData")]
-public CombinedData CombineData([From(SourceStep = "GetDataA")] DataA dataA, 
-                                [From(SourceStep = "GetDataB")] DataB dataB)
-{
-    // Implementation
-}
-```
-
-These primitives form the foundation of StepWise, allowing you to create complex workflows while maintaining clarity and modularity in your code.
-
-### Parallel Execution
+## Parallel Execution
 
 StepWise wisely supports parallel execution of steps that do not have dependencies on each other. This can significantly improve the performance of your workflows by executing independent steps concurrently.
 
-## Quick Start
-
-Here's a simple example of how to define and execute a workflow using StepWise:
-
-```csharp
-using StepWise;
-
-public class SimpleWorkflow
-{
-    [Step(Name = "GetNumber")]
-    public int GetNumber()
-    {
-        return 42;
-    }
-
-    [Step(Name = "DoubleNumber")]
-    public int DoubleNumber([From(SourceStep = "GetNumber")] int number)
-    {
-        return number * 2;
-    }
-
-    [Step(Name = "PrintResult")]
-    public void PrintResult([From(SourceStep = "DoubleNumber")] int result)
-    {
-        Console.WriteLine($"The result is: {result}");
-    }
-}
-
-// Usage
-var workflow = typeof(SimpleWorkflow).BuildWorkflowFromType();
-var engine = new WorkflowEngine();
-engine.ExecuteWorkflow(workflow, "PrintResult");
-```
-
-## Defining Steps
-
-Steps are defined as methods within a class, decorated with the `[Step]` attribute:
-
-```csharp
-[Step(Name = "StepName")]
-public ReturnType StepMethod(ParameterType param)
-{
-    // Step implementation
-}
-```
-
-## Defining Dependencies
-
-Dependencies between steps are defined using the `[From]` attribute on step parameters:
-
-```csharp
-[Step(Name = "DependentStep")]
-public void DependentStep([From(SourceStep = "PreviousStep")] int input)
-{
-    // Step implementation using the output from PreviousStep
-}
-```
-
-## Executing Workflows
-
-Workflows can be executed using the `WorkflowEngine`:
-
-```csharp
-var workflow = typeof(YourWorkflowClass).BuildWorkflowFromType();
-var engine = new WorkflowEngine();
-var result = engine.ExecuteWorkflow(workflow, "FinalStepName");
-```
-
-## Advanced Usage
-
-For more complex scenarios, you can use the `WorkflowBuilder` to programmatically construct workflows:
-
-```csharp
-var builder = new WorkflowBuilder();
-builder.AddStep("Step1", () => 42)
-       .AddStep("Step2", (int x) => x * 2)
-       .AddStep("Step3", (int x) => Console.WriteLine(x));
-
-var workflow = builder.Build();
-var engine = new WorkflowEngine();
-engine.ExecuteWorkflow(workflow, "Step3");
-```
 
 ## Contributing
 
