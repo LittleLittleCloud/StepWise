@@ -16,6 +16,9 @@ var loggerFactory = LoggerFactory.Create(builder =>
 });
 
 var logger = loggerFactory.CreateLogger<WorkflowEngine>();
+
+// Follow the configuration instruction on setting up dotnet interactive and python kernel
+// https://github.com/LittleLittleCloud/code-interpreter-workflow?tab=readme-ov-file#pre-requisite
 using var kernel = DotnetInteractiveKernelBuilder
     .CreateDefaultInProcessKernelBuilder()
     .AddPowershellKernel()
