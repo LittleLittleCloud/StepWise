@@ -77,10 +77,12 @@ var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dict
     [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
 });
 stopwatch.Stop();
+
+// Because the steps are executed in parallel, the total time should be less than the sum of individual step times
 stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
 ```
 
-## More Examples
+## Examples
 You can find more examples in the [examples](./example) directory.
 
 

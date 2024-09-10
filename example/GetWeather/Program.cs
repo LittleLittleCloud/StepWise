@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using StepWise.Core;
 
 var loggerFactory = LoggerFactory.Create(builder =>
@@ -6,15 +7,38 @@ var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddConsole();
 });
 
-var workflow = new GetWeatherWorkflow(logger: loggerFactory.CreateLogger<WorkflowEngine>());
-var weathers = await workflow.ExecuteGetWeather(["Seattle", "Redmond"]);
+var getWeather = new Workflow();
+var workflowEngine = WorkflowEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<WorkflowEngine>());
 
-foreach (var weather in weathers)
+var input = new Dictionary<string, object>
 {
-    Console.WriteLine($"The weather in {weather.City} on {weather.Date} is {weather.Forecast}.");
+    { "cities", new string[] { "Seattle", "Redmond" } }
+};
+
+await foreach( (var stepName, var value) in workflowEngine.ExecuteStepAsync(nameof(Workflow.GetWeatherAsync), input))
+{
+    if (stepName == nameof(Workflow.GetWeatherAsync) && value is Workflow.Weather[] weathers)
+    {
+        Console.WriteLine("Weather forecast:");
+        foreach (var weather in weathers)
+        {
+            Console.WriteLine($"City: {weather.City}, Date: {weather.Date}, Forecast: {weather.Forecast}");
+        }
+
+        break;
+    }
+
+    Console.WriteLine($"Step {stepName} is completed");
+
+    var json = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+
+    Console.WriteLine($"""
+        Value:
+        {json}
+        """);
 }
 
-public partial class GetWeatherWorkflow
+public class Workflow
 {
     [Step]
     public async Task<DateTime> GetCurrentDateAsync()
@@ -23,7 +47,8 @@ public partial class GetWeatherWorkflow
     }
 
     [Step]
-    public async Task<Weather[]> GetWeather(
+    [DependOn(nameof(GetCurrentDateAsync))]
+    public async Task<Weather[]> GetWeatherAsync(
         string[] cities,
         [FromStep(nameof(GetCurrentDateAsync))] DateTime date)
     {
@@ -43,41 +68,5 @@ public partial class GetWeatherWorkflow
         public DateTime Date { get; }
 
         public string Forecast { get; }
-    }
-}
-
-//auto-generated
-public partial class GetWeatherWorkflow
-{
-    private readonly Workflow _workflow;
-    private readonly WorkflowEngine _workflowEngine;
-
-    /// <summary>
-    /// Allow user to override the default constructor
-    /// </summary>
-    public GetWeatherWorkflow(ILogger<WorkflowEngine>? logger = null)
-    {
-        _workflow = Workflow.CreateFromInstance(this);
-        _workflowEngine = new WorkflowEngine(_workflow, logger: logger);
-    }
-
-    public async Task<Weather[]> ExecuteGetWeather(
-        string[]? cities = null,
-        DateTime? date = null)
-    {
-        var parameters = new Dictionary<string, object>();
-        if (cities != null)
-        {
-            parameters[nameof(cities)] = cities;
-        }
-
-        if (date != null)
-        {
-            parameters[nameof(date)] = date;
-        }
-
-        return await _workflowEngine.ExecuteStepAsync<Weather[]>(
-            nameof(GetWeather),
-            parameters);
     }
 }

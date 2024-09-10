@@ -1,0 +1,61 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: dotnet-release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release/**
+  release:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build and release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '22.x'
+    - uses: nuget/setup-nuget@v2
+      with:
+        nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+        nuget-version: 'latest'
+    - name: Restore dependencies
+      run: |
+        dotnet restore -bl
+    - name: Build
+      run: |
+        echo "Build"
+        dotnet build --no-restore --configuration Release -bl /p:SignAssembly=true
+    - name: Unit Test
+      run: dotnet test --no-build -bl --configuration Release -m:1
+    - name: Pack
+      run: |
+        echo "Create release build package"
+        dotnet pack --no-build --configuration Release --output './output/release' -bl
+
+        echo "ls output directory"
+        ls -R ./output
+    - name: Publish package to Nuget
+      run: |
+        echo "Publish package to Nuget"
+        echo "ls output directory"
+        ls -R ./output/release
+        dotnet nuget push --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json ./output/release/*.nupkg --skip-duplicate

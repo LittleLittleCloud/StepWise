@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Json;
 using AutoGen.Core;
 using AutoGen.DotnetInteractive;
 using AutoGen.DotnetInteractive.Extension;
@@ -28,27 +29,41 @@ var chatClient = openAIClient.GetChatClient(model);
 var agent = new OpenAIChatAgent(
     chatClient: chatClient,
     name: "assistant")
-    .RegisterMessageConnector()
-    .RegisterPrintMessage();
+    .RegisterMessageConnector();
 
-var codeInterpreter = new CodeInterpreter(agent, kernel);
-var workflow = Workflow.CreateFromInstance(codeInterpreter);
-var engine = new WorkflowEngine(workflow, maxConcurrency: 1, logger);
+var codeInterpreter = new Workflow(agent, kernel);
+var engine = WorkflowEngine.CreateFromInstance(codeInterpreter, maxConcurrency: 1, logger);
 
 var task = "use python to switch my system to dark mode";
-var result = await engine.ExecuteStepAsync<string>(nameof(codeInterpreter.GenerateReply), new Dictionary<string, object>
+var input = new Dictionary<string, object>
 {
     ["task"] = task
-});
+};
 
-Console.WriteLine($"Final Reply: {result}");
+await foreach ((var stepName, var value) in engine.ExecuteStepAsync(nameof(Workflow.GenerateReply), input))
+{
+    if (stepName == nameof(Workflow.GenerateReply) && value is string reply)
+    {
+        Console.WriteLine($"Final Reply: {reply}");
+        break;
+    }
 
-public class CodeInterpreter
+    Console.WriteLine($"Step {stepName} is completed");
+
+    var json = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+
+    Console.WriteLine($"""
+        Value:
+        {json}
+        """);
+}
+
+public class Workflow
 {
     private IAgent _agent;
     private readonly Kernel _kernel;
 
-    public CodeInterpreter(IAgent agent, Kernel kernel)
+    public Workflow(IAgent agent, Kernel kernel)
     {
         _agent = agent;
         _kernel = kernel;

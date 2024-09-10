@@ -24,6 +24,12 @@ public class WorkflowEngine : IWorkflowEngine
         _maxConcurrency = maxConcurrency;
     }
 
+    public static WorkflowEngine CreateFromInstance(object instance, int maxConcurrency = 1, ILogger? logger = null)
+    {
+        var workflow = Workflow.CreateFromInstance(instance);
+        return new WorkflowEngine(workflow, maxConcurrency, logger);
+    }
+
     public async Task<TResult> ExecuteStepAsync<TResult>(string stepName, Dictionary<string, object>? inputs = null)
     {
         var context = new Dictionary<string, object>();
