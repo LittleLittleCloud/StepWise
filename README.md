@@ -1,6 +1,6 @@
 # StepWise
 
-StepWise is a powerful and flexible C# library for defining and executing workflows. It allows you to break down complex processes into manageable steps, define dependencies between them, and execute them in the correct order.
+StepWise is a powerful and flexible C# library for defining and executing workflows. It allows you to break down complex workflows into manageable steps, define dependencies between them, and execute them in the correct order.
 
 ## Features
 

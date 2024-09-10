@@ -54,6 +54,8 @@ public class PrepareDinnerWorkflowTest
         return $"Dinner ready!";
     }
 
+    private static readonly string[] value = ["tomato", "onion", "garlic"];
+
     [Fact]
     public async Task ItPrepareDinnerConcurrentlyAsync()
     {
@@ -61,9 +63,9 @@ public class PrepareDinnerWorkflowTest
         var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, object>
+        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
         {
-            [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
+            [nameof(ChopVegetables)] = StepVariable.Create(value),
         });
 
         stopwatch.Stop();
@@ -79,9 +81,9 @@ public class PrepareDinnerWorkflowTest
         var engine = new WorkflowEngine(workflow, maxConcurrency: 1);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, object>
+        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
         {
-            [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
+            [nameof(ChopVegetables)] = StepVariable.Create(new[] { "tomato", "onion", "garlic" }),
         });
 
         stopwatch.Stop();

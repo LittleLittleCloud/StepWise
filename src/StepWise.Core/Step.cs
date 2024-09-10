@@ -57,7 +57,25 @@ public class Step
     public List<string> Dependencies { get; set; }
     public Delegate StepMethod { get; set; }
 
-    public bool IsExecuctionConditionSatisfied(Dictionary<string, object> inputs)
+    public bool IsExecuctionConditionSatisfied(Dictionary<string, StepVariable> inputs)
+    {
+        foreach (var param in InputParameters)
+        {
+            if (param.HasDefaultValue)
+            {
+                continue;
+            }
+
+            if (!inputs.ContainsKey(param.SourceStep ?? param.Name))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsExecuctionConditionSatisfied(Dictionary<string, object> inputs)
     {
         foreach (var param in InputParameters)
         {
@@ -126,31 +144,92 @@ public class Step
     }
 }
 
-public class StepBean
+public class StepVariable
+{
+    public StepVariable(int generation, object value)
+    {
+        Generation = generation;
+        Value = value;
+    }
+
+    public static StepVariable Create(object value, int generation = 0)
+    {
+        return new StepVariable(generation, value);
+    }
+
+    public int Generation { get; set; }
+
+    public object Value { get; set; }
+
+    /// <summary>
+    /// A convenient method to cast the result to the specified type.
+    /// </summary>
+    public T As<T>()
+    {
+        return (T)Value;
+    }
+}
+
+/// <summary>
+/// The step run represents the minimal unit of execute a step.
+/// It contains the step, the generation of the step, and the inputs(parameter) of the step.
+/// </summary>
+public class StepRun
 {
     private readonly Step _step;
     private readonly int _generation = 0;
-    private readonly Dictionary<string, object> _inputs = new();
+    private readonly Dictionary<string, StepVariable> _inputs = new();
 
-    private StepBean(Step step, int generation, Dictionary<string, object> inputs)
+    private StepRun(Step step, int generation, Dictionary<string, StepVariable> inputs)
     {
         _step = step;
         _generation = generation;
         _inputs = inputs;
     }
 
-    public static StepBean Create(Step step, int generation, Dictionary<string, object>? inputs = null)
+    public Step Step => _step;
+
+    public int Generation => _generation;
+
+    public Dictionary<string, StepVariable> Inputs => _inputs;
+
+    public static StepRun Create(Step step, int generation, Dictionary<string, StepVariable>? inputs = null)
     {
-        return new StepBean(step, generation, inputs ?? new Dictionary<string, object>());
+        return new StepRun(step, generation, inputs ?? new Dictionary<string, StepVariable>());
     }
 
     public async Task<object?> ExecuteAsync(CancellationToken ct = default)
     {
-        return await _step.ExecuteAsync(_inputs, ct);
+        return await _step.ExecuteAsync(_inputs.ToDictionary(kv => kv.Key, kv => kv.Value.Value), ct);
     }
 
     public override string ToString()
     {
-        return $"{_step.Name} (gen: {_generation})";
+        // format [gen] stepName([gen]input1, [gen]input2, ...)
+        var inputs = string.Join(", ", _inputs.Select(kv => $"{kv.Key}[{_inputs[kv.Key].Generation}]"));
+        return $"{_step.Name}[{_generation}]({inputs})";
     }
+}
+
+public class StepResult
+{
+    public StepResult(StepRun stepBean, object? result)
+    {
+        StepRun = stepBean;
+        Result = result is null ? null : StepVariable.Create(result, stepBean.Generation);
+    }
+
+    public static StepResult Create(StepRun stepBean, object? result)
+    {
+        return new StepResult(stepBean, result);
+    }
+
+    public StepRun StepRun { get; }
+
+    public string StepName => StepRun.Step.Name;
+
+    /// <summary>
+    /// The result of the step.
+    /// </summary>
+    public StepVariable? Result { get; }
 }

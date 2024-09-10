@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -86,15 +81,21 @@ public class GuessNumberWorkflowTest
         var workflow = Workflow.CreateFromInstance(this);
         var engine = new WorkflowEngine(workflow, logger: _logger);
 
-        var context = new Dictionary<string, object>()
+        var context = new Dictionary<string, StepVariable>()
         {
-            [nameof(InputNumber)] = 5,
+            [nameof(InputNumber)] = StepVariable.Create(5)
         };
-        await foreach (var (name, result) in engine.ExecuteStepAsync(nameof(FinalResult), context))
+        await foreach (var stepResult in engine.ExecuteStepAsync(nameof(FinalResult), context))
         {
-            context[name] = result;
+            var name = stepResult.StepName;
+            var result = stepResult.Result;
 
-            if (name == nameof(FinalResult) && result is string finalResult)
+            if (result is not null)
+            {
+                context[name] = result;
+            }
+
+            if (name == nameof(FinalResult) && result?.As<string>() is string finalResult)
             {
                 break;
             }

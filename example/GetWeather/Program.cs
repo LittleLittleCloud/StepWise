@@ -10,14 +10,14 @@ var loggerFactory = LoggerFactory.Create(builder =>
 var getWeather = new Workflow();
 var workflowEngine = WorkflowEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<WorkflowEngine>());
 
-var input = new Dictionary<string, object>
+var input = new Dictionary<string, StepVariable>
 {
-    { "cities", new string[] { "Seattle", "Redmond" } }
+    { "cities", StepVariable.Create(new string[] { "Seattle", "Redmond" }) }
 };
 
-await foreach( (var stepName, var value) in workflowEngine.ExecuteStepAsync(nameof(Workflow.GetWeatherAsync), input))
+await foreach(var stepResult in workflowEngine.ExecuteStepAsync(nameof(Workflow.GetWeatherAsync), input))
 {
-    if (stepName == nameof(Workflow.GetWeatherAsync) && value is Workflow.Weather[] weathers)
+    if (stepResult.StepName == nameof(Workflow.GetWeatherAsync) && stepResult.Result?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
     {
         Console.WriteLine("Weather forecast:");
         foreach (var weather in weathers)
@@ -27,15 +27,6 @@ await foreach( (var stepName, var value) in workflowEngine.ExecuteStepAsync(name
 
         break;
     }
-
-    Console.WriteLine($"Step {stepName} is completed");
-
-    var json = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
-
-    Console.WriteLine($"""
-        Value:
-        {json}
-        """);
 }
 
 public class Workflow
