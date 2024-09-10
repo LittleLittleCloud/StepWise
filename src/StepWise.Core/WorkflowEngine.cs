@@ -184,8 +184,12 @@ public class WorkflowEngine : IWorkflowEngine
         Step finalStep,
         CancellationToken ct = default)
     {
+        await Task.Yield();
         foreach (var stepRun in _stepsTaskQueue.GetConsumingEnumerable(ct))
         {
+            // This is important to save the chance for other tasks to run
+            await Task.Yield();
+
             Interlocked.Increment(ref _busyTaskRunners);
             //// exit if early stop
             //if ((_stepResultQueue.IsAddingCompleted || _stepsTaskQueue.IsAddingCompleted) && earlyStop)
@@ -257,6 +261,14 @@ public class WorkflowEngine : IWorkflowEngine
                             _stepsTaskQueue.Add(nextStepRun);
                         }
                     }
+                }
+                catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))
+                {
+                    // This means the task queue has been marked as complete
+                    // This is expected when the task queue is empty and there is no busy task runner
+
+                    _logger?.LogInformation($"[Runner {runnerId}]: The task queue has been marked as complete. Exiting.");
+                    return;
                 }
                 catch (Exception ex)
                 {

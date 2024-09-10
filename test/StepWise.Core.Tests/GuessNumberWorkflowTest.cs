@@ -101,7 +101,7 @@ public class GuessNumberWorkflowTest
             }
         }
 
-        context[nameof(FinalResult)].Should().Be("The number was 5!");
+        context[nameof(FinalResult)].Value.As<string>().Should().Be("The number was 5!");
     }
 
     [Fact]
