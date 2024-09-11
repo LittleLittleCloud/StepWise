@@ -93,6 +93,8 @@ stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
 ## Examples
 You can find more examples in the [examples](./example) directory.
 
+## `StepWiseEngine`
+`StepWiseEngine` is the core component of StepWise that manages the execution of workflows. It uses a consumer-producer approach to execute steps in the correct order while handling dependencies between steps and parallel execution when possible. For a deep dive into `StepWiseEngine`, see the [documentation](./docs/DeepDiveToStepWiseEngine.md).
 
 ## Primitives
 

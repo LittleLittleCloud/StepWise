@@ -12,11 +12,6 @@ public class StepWiseEngine : IStepWiseEngine
     private readonly Workflow _workflow;
     private readonly ILogger? _logger = null;
     private readonly int _maxConcurrency = 1;
-    //private BlockingCollection<StepRun> _stepsTaskQueue = new BlockingCollection<StepRun>();
-    //private int _busyTaskRunners = 0;
-    //private ConcurrentDictionary<string, StepVariable> _context = new ConcurrentDictionary<string, StepVariable>();
-    private readonly ConcurrentDictionary<Guid, int> _sessionBusyTaskRunners = new ConcurrentDictionary<Guid, int>();
-    //private BlockingCollection<StepResult> _stepResultQueue = new BlockingCollection<StepResult>();
 
     public StepWiseEngine(Workflow workflow, int maxConcurrency = 1, ILogger? logger = null)
     {
@@ -189,10 +184,10 @@ public class StepWiseEngine : IStepWiseEngine
             var dependSteps = _workflow.GetAllDependSteps(stepRun.Step);
             _context[stepRun.Step.Name] = StepVariable.Create(res.Value, stepRun.Generation);
 
-            var contextGeneration = stepRun.Generation + 1;
 
             // remove the variables that depend on the current step
             var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
+            var contextGeneration = Math.Max(stepRun.Generation + 1, filteredContext.Max(kv => kv.Value.Generation) + 1);
 
             // update task queue with the next steps
             // find all steps that takes the result as input
