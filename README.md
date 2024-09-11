@@ -14,10 +14,7 @@ StepWise is a powerful and flexible C# library for defining and executing workfl
 
 - Define workflows as a series of steps
 - Automatic dependency resolution between steps
-- Attribute-based workflow definition for clean and readable code
-- Programmatic workflow building for dynamic scenarios
-- Flexible input and output handling for each step
-- Built-in error handling and custom exceptions
+- Parallel execution of independent steps
 
 ## Quick Start
 
@@ -80,10 +77,22 @@ var prepareDinner = new PrepareDinner();
 var workflow = Workflow.CreateFromInstance(prepareDinner);
 var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, object>
+var inputVariables = new Dictionary<string, object>
 {
-    [nameof(ChopVegetables)] = new[] { "tomato", "onion", "garlic" },
-});
+    [nameof(ChopVegetables)] = StepVariable.Create(new[] { "tomato", "onion", "garlic" }),
+};
+
+await foreach (var stepResult in engine.ExecuteAsync(nameof(ServeDinner), inputVariables))
+{
+    // print every step result
+    // ChopVegetables: Chopped tomato, onion, garlic
+    // BoilWater: Boiled water
+    // CookPasta: Cooked pasta
+    // CookSauce: Cooked sauce
+    // ServeDinner: Dinner ready!
+    Console.WriteLine(stepResult);
+}
+
 stopwatch.Stop();
 
 // Because the steps are executed in parallel, the total time should be less than the sum of individual step times
@@ -93,8 +102,29 @@ stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
 ## Examples
 You can find more examples in the [examples](./example) directory.
 
+## Dependency Management between Steps
+### Step Dependency
+In StepWise, you can define dependencies between steps using the `[DependsOn]` attribute. This ensures that a step is executed only after its dependencies have been satisfied.
+
+> [!Note]
+> Prevent circular dependencies between steps, otherwise, the workflow engine will remind you with an exception.
+
+### Variable Dependency
+Variable dependencies of a step means that the step requires certain variables to be available in the context before it can be executed. If all variable dependencies are met, the step can be executed in parallel with other steps that don't have dependencies on it. In StepWise, variable dependencies are the input parameters of a step.
+
+> [!Note]
+> `[FromStep]` attribute doesn't affect the step dependency. It is used to pass the output of one step as input to another step.
+
+StepWise automatically manages dependencies between Steps:
+- Use the `[DependsOn]` attribute to specify dependencies between Steps.
+- The StepwiseEngine resolves these dependencies and ensures Steps are executed in the correct order.
+
+## Parallel Execution
+
+StepWise supports parallel execution of steps that do not have step dependencies on each other. This can significantly improve the performance of your workflows by executing independent steps concurrently.
+
 ## `StepWiseEngine`
-`StepWiseEngine` is the core component of StepWise that manages the execution of workflows. It uses a consumer-producer approach to execute steps in the correct order while handling dependencies between steps and parallel execution when possible. For a deep dive into `StepWiseEngine`, see the [documentation](./docs/DeepDiveToStepWiseEngine.md).
+`StepWiseEngine` is the core component of StepWise that manages the execution of workflows. It uses a consumer-producer approach to execute steps in the correct order while handling dependencies between steps and parallel execution when possible. You can visit this [documentation](./docs/DeepDiveToStepWiseEngine.md) to learn more about how the `StepWiseEngine` works.
 
 ## Primitives
 
@@ -108,14 +138,14 @@ A Step is the smallest unit of work in StepWise. It represents a single task or 
 - **Properties**:
   - Name: A unique identifier for the step.
   - Input Parameters: The data required by the step to perform its task.
-  - Output: The result produced by the step (if any).
+  - Output: The result produced by the step (if any). **Must be a Task or Task<\T>**.
   - Dependencies: Other steps that must be executed before this step. This is specified using the `[DependsOn]` attribute.
 - **Usage**: 
   ```csharp
-  [Step(Name = "GetData")]
+  [Step]
   [DependsOn(nameof(OtherStep))]
   [DependsOn(nameof(AnotherStep))]
-  public Data GetData(int id)
+  public Task<Data> GetData(int id)
   {
       // Implementation
   }
@@ -131,34 +161,17 @@ A Workflow is a collection of Steps that together accomplish a larger task.
   public class DataProcessingWorkflow
   {
       [Step(Name = "GetData")]
-      public Data GetData(int id) { /* ... */ }
+      public Task<Data> GetData(int id) { /* ... */ }
 
       [Step(Name = "ProcessData")]
       [DependsOn(nameof(GetData))]
-      public Result ProcessData([FromStep("GetData")] Data data) { /* ... */ }
+      public Task<Result> ProcessData([FromStep("GetData")] Data data) { /* ... */ }
 
       [Step(Name = "SaveResult")]
         [DependsOn(nameof(ProcessData))]
-      public void SaveResult([FromStep("ProcessData")] Result result) { /* ... */ }
+      public Task<string> SaveResult([FromStep("ProcessData")] Result result) { /* ... */ }
   }
   ```
-
-## Dependency Management
-
-> [!Note]
-> `[FromStep]` attribute doesn't affect the dependency between steps. It is used to pass the output of one step as input to another step.
-
-> [!Note]
-> Prevent circular dependencies between steps, otherwise, the workflow engine will remind you with an exception.
-
-StepWise automatically manages dependencies between Steps:
-- Use the `[DependsOn]` attribute to specify dependencies between Steps.
-- The WorkflowEngine resolves these dependencies and ensures Steps are executed in the correct order.
-
-## Parallel Execution
-
-StepWise wisely supports parallel execution of steps that do not have dependencies on each other. This can significantly improve the performance of your workflows by executing independent steps concurrently.
-
 
 ## Contributing
 
