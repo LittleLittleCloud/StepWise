@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace StepWise.Core;
 
-public class WorkflowEngine : IWorkflowEngine
+public class StepWiseEngine : IStepWiseEngine
 {
     private readonly Workflow _workflow;
     private readonly ILogger? _logger = null;
@@ -17,39 +17,20 @@ public class WorkflowEngine : IWorkflowEngine
     private ConcurrentDictionary<string, StepVariable> _context = new ConcurrentDictionary<string, StepVariable>();
     private BlockingCollection<StepResult> _stepResultQueue = new BlockingCollection<StepResult>();
 
-    public WorkflowEngine(Workflow workflow, int maxConcurrency = 1, ILogger? logger = null)
+    public StepWiseEngine(Workflow workflow, int maxConcurrency = 1, ILogger? logger = null)
     {
         _workflow = workflow;
         _logger = logger;
         _maxConcurrency = maxConcurrency;
     }
 
-    public static WorkflowEngine CreateFromInstance(object instance, int maxConcurrency = 1, ILogger? logger = null)
+    public static StepWiseEngine CreateFromInstance(object instance, int maxConcurrency = 1, ILogger? logger = null)
     {
         var workflow = Workflow.CreateFromInstance(instance);
-        return new WorkflowEngine(workflow, maxConcurrency, logger);
+        return new StepWiseEngine(workflow, maxConcurrency, logger);
     }
 
-    public async Task<TResult> ExecuteStepAsync<TResult>(
-        string targetStepName,
-        Dictionary<string, StepVariable>? inputs = null,
-        bool earlyStop = true,
-        int? maxSteps = null,
-        CancellationToken ct = default)
-    {
-        maxSteps ??= int.MaxValue;
-        await foreach (var stepResult in ExecuteStepAsync(targetStepName, inputs, earlyStop, maxSteps, ct))
-        {
-            if (stepResult.Result != null && stepResult.StepName == targetStepName)
-            {
-                return stepResult.Result.As<TResult>() ?? throw new Exception($"Step '{targetStepName}' did not return the expected result type.");
-            }
-        }
-
-        throw new Exception($"Step '{targetStepName}' did not return the expected result type.");
-    }
-
-    public async IAsyncEnumerable<StepResult> ExecuteStepAsync(
+    public async IAsyncEnumerable<StepResult> ExecuteAsync(
         string targetStep,
         Dictionary<string, StepVariable>? inputs = null,
         bool earlyStop = true,
@@ -170,12 +151,89 @@ public class WorkflowEngine : IWorkflowEngine
         Console.WriteLine("executeStepTask: " + executeStepTask);
         foreach (var stepResult in _stepResultQueue.GetConsumingEnumerable(ct))
         {
+            var stepRun = stepResult.StepRun;
+            var res = stepResult.Result;
+            if (res == null)
+            {
+                _logger?.LogInformation($"Skipping {stepRun} because the result is null.");
+
+                if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 0)
+                {
+                    _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
+
+                    this._stepsTaskQueue.CompleteAdding();
+                    this._stepResultQueue.CompleteAdding();
+                }
+
+                continue;
+            }
+
+            var dependSteps = _workflow.GetAllDependSteps(stepRun.Step);
+            _context[stepRun.Step.Name] = StepVariable.Create(res.Value, stepRun.Generation);
+
+            var contextGeneration = stepRun.Generation + 1;
+
+            // remove the variables that depend on the current step
+            var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
+
+            // update task queue with the next steps
+            // find all steps that takes the result as input
+            var nextSteps = _workflow.Steps.Values.Where(x => x.InputParameters.Any(p => p.SourceStep == stepRun.Step.Name)).ToList();
+            var stepsToAdd = new List<Step>();
+            foreach (var nextStep in nextSteps)
+            {
+                var nextStepRun = StepRun.Create(nextStep, contextGeneration, filteredContext);
+                if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
+                {
+                    _logger?.LogInformation($"Skipping {nextStepRun} because of missing prerequisites.");
+                    continue;
+                }
+
+                // check if the step has already been executed
+                if (_context.TryGetValue(nextStep.Name, out var nextValue) && nextValue.Generation >= contextGeneration)
+                {
+                    _logger?.LogInformation($"Skipping {nextStepRun} has already been executed.");
+                    continue;
+                }
+
+                _logger?.LogInformation($"Skipping {nextStepRun} to the task queue.");
+                stepsToAdd.Add(nextStep);
+            }
+
+            if (stepsToAdd.Count > 0)
+            {
+                // if contains self-loop (stepsToAdd contains the current step), move that step to the end
+                if (stepsToAdd.Any(x => x.Name == stepRun.Step.Name))
+                {
+                    var selfLoopStep = stepsToAdd.First(x => x.Name == stepRun.Step.Name);
+                    stepsToAdd.Remove(selfLoopStep);
+                    stepsToAdd.Add(selfLoopStep);
+                }
+
+                foreach (var s in stepsToAdd)
+                {
+                    _stepsTaskQueue.Add(StepRun.Create(s, contextGeneration, filteredContext));
+                }
+            }
+            else
+            {
+                _logger?.LogInformation($"No steps to add to the task queue.");
+
+                if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 0)
+                {
+                    _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
+
+                    this._stepsTaskQueue.CompleteAdding();
+                    this._stepResultQueue.CompleteAdding();
+                }
+            }
+            
             yield return stepResult;
         }
 
-
         _logger?.LogInformation($"Workflow engine has completed.");
         _stepsTaskQueue.CompleteAdding();
+
         await executeStepTask;
     }
 
@@ -204,9 +262,7 @@ public class WorkflowEngine : IWorkflowEngine
             // skip the step
             if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
             {
-                _logger?.LogInformation($"[Runner {runnerId}]: {stepRun} has already been executed.");
-
-                Interlocked.Decrement(ref _busyTaskRunners);
+                throw new Exception($"[Runner {runnerId}]: The step {stepRun} has already been executed with a newer version. This should not happen.");
             }
             else
             {
@@ -229,37 +285,7 @@ public class WorkflowEngine : IWorkflowEngine
 
                         _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {stepRun}.");
                         _logger?.LogDebug($"[Runner {runnerId}]: {stepRun} result is '{res}'.");
-                        _context[stepRun.Step.Name] = StepVariable.Create(res, stepRun.Generation);
                         _stepResultQueue.Add(StepResult.Create(stepRun, res));
-
-                        var dependSteps = _workflow.GetAllDependSteps(stepRun.Step);
-
-                        // remove the variables that depend on the current step
-                        var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
-
-                        // update task queue with the next steps
-                        // find all steps that takes the result as input
-                        var nextSteps = _workflow.Steps.Values.Where(x => x.InputParameters.Any(p => p.SourceStep == stepRun.Step.Name)).ToList();
-
-                        foreach (var nextStep in nextSteps)
-                        {
-                            var nextStepRun = StepRun.Create(nextStep, contextGeneration, filteredContext);
-                            if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
-                            {
-                                _logger?.LogInformation($"[Runner {runnerId}]: Skipping {nextStepRun} because of missing prerequisites.");
-                                continue;
-                            }
-
-                            // check if the step has already been executed
-                            if (_context.TryGetValue(nextStep.Name, out var nextValue) && nextValue.Generation >= contextGeneration)
-                            {
-                                _logger?.LogInformation($"[Runner {runnerId}]: {nextStepRun} has already been executed.");
-                                continue;
-                            }
-
-                            _logger?.LogInformation($"[Runner {runnerId}]: Adding {nextStepRun} to the task queue.");
-                            _stepsTaskQueue.Add(nextStepRun);
-                        }
                     }
                 }
                 catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))
@@ -278,14 +304,13 @@ public class WorkflowEngine : IWorkflowEngine
                 }
                 finally
                 {
-                    if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 1)
-                    {
-                        _logger?.LogInformation($"[Runner {runnerId}]: The task queue is empty and there is only no busy task runner. Setting the task queue as complete.");
-                        _stepsTaskQueue.CompleteAdding();
-                        _stepResultQueue.CompleteAdding();
+                    //if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 1)
+                    //{
+                    //    _logger?.LogInformation($"[Runner {runnerId}]: The task queue is empty and there is only no busy task runner. Setting the task queue as complete.");
+                    //    _stepResultQueue.CompleteAdding();
 
-                        //return;
-                    }
+                    //    //return;
+                    //}
                     Interlocked.Decrement(ref _busyTaskRunners);
                 }
             }

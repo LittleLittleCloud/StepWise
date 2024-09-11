@@ -31,13 +31,19 @@ public class SelfLoopWorkflowTest
 
     [Step]
     [DependOn(nameof(Start))]
-    public async Task<int> AddNumberByOne(
+    public async Task<int?> AddNumberByOne(
         [FromStep(nameof(Start))] int start,
-        [FromStep(nameof(AddNumberByOne))] int? current = null)
+        [FromStep(nameof(AddNumberByOne))] int? current = null,
+        [FromStep(nameof(End))] string? end = null)
     {
         // sleep one second
         // when self-looping
         await Task.Delay(1000);
+
+        if (end == "Done!")
+        {
+            return null;
+        }
 
         if (current == null)
         {
@@ -67,10 +73,10 @@ public class SelfLoopWorkflowTest
         var startStep = workflow.Steps[nameof(Start)];
         var dependStartSteps = workflow.GetAllDependSteps(startStep);
         dependStartSteps.Count().Should().Be(2);
-        var engine = new WorkflowEngine(workflow, maxConcurrency: 1, _logger);
+        var engine = new StepWiseEngine(workflow, maxConcurrency: 3, _logger);
 
         var stepAndResult = new List<StepResult>();
-        await foreach (var stepResult in engine.ExecuteStepAsync(nameof(End), maxSteps: 6))
+        await foreach (var stepResult in engine.ExecuteAsync(nameof(End), maxSteps: 7))
         {
             stepAndResult.Add(stepResult);
         }

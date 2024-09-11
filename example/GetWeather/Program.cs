@@ -8,13 +8,13 @@ var loggerFactory = LoggerFactory.Create(builder =>
 });
 
 var getWeather = new Workflow();
-var workflowEngine = WorkflowEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<WorkflowEngine>());
+var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<StepWiseEngine>());
 var input = new Dictionary<string, StepVariable>
 {
     { "cities", StepVariable.Create(new string[] { "Seattle", "Redmond" }) }
 };
 
-await foreach(var stepResult in workflowEngine.ExecuteStepAsync(nameof(Workflow.GetWeatherAsync), input))
+await foreach(var stepResult in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input))
 {
     if (stepResult.StepName == nameof(Workflow.GetWeatherAsync) && stepResult.Result?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
     {

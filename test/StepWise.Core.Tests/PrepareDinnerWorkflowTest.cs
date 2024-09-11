@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using Xunit;
+using StepWise.Core.Extension;
 
 namespace StepWise.Core.Tests;
 
@@ -60,10 +61,10 @@ public class PrepareDinnerWorkflowTest
     public async Task ItPrepareDinnerConcurrentlyAsync()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
+        var engine = new StepWiseEngine(workflow, maxConcurrency: 10);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
+        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
         {
             [nameof(ChopVegetables)] = StepVariable.Create(value),
         });
@@ -78,10 +79,10 @@ public class PrepareDinnerWorkflowTest
     public async Task ItPrepareDinnerStepByStepAsync()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new WorkflowEngine(workflow, maxConcurrency: 1);
+        var engine = new StepWiseEngine(workflow, maxConcurrency: 1);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteStepAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
+        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
         {
             [nameof(ChopVegetables)] = StepVariable.Create(new[] { "tomato", "onion", "garlic" }),
         });

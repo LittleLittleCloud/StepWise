@@ -101,9 +101,9 @@ public class CumulativeWorkflowTest
     [Fact]
     public async Task CumulativeWorkflow()
     {
-        var workflowEngine = WorkflowEngine.CreateFromInstance(this, maxConcurrency: 3, _logger);
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, maxConcurrency: 3, _logger);
         var steps = new List<string>();
-        await foreach (var stepResult in workflowEngine.ExecuteStepAsync(nameof(E)))
+        await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(E)))
         {
             var stepName = stepResult.StepName;
             var value = stepResult.Result;

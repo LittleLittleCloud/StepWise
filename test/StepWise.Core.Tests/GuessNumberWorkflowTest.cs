@@ -3,6 +3,7 @@ using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
+using StepWise.Core.Extension;
 
 namespace StepWise.Core.Tests;
 
@@ -79,13 +80,13 @@ public class GuessNumberWorkflowTest
     public async Task ItGuessNumber()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new WorkflowEngine(workflow, logger: _logger);
+        var engine = new StepWiseEngine(workflow, logger: _logger);
 
         var context = new Dictionary<string, StepVariable>()
         {
             [nameof(InputNumber)] = StepVariable.Create(5)
         };
-        await foreach (var stepResult in engine.ExecuteStepAsync(nameof(FinalResult), context))
+        await foreach (var stepResult in engine.ExecuteAsync(nameof(FinalResult), context))
         {
             var name = stepResult.StepName;
             var result = stepResult.Result;
@@ -108,9 +109,9 @@ public class GuessNumberWorkflowTest
     public async Task ItThrowExceptionWhenNumberIsNotProvided()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new WorkflowEngine(workflow);
+        var engine = new StepWiseEngine(workflow);
 
-        Func<Task> action = async () => await engine.ExecuteStepAsync<string>(nameof(FinalResult));
+        Func<Task> action = async () => await engine.ExecuteAsync<string>(nameof(FinalResult));
 
         await action.Should().ThrowAsync<Exception>();
     }
