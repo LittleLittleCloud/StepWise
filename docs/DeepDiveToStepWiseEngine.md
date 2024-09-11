@@ -22,7 +22,7 @@ graph TD
     B--> E{StepRun Queue Empty?}
     E -->|No| F[Dequeue StepRun]
     F --> StepRunner
-    StepRunner --> H[Enqueue Variable Queue]
+    StepRunner --> H[Enqueue Variable Queue and StepRun Queue if needed]
     H --> E
     E -->|Yes| I{All Runners Idle?}
     I -->|No| E
