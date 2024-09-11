@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background circle with blue border -->
+  <circle cx="100" cy="100" r="90" fill="#e6f3e6" stroke="#1e5aad" stroke-width="4"/>
+  
+  <!-- Steps (rounded rectangles) with gradient colors -->
+  <rect x="80" y="140" width="40" height="20" rx="5" ry="5" fill="#1e5aad" />
+  <rect x="60" y="110" width="80" height="20" rx="5" ry="5" fill="#4a90e2" />
+  <rect x="40" y="80" width="120" height="20" rx="5" ry="5" fill="#7cb9e8" />
+  
+  <!-- Arrow -->
+  <path d="M100 70 L85 40 L115 40 Z" fill="#0d2f6b" />
+</svg>
