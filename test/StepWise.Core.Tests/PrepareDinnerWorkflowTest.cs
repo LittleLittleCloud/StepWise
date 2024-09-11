@@ -73,7 +73,7 @@ public class PrepareDinnerWorkflowTest
         stopwatch.Stop();
 
         // why it's not 6000ms?
-        // because the available thread might be less than the tasks, so it's not guaranteed that all steps will be executed concurrently.
+        // because the available thread (on ci) might be less than the tasks, so it's not guaranteed that all steps will be executed concurrently.
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(15000);
         result.Should().Be("Dinner ready!");
     }
