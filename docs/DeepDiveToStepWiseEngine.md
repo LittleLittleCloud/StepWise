@@ -18,29 +18,21 @@ Before we dive into the implementation details, let's first clarify some key con
 ## Implementation Overview
 ```mermaid
 graph TD
-    A[Start] --> B[Initialize Context]
-    B --> C[Initialize StepRun Queue]
-    B --> D[Initialize Variable Queue]
-    C --> E{StepRun Queue Empty?}
+    A[Start] --> B[Initialize StepRun and Variable Queue]
+    B--> E{StepRun Queue Empty?}
     E -->|No| F[Dequeue StepRun]
-    F --> G[Execute StepRun]
-    G --> H[Enqueue Variable Queue]
+    F --> StepRunner
+    StepRunner --> H[Enqueue Variable Queue]
     H --> E
-    E -->|Yes| I{All Tasks Complete?}
+    E -->|Yes| I{All Runners Idle?}
     I -->|No| E
     I -->|Yes| J[Post processing]
     J --> K[End]
 
-    subgraph "StepRun Queue"
-    C1[`A_0()`] --> C2[`B_1(a_0)`] --> C3[`C_2(a_0, b_1)`]
+    subgraph StepRunner["Step Runner"]
+    Runner1
+    Runners["..."]
     end
-
-    subgraph "Variable Queue"
-    D1[`a_0`] --> D2[`b_1`] --> D3[`c_2`]
-    end
-
-    G -.-> C1
-    H -.-> D3
 ```
 
 <!-- create a short description of the consumer-producer pattern based on the diagram above -->
