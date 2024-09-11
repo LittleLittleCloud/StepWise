@@ -36,10 +36,6 @@ public class SelfLoopWorkflowTest
         [FromStep(nameof(AddNumberByOne))] int? current = null,
         [FromStep(nameof(End))] string? end = null)
     {
-        // sleep one second
-        // when self-looping
-        await Task.Delay(1000);
-
         if (end == "Done!")
         {
             return null;

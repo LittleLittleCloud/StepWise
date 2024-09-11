@@ -148,7 +148,6 @@ public class StepWiseEngine : IStepWiseEngine
 
         // execute steps
         var executeStepTask = Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i => ExecuteSingleStepAsync(i, step, ct)));
-        Console.WriteLine("executeStepTask: " + executeStepTask);
         foreach (var stepResult in _stepResultQueue.GetConsumingEnumerable(ct))
         {
             var stepRun = stepResult.StepRun;
