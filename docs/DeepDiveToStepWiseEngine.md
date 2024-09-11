@@ -50,9 +50,16 @@ In this section, we will explore a few examples to illustrate how the `StepWiseE
 `A`, `B`, and `C` are independent steps that can be executed in parallel.
 ```mermaid
 graph TD
+    Start --> A[Step A]
+    Start --> B[Step B]
+    Start --> C[Step C]
     A[Step A]
     B[Step B]
     C[Step C]
+    End[End]
+    A --> End
+    B --> End
+    C --> End
 ```
 #### Initialize context
 `{}`: An empty context.
