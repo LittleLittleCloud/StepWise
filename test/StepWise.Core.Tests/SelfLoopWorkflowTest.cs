@@ -19,8 +19,11 @@ public class SelfLoopWorkflowTest
     public SelfLoopWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = new XUnitLoggerProvider(testOutputHelper)
-            .CreateLogger(nameof(SelfLoopWorkflowTest));
+        _logger = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        })
+    .CreateLogger(nameof(GuessNumberWorkflowTest));
     }
 
     [Step]
