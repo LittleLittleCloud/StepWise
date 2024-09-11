@@ -7,6 +7,7 @@ namespace StepWise.Core.Tests;
 /// <summary>
 /// This workflow test the parallel execution of steps.
 /// </summary>
+[Collection("Sequential")]
 public class PrepareDinnerWorkflowTest
 {
     [Step]
