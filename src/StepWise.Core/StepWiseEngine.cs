@@ -249,17 +249,9 @@ public class StepWiseEngine : IStepWiseEngine
             await Task.Yield();
 
             Interlocked.Increment(ref _busyTaskRunners);
-            //// exit if early stop
-            //if ((_stepResultQueue.IsAddingCompleted || _stepsTaskQueue.IsAddingCompleted) && earlyStop)
-            //{
-            //    _logger?.LogInformation($"[Runner {runnerId}]: Early stopping {stepRun}");
-            //    Interlocked.Decrement(ref _busyTaskRunners);
-            //    return;
-            //}
-
             // scenario 1
             // if the step has already been executed, or there is a newer version of the step in the task queue
-            // skip the step
+            // throw exception.
             if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
             {
                 throw new Exception($"[Runner {runnerId}]: The step {stepRun} has already been executed with a newer version. This should not happen.");
@@ -304,30 +296,9 @@ public class StepWiseEngine : IStepWiseEngine
                 }
                 finally
                 {
-                    //if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 1)
-                    //{
-                    //    _logger?.LogInformation($"[Runner {runnerId}]: The task queue is empty and there is only no busy task runner. Setting the task queue as complete.");
-                    //    _stepResultQueue.CompleteAdding();
-
-                    //    //return;
-                    //}
                     Interlocked.Decrement(ref _busyTaskRunners);
                 }
             }
-
-            //// if the final step result is already in the context, stop the execution
-            //if (_context.ContainsKey(finalStep.Name) && _busyTaskRunners == 0 && earlyStop)
-            //{
-            //    var finalStepResult = _context[finalStep.Name];
-            //    _logger?.LogInformation($"[Runner {runnerId}]: The {finalStep} has been executed. Early stopping.");
-            //    _stepsTaskQueue.CompleteAdding();
-            //    _stepResultQueue.CompleteAdding();
-
-            //    return;
-            //}
-
-            // if the task queue is empty and busy task runners are 0, stop the execution
-            
         }
     }
 
