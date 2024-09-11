@@ -15,7 +15,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddConsole();
 });
 
-var logger = loggerFactory.CreateLogger<WorkflowEngine>();
+var logger = loggerFactory.CreateLogger<StepWiseEngine>();
 
 // Follow the configuration instruction on setting up dotnet interactive and python kernel
 // https://github.com/LittleLittleCloud/code-interpreter-workflow?tab=readme-ov-file#pre-requisite
@@ -35,30 +35,21 @@ var agent = new OpenAIChatAgent(
     .RegisterMessageConnector();
 
 var codeInterpreter = new Workflow(agent, kernel);
-var engine = WorkflowEngine.CreateFromInstance(codeInterpreter, maxConcurrency: 1, logger);
+var engine = StepWiseEngine.CreateFromInstance(codeInterpreter, maxConcurrency: 1, logger);
 
 var task = "use python to switch my system to dark mode";
-var input = new Dictionary<string, object>
+var input = new Dictionary<string, StepVariable>
 {
-    ["task"] = task
+    ["task"] = StepVariable.Create(task),
 };
 
-await foreach ((var stepName, var value) in engine.ExecuteStepAsync(nameof(Workflow.GenerateReply), input))
+await foreach (var stepResult in engine.ExecuteAsync(nameof(Workflow.GenerateReply), input))
 {
-    if (stepName == nameof(Workflow.GenerateReply) && value is string reply)
+    if (stepResult.StepName == nameof(Workflow.GenerateReply) && stepResult.Result?.As<string>() is string reply)
     {
         Console.WriteLine($"Final Reply: {reply}");
         break;
     }
-
-    Console.WriteLine($"Step {stepName} is completed");
-
-    var json = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
-
-    Console.WriteLine($"""
-        Value:
-        {json}
-        """);
 }
 
 public class Workflow

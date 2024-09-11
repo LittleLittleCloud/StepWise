@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
+using StepWise.Core.Extension;
 
 namespace StepWise.Core.Tests;
 
 /// <summary>
 /// This workflow test if and while loops.
 /// </summary>
+[Collection("Sequential")]
 public class GuessNumberWorkflowTest
 {
     private readonly ITestOutputHelper _testOutputHelper;
@@ -22,8 +19,11 @@ public class GuessNumberWorkflowTest
     public GuessNumberWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = new XUnitLoggerProvider(testOutputHelper)
-            .CreateLogger(nameof(GuessNumberWorkflowTest));
+        _logger = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        })
+    .CreateLogger(nameof(GuessNumberWorkflowTest));
     }
 
     [Step]
@@ -84,32 +84,38 @@ public class GuessNumberWorkflowTest
     public async Task ItGuessNumber()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new WorkflowEngine(workflow, logger: _logger);
+        var engine = new StepWiseEngine(workflow, logger: _logger);
 
-        var context = new Dictionary<string, object>()
+        var context = new Dictionary<string, StepVariable>()
         {
-            [nameof(InputNumber)] = 5,
+            [nameof(InputNumber)] = StepVariable.Create(5)
         };
-        await foreach (var (name, result) in engine.ExecuteStepAsync(nameof(FinalResult), context))
+        await foreach (var stepResult in engine.ExecuteAsync(nameof(FinalResult), context))
         {
-            context[name] = result;
+            var name = stepResult.StepName;
+            var result = stepResult.Result;
 
-            if (name == nameof(FinalResult) && result is string finalResult)
+            if (result is not null)
+            {
+                context[name] = result;
+            }
+
+            if (name == nameof(FinalResult) && result?.As<string>() is string finalResult)
             {
                 break;
             }
         }
 
-        context[nameof(FinalResult)].Should().Be("The number was 5!");
+        context[nameof(FinalResult)].Value.As<string>().Should().Be("The number was 5!");
     }
 
     [Fact]
     public async Task ItThrowExceptionWhenNumberIsNotProvided()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new WorkflowEngine(workflow);
+        var engine = new StepWiseEngine(workflow);
 
-        Func<Task> action = async () => await engine.ExecuteStepAsync<string>(nameof(FinalResult));
+        Func<Task> action = async () => await engine.ExecuteAsync<string>(nameof(FinalResult));
 
         await action.Should().ThrowAsync<Exception>();
     }

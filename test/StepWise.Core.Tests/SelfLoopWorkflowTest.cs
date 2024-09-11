@@ -19,8 +19,11 @@ public class SelfLoopWorkflowTest
     public SelfLoopWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = new XUnitLoggerProvider(testOutputHelper)
-            .CreateLogger(nameof(SelfLoopWorkflowTest));
+        _logger = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        })
+    .CreateLogger(nameof(GuessNumberWorkflowTest));
     }
 
     [Step]
@@ -31,10 +34,16 @@ public class SelfLoopWorkflowTest
 
     [Step]
     [DependOn(nameof(Start))]
-    public async Task<int> AddNumberByOne(
+    public async Task<int?> AddNumberByOne(
         [FromStep(nameof(Start))] int start,
-        [FromStep(nameof(AddNumberByOne))] int? current = null)
+        [FromStep(nameof(AddNumberByOne))] int? current = null,
+        [FromStep(nameof(End))] string? end = null)
     {
+        if (end == "Done!")
+        {
+            return null;
+        }
+
         if (current == null)
         {
             return start + 1;
@@ -63,12 +72,12 @@ public class SelfLoopWorkflowTest
         var startStep = workflow.Steps[nameof(Start)];
         var dependStartSteps = workflow.GetAllDependSteps(startStep);
         dependStartSteps.Count().Should().Be(2);
-        var engine = new WorkflowEngine(workflow, maxConcurrency: 10, _logger);
+        var engine = new StepWiseEngine(workflow, maxConcurrency: 3, _logger);
 
-        var stepAndResult = new List<(string, object)>();
-        await foreach (var (step, result) in engine.ExecuteStepAsync(nameof(End)))
+        var stepAndResult = new List<StepResult>();
+        await foreach (var stepResult in engine.ExecuteAsync(nameof(End), maxSteps: 7))
         {
-            stepAndResult.Add((step, result));
+            stepAndResult.Add(stepResult);
         }
 
         // stepAndResult should contain the following:
@@ -81,22 +90,22 @@ public class SelfLoopWorkflowTest
 
         stepAndResult.Should().HaveCount(6);
 
-        stepAndResult[0].Item1.Should().Be(nameof(Start));
-        stepAndResult[0].Item2.Should().Be(1);
+        stepAndResult[0].StepName.Should().Be(nameof(Start));
+        stepAndResult[0].Result!.As<int>().Should().Be(1);
 
-        stepAndResult[1].Item1.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[1].Item2.Should().Be(2);
+        stepAndResult[1].StepName.Should().Be(nameof(AddNumberByOne));
+        stepAndResult[1].Result!.As<int>().Should().Be(2);
 
-        stepAndResult[2].Item1.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[2].Item2.Should().Be(3);
+        stepAndResult[2].StepName.Should().Be(nameof(AddNumberByOne));
+        stepAndResult[2].Result!.As<int>().Should().Be(3);
 
-        stepAndResult[3].Item1.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[3].Item2.Should().Be(4);
+        stepAndResult[3].StepName.Should().Be(nameof(AddNumberByOne));
+        stepAndResult[3].Result!.As<int>().Should().Be(4);
 
-        stepAndResult[4].Item1.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[4].Item2.Should().Be(5);
+        stepAndResult[4].StepName.Should().Be(nameof(AddNumberByOne));
+        stepAndResult[4].Result!.As<int>().Should().Be(5);
 
-        stepAndResult[5].Item1.Should().Be(nameof(End));
-        stepAndResult[5].Item2.Should().Be("Done!");
+        stepAndResult[5].StepName.Should().Be(nameof(End));
+        stepAndResult[5].Result!.As<string>().Should().Be("Done!");
     }
 }
