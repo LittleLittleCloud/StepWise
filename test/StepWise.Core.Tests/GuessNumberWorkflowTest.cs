@@ -10,6 +10,7 @@ namespace StepWise.Core.Tests;
 /// <summary>
 /// This workflow test if and while loops.
 /// </summary>
+[Collection("Sequential")]
 public class GuessNumberWorkflowTest
 {
     private readonly ITestOutputHelper _testOutputHelper;

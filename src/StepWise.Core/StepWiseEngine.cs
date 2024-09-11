@@ -12,10 +12,11 @@ public class StepWiseEngine : IStepWiseEngine
     private readonly Workflow _workflow;
     private readonly ILogger? _logger = null;
     private readonly int _maxConcurrency = 1;
-    private BlockingCollection<StepRun> _stepsTaskQueue = new BlockingCollection<StepRun>();
-    private int _busyTaskRunners = 0;
-    private ConcurrentDictionary<string, StepVariable> _context = new ConcurrentDictionary<string, StepVariable>();
-    private BlockingCollection<StepResult> _stepResultQueue = new BlockingCollection<StepResult>();
+    //private BlockingCollection<StepRun> _stepsTaskQueue = new BlockingCollection<StepRun>();
+    //private int _busyTaskRunners = 0;
+    //private ConcurrentDictionary<string, StepVariable> _context = new ConcurrentDictionary<string, StepVariable>();
+    private readonly ConcurrentDictionary<Guid, int> _sessionBusyTaskRunners = new ConcurrentDictionary<Guid, int>();
+    //private BlockingCollection<StepResult> _stepResultQueue = new BlockingCollection<StepResult>();
 
     public StepWiseEngine(Workflow workflow, int maxConcurrency = 1, ILogger? logger = null)
     {
@@ -109,10 +110,10 @@ public class StepWiseEngine : IStepWiseEngine
         [EnumeratorCancellation]
         CancellationToken ct = default)
     {
-        _context.Clear();
-        _busyTaskRunners = 0;
-        _stepsTaskQueue = new BlockingCollection<StepRun>();
-        _stepResultQueue = new BlockingCollection<StepResult>();
+        int _busyTaskRunners = 0;
+        var _context = new ConcurrentDictionary<string, StepVariable>();
+        using var _stepsTaskQueue = new BlockingCollection<StepRun>();
+        using var _stepResultQueue = new BlockingCollection<StepResult>();
 
         // add inputs to context
         foreach (var input in inputs)
@@ -147,7 +148,25 @@ public class StepWiseEngine : IStepWiseEngine
         _logger?.LogInformation($"Starting the workflow engine with max concurrency {_maxConcurrency}.");
 
         // execute steps
-        var executeStepTask = Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i => ExecuteSingleStepAsync(i, step, ct)));
+        var executeStepTask = Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i =>
+        {
+            return Task.Run(async () =>
+            {
+                foreach (var stepRun in _stepsTaskQueue.GetConsumingEnumerable(ct))
+                {
+                    try
+                    {
+                        Interlocked.Increment(ref _busyTaskRunners);
+                        await ExecuteSingleStepAsync(i, stepRun, _stepsTaskQueue, _context, _stepResultQueue, ct);
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref _busyTaskRunners);
+                    }
+                }
+            });
+        }));
+
         foreach (var stepResult in _stepResultQueue.GetConsumingEnumerable(ct))
         {
             var stepRun = stepResult.StepRun;
@@ -160,8 +179,8 @@ public class StepWiseEngine : IStepWiseEngine
                 {
                     _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
 
-                    this._stepsTaskQueue.CompleteAdding();
-                    this._stepResultQueue.CompleteAdding();
+                    _stepsTaskQueue.CompleteAdding();
+                    _stepResultQueue.CompleteAdding();
                 }
 
                 continue;
@@ -222,8 +241,8 @@ public class StepWiseEngine : IStepWiseEngine
                 {
                     _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
 
-                    this._stepsTaskQueue.CompleteAdding();
-                    this._stepResultQueue.CompleteAdding();
+                    _stepsTaskQueue.CompleteAdding();
+                    _stepResultQueue.CompleteAdding();
                 }
             }
             
@@ -238,65 +257,57 @@ public class StepWiseEngine : IStepWiseEngine
 
     private async Task ExecuteSingleStepAsync(
         int runnerId,
-        Step finalStep,
+        StepRun stepRun,
+        BlockingCollection<StepRun> _stepsTaskQueue,
+        ConcurrentDictionary<string, StepVariable> _context,
+        BlockingCollection<StepResult> _stepResultQueue,
         CancellationToken ct = default)
     {
         await Task.Yield();
-        foreach (var stepRun in _stepsTaskQueue.GetConsumingEnumerable(ct))
+        // scenario 1
+        // if the step has already been executed, or there is a newer version of the step in the task queue
+        // throw exception.
+        if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
         {
-            // This is important to save the chance for other tasks to run
-            await Task.Yield();
-
-            Interlocked.Increment(ref _busyTaskRunners);
-            // scenario 1
-            // if the step has already been executed, or there is a newer version of the step in the task queue
-            // throw exception.
-            if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
+            throw new Exception($"[Runner {runnerId}]: The step {stepRun} has already been executed with a newer version. This should not happen.");
+        }
+        else
+        {
+            // scenario 2
+            // run the step by calling the step.ExecuteAsync method
+            // the step.ExecuteAsync will short-circuit if the dependencies are not met
+            _logger?.LogInformation($"[Runner {runnerId}]: Running {stepRun}.");
+            try
             {
-                throw new Exception($"[Runner {runnerId}]: The step {stepRun} has already been executed with a newer version. This should not happen.");
+                var res = await stepRun.ExecuteAsync(ct);
+                // if res is null, it means the step is not ready to run, or not producing any result
+                // maybe the dependencies are not met, maybe the executor function returns null.
+                if (res == null)
+                {
+                    _logger?.LogInformation($"[Runner {runnerId}]: {stepRun} returns null. Skipping.");
+                }
+                else
+                {
+                    var contextGeneration = stepRun.Generation + 1;
+
+                    _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {stepRun}.");
+                    _logger?.LogDebug($"[Runner {runnerId}]: {stepRun} result is '{res}'.");
+                    _stepResultQueue.Add(StepResult.Create(stepRun, res));
+                }
             }
-            else
+            catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))
             {
-                // scenario 2
-                // run the step by calling the step.ExecuteAsync method
-                // the step.ExecuteAsync will short-circuit if the dependencies are not met
-                _logger?.LogInformation($"[Runner {runnerId}]: Running {stepRun}.");
-                try
-                {
-                    var res = await stepRun.ExecuteAsync(ct);
-                    // if res is null, it means the step is not ready to run, or not producing any result
-                    // maybe the dependencies are not met, maybe the executor function returns null.
-                    if (res == null)
-                    {
-                        _logger?.LogInformation($"[Runner {runnerId}]: {stepRun} returns null. Skipping.");
-                    }
-                    else
-                    {
-                        var contextGeneration = stepRun.Generation + 1;
+                // This means the task queue has been marked as complete
+                // This is expected when the task queue is empty and there is no busy task runner
 
-                        _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {stepRun}.");
-                        _logger?.LogDebug($"[Runner {runnerId}]: {stepRun} result is '{res}'.");
-                        _stepResultQueue.Add(StepResult.Create(stepRun, res));
-                    }
-                }
-                catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))
-                {
-                    // This means the task queue has been marked as complete
-                    // This is expected when the task queue is empty and there is no busy task runner
+                _logger?.LogInformation($"[Runner {runnerId}]: The task queue has been marked as complete. Exiting.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, $"[Runner {runnerId}]: Error running {stepRun}");
 
-                    _logger?.LogInformation($"[Runner {runnerId}]: The task queue has been marked as complete. Exiting.");
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.LogError(ex, $"[Runner {runnerId}]: Error running {stepRun}");
-
-                    throw;
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref _busyTaskRunners);
-                }
+                throw;
             }
         }
     }
