@@ -1,4 +1,12 @@
+<a name="readme-top"></a>
+
+
+<div align="center">
+
+<img src="./asset/stepwise-logo-svg.svg" alt="StepWise Logo" width="100">
+
 # StepWise
+</div>
 
 StepWise is a powerful and flexible C# library for defining and executing workflows. It allows you to break down complex processes into manageable steps, define dependencies between them, and execute them in the correct order.
 
