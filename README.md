@@ -100,7 +100,7 @@ stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
 ```
 
 ## Examples
-You can find more examples in the [examples](./example) directory.
+You can find more examples in the [examples](https://github.com/LittleLittleCloud/StepWise/tree/main/example) directory.
 
 ## Dependency Management between Steps
 ### Step Dependency
@@ -124,7 +124,7 @@ StepWise automatically manages dependencies between Steps:
 StepWise supports parallel execution of steps that do not have step dependencies on each other. This can significantly improve the performance of your workflows by executing independent steps concurrently.
 
 ## `StepWiseEngine`
-`StepWiseEngine` is the core component of StepWise that manages the execution of workflows. It uses a consumer-producer approach to execute steps in the correct order while handling dependencies between steps and parallel execution when possible. You can visit this [documentation](./docs/DeepDiveToStepWiseEngine.md) to learn more about how the `StepWiseEngine` works.
+`StepWiseEngine` is the core component of StepWise that manages the execution of workflows. It uses a consumer-producer approach to execute steps in the correct order while handling dependencies between steps and parallel execution when possible. You can visit this [documentation](./article/DeepDiveToStepWiseEngine.md) to learn more about how the `StepWiseEngine` works.
 
 ## Primitives
 
@@ -175,11 +175,11 @@ A Workflow is a collection of Steps that together accomplish a larger task.
 
 ## Contributing
 
-We welcome contributions to StepWise! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
+We welcome contributions to StepWise! Please see our [Contributing Guide](https://github.com/LittleLittleCloud/StepWise/tree/main/CONTRIBUTING.md) for more details.
 
 ## License
 
-StepWise is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+StepWise is released under the MIT License. See the [LICENSE](https://github.com/LittleLittleCloud/StepWise/tree/main/LICENSE) file for details.
 
 ## Support
 

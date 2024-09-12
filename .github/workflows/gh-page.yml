@@ -1,0 +1,82 @@
+# Your GitHub workflow file under .github/workflows/
+# Trigger the action on push to main
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '30 5,17 * * *'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  actions: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+  
+jobs:
+  publish-docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+    # checkout autogen library
+    # url: https://github.com/microsoft/autogen/tree/dotnet
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: ls
+      run: ls
+    - name: Dotnet Setup
+      uses: actions/setup-dotnet@v3
+      with:
+        global-json-file: global.json
+
+    - run: dotnet tool update -g docfx
+    - run: docfx website/docfx.json
+
+    - name: insert clarity snippet to website/_site/index.html
+      run: |
+        import os
+        clarity_script = """
+        <script type="text/javascript">
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "o1x9ju6yyh");
+        </script>
+        """
+
+        site_folder = 'website/_site/'
+
+        for root, dirs, files in os.walk(site_folder):
+            for file in files:
+                if file.endswith('.html'):
+                    html_path = os.path.join(root, file)
+
+                    # insert the script into the html's head section
+                    with open(html_path, 'r') as file:
+                        html = file.read()
+                        html = html.replace('</head>', clarity_script + '</head>')
+
+                    with open(html_path, 'w') as file:
+                        file.write(html)
+
+                    print(f'Clarity script inserted into {html_path}')
+      shell: python
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        # Upload entire repository
+        path: 'website/_site'
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
