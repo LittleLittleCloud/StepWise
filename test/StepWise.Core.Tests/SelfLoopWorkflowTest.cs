@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// SelfLoopWorkflowTest.cs
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +11,7 @@ using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
+using StepWise.Core.Extension;
 
 namespace StepWise.Core.Tests;
 
@@ -19,11 +23,7 @@ public class SelfLoopWorkflowTest
     public SelfLoopWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = LoggerFactory.Create(builder =>
-        {
-            builder.AddConsole();
-        })
-    .CreateLogger(nameof(GuessNumberWorkflowTest));
+        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(SelfLoopWorkflowTest));
     }
 
     [Step]
@@ -72,12 +72,15 @@ public class SelfLoopWorkflowTest
         var startStep = workflow.Steps[nameof(Start)];
         var dependStartSteps = workflow.GetAllDependSteps(startStep);
         dependStartSteps.Count().Should().Be(2);
-        var engine = new StepWiseEngine(workflow, maxConcurrency: 3, _logger);
+        var engine = new StepWiseEngine(workflow, maxConcurrency: 1, _logger);
 
-        var stepAndResult = new List<StepResult>();
-        await foreach (var stepResult in engine.ExecuteAsync(nameof(End), maxSteps: 7))
+        var stepAndResult = new List<StepRunAndResult>();
+        await foreach (var stepRunAndResult in engine.ExecuteAsync(nameof(End), maxSteps: 10))
         {
-            stepAndResult.Add(stepResult);
+            if (stepRunAndResult.Result != null)
+            {
+                stepAndResult.Add(stepRunAndResult);
+            }
         }
 
         // stepAndResult should contain the following:

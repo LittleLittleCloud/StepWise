@@ -1,9 +1,12 @@
-﻿using FluentAssertions;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// GuessNumberWorkflowTest.cs
+
+using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
+using StepWise.Core.Extension;
 using Xunit;
 using Xunit.Abstractions;
-using StepWise.Core.Extension;
 
 namespace StepWise.Core.Tests;
 
@@ -19,11 +22,7 @@ public class GuessNumberWorkflowTest
     public GuessNumberWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = LoggerFactory.Create(builder =>
-        {
-            builder.AddConsole();
-        })
-    .CreateLogger(nameof(GuessNumberWorkflowTest));
+        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(GuessNumberWorkflowTest));
     }
 
     [Step]

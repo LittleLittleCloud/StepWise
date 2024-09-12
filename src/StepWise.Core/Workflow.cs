@@ -1,4 +1,7 @@
-﻿using System.Linq.Expressions;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// Workflow.cs
+
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace StepWise.Core;

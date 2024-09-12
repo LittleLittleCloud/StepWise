@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// Step.cs
+
+using System.Reflection;
 
 namespace StepWise.Core;
 
@@ -41,7 +44,7 @@ public class Step
             dependencies.Add(attr.Name);
         }
 
-        foreach ( var param in parameters )
+        foreach (var param in parameters)
         {
             var sourceStep = param.GetCustomAttribute<FromStepAttribute>()?.Name;
             var hasDefaultValue = param.HasDefaultValue;
@@ -211,17 +214,17 @@ public class StepRun
     }
 }
 
-public class StepResult
+public class StepRunAndResult
 {
-    public StepResult(StepRun stepBean, object? result)
+    public StepRunAndResult(StepRun stepBean, StepVariable? result)
     {
         StepRun = stepBean;
-        Result = result is null ? null : StepVariable.Create(result, stepBean.Generation);
+        Result = result;
     }
 
-    public static StepResult Create(StepRun stepBean, object? result)
+    public static StepRunAndResult Create(StepRun stepBean, StepVariable? result = null)
     {
-        return new StepResult(stepBean, result);
+        return new StepRunAndResult(stepBean, result);
     }
 
     public StepRun StepRun { get; }
@@ -229,7 +232,12 @@ public class StepResult
     public string StepName => StepRun.Step.Name;
 
     /// <summary>
-    /// The result of the step.
+    /// The result of the step. It can be null if the step doesn't return a value.
     /// </summary>
     public StepVariable? Result { get; }
+
+    public override string ToString()
+    {
+        return $"{StepRun} => {Result?.Value}";
+    }
 }

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// CumulativeWorkflowTest.cs
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,7 +37,7 @@ public class CumulativeWorkflowTest
         {
             builder.AddConsole();
         })
-            .CreateLogger(nameof(GuessNumberWorkflowTest));
+            .CreateLogger(nameof(CumulativeWorkflowTest));
     }
 
     [Step]
