@@ -161,6 +161,8 @@ public class StepWiseEngine : IStepWiseEngine
 
         foreach (var stepResult in _stepResultQueue.GetConsumingEnumerable(ct))
         {
+            yield return stepResult;
+
             var stepRun = stepResult.StepRun;
             var res = stepResult.Result;
             if (res != null)
@@ -183,6 +185,12 @@ public class StepWiseEngine : IStepWiseEngine
                     var nextStepRun = StepRun.Create(nextStep, contextGeneration, filteredContext);
                     if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
                     {
+                        // log filter context
+                        foreach (var kv in filteredContext)
+                        {
+                            _logger?.LogInformation($"Filtered context: {kv.Key}[{kv.Value.Generation}]");
+                        }
+
                         _logger?.LogInformation($"Skipping adding {nextStepRun} because of missing prerequisites.");
                         continue;
                     }
@@ -216,18 +224,26 @@ public class StepWiseEngine : IStepWiseEngine
                 else
                 {
                     _logger?.LogInformation($"No steps to add to the task queue.");
+
+                    // check if the task queue is empty and there is no busy task runner
+                    if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 0 && _stepResultQueue.Count == 0)
+                    {
+                        _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
+                        _stepsTaskQueue.CompleteAdding();
+                        _stepResultQueue.CompleteAdding();
+                    }
                 }
             }
-
-            if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
+            else
             {
-                _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
+                if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
+                {
+                    _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
 
-                _stepsTaskQueue.CompleteAdding();
-                _stepResultQueue.CompleteAdding();
+                    _stepsTaskQueue.CompleteAdding();
+                    _stepResultQueue.CompleteAdding();
+                }
             }
-
-            yield return stepResult;
         }
 
         _logger?.LogInformation($"Workflow engine has completed.");
