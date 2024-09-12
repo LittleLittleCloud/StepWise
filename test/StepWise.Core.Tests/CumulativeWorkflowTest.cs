@@ -37,7 +37,7 @@ public class CumulativeWorkflowTest
         {
             builder.AddConsole();
         })
-            .CreateLogger(nameof(GuessNumberWorkflowTest));
+            .CreateLogger(nameof(CumulativeWorkflowTest));
     }
 
     [Step]
