@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// StepWiseEngine.cs
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -240,7 +243,7 @@ public class StepWiseEngine : IStepWiseEngine
                     _stepResultQueue.CompleteAdding();
                 }
             }
-            
+
             yield return stepResult;
         }
 

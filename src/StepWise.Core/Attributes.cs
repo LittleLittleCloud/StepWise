@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// Attributes.cs
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;

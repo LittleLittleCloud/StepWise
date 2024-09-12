@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// Step.cs
+
+using System.Reflection;
 
 namespace StepWise.Core;
 
@@ -41,7 +44,7 @@ public class Step
             dependencies.Add(attr.Name);
         }
 
-        foreach ( var param in parameters )
+        foreach (var param in parameters)
         {
             var sourceStep = param.GetCustomAttribute<FromStepAttribute>()?.Name;
             var hasDefaultValue = param.HasDefaultValue;

@@ -1,4 +1,6 @@
-﻿
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// IStepWiseEngine.cs
+
 namespace StepWise.Core;
 
 public interface IStepWiseEngine

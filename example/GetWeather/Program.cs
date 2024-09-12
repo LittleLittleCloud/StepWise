@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// Program.cs
+
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StepWise.Core;
 
@@ -14,7 +17,7 @@ var input = new Dictionary<string, StepVariable>
     { "cities", StepVariable.Create(new string[] { "Seattle", "Redmond" }) }
 };
 
-await foreach(var stepResult in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input))
+await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input))
 {
     if (stepResult.StepName == nameof(Workflow.GetWeatherAsync) && stepResult.Result?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
     {

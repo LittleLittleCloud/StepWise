@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
+// Program.cs
+
+using System.Text;
 using System.Text.Json;
 using AutoGen.Core;
 using AutoGen.DotnetInteractive;
@@ -186,7 +189,7 @@ public class Workflow
 
             return reply.GetContent();
         }
-        
+
         return null;
     }
 
@@ -225,7 +228,7 @@ public class Workflow
             return reply is not null ? (code, reply) : (code, "disapproved");
         }
     }
-    
+
     [Step]
     [DependOn(nameof(InputTask))]
     public async Task<bool> IsTask(
