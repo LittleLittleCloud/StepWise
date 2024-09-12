@@ -68,10 +68,7 @@ public class PrepareDinnerWorkflowTest
         var engine = new StepWiseEngine(workflow, maxConcurrency: 10);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
-        {
-            [nameof(ChopVegetables)] = StepVariable.Create(value),
-        });
+        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), [StepVariable.Create(nameof(ChopVegetables), value)]);
 
         stopwatch.Stop();
 
@@ -88,10 +85,7 @@ public class PrepareDinnerWorkflowTest
         var engine = new StepWiseEngine(workflow, maxConcurrency: 1);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), new Dictionary<string, StepVariable>
-        {
-            [nameof(ChopVegetables)] = StepVariable.Create(new[] { "tomato", "onion", "garlic" }),
-        });
+        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), [StepVariable.Create(nameof(ChopVegetables), new string[] { "tomato", "onion", "garlic" })]);
 
         stopwatch.Stop();
 

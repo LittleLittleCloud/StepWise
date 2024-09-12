@@ -11,9 +11,10 @@ public class Workflow
     private readonly Dictionary<string, Step> _steps = new();
     private readonly List<(Step, Step)> _adajcentMap = new(); // from -> to
 
-    internal Workflow(Dictionary<string, Step> steps)
+    internal Workflow(string name, Dictionary<string, Step> steps)
     {
         _steps = steps;
+        Name = name;
         foreach (var step in steps.Values)
         {
             foreach (var dependency in step.Dependencies)
@@ -25,9 +26,12 @@ public class Workflow
 
     public Dictionary<string, Step> Steps => _steps;
 
-    public static Workflow CreateFromInstance(object instance)
+    public string Name { get; }
+
+    public static Workflow CreateFromInstance(object instance, string? name = null)
     {
         var type = instance.GetType();
+        name ??= type.Name;
         var steps = new Dictionary<string, Step>();
 
         foreach (var method in type.GetMethods())
@@ -43,7 +47,7 @@ public class Workflow
             steps.Add(step.Name, step);
         }
 
-        return new Workflow(steps);
+        return new Workflow(name, steps);
     }
 
     /// <summary>

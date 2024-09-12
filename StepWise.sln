@@ -23,7 +23,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GetWeather", "example\GetWe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.Core.Tests", "test\StepWise.Core.Tests\StepWise.Core.Tests.csproj", "{2C1A5352-C488-4EBB-B3C6-2FDCE9B043F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeInterpreter", "example\CodeInterpreter\CodeInterpreter.csproj", "{9BF63586-31E6-4075-B120-C8D2B6E7296A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeInterpreter", "example\CodeInterpreter\CodeInterpreter.csproj", "{9BF63586-31E6-4075-B120-C8D2B6E7296A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.WebAPI", "src\StepWise.WebAPI\StepWise.WebAPI.csproj", "{8D2B6D19-3922-4B52-BB88-B28C01737970}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.WebAPI.Tests", "test\StepWise.WebAPI.Tests\StepWise.WebAPI.Tests.csproj", "{DAE8E54E-0A43-4FD7-9D75-6081792FA94E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +51,14 @@ Global
 		{9BF63586-31E6-4075-B120-C8D2B6E7296A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BF63586-31E6-4075-B120-C8D2B6E7296A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BF63586-31E6-4075-B120-C8D2B6E7296A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D2B6D19-3922-4B52-BB88-B28C01737970}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D2B6D19-3922-4B52-BB88-B28C01737970}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D2B6D19-3922-4B52-BB88-B28C01737970}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D2B6D19-3922-4B52-BB88-B28C01737970}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAE8E54E-0A43-4FD7-9D75-6081792FA94E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAE8E54E-0A43-4FD7-9D75-6081792FA94E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAE8E54E-0A43-4FD7-9D75-6081792FA94E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAE8E54E-0A43-4FD7-9D75-6081792FA94E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,6 +68,8 @@ Global
 		{CEEC902A-E5F1-48DB-B549-D27C5011020A} = {0D861355-C022-4E1A-8C7B-7D1C3A066EE3}
 		{2C1A5352-C488-4EBB-B3C6-2FDCE9B043F8} = {5E5C30E1-F538-430A-BE65-40C1C5B5C76A}
 		{9BF63586-31E6-4075-B120-C8D2B6E7296A} = {0D861355-C022-4E1A-8C7B-7D1C3A066EE3}
+		{8D2B6D19-3922-4B52-BB88-B28C01737970} = {19750AFD-3091-4569-9D89-8D5735C3EBFC}
+		{DAE8E54E-0A43-4FD7-9D75-6081792FA94E} = {5E5C30E1-F538-430A-BE65-40C1C5B5C76A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55953F2E-2283-4F22-9B79-17E81B54BDCE}

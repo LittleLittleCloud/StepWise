@@ -12,9 +12,10 @@ var loggerFactory = LoggerFactory.Create(builder =>
 
 var getWeather = new Workflow();
 var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<StepWiseEngine>());
-var input = new Dictionary<string, StepVariable>
+
+StepVariable[] input = new StepVariable[]
 {
-    { "cities", StepVariable.Create(new string[] { "Seattle", "Redmond" }) }
+    StepVariable.Create("cities", new string[] { "Seattle", "Redmond" })
 };
 
 await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input))
