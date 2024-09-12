@@ -219,7 +219,7 @@ public class StepWiseEngine : IStepWiseEngine
                 }
             }
 
-            if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 0)
+            if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
             {
                 _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
 
