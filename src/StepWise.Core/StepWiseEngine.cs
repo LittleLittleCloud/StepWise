@@ -31,12 +31,12 @@ public class StepWiseEngine : IStepWiseEngine
 
     public async IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
         string targetStep,
-        Dictionary<string, StepVariable>? inputs = null,
+        IEnumerable<StepVariable>? inputs = null,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         [EnumeratorCancellation]
         CancellationToken ct = default)
     {
-        inputs ??= new Dictionary<string, StepVariable>();
+        inputs ??= [];
         stopStrategy ??= new NeverStopStopStrategy();
         this._logger?.LogInformation($"Starting the workflow engine with target step '{targetStep}' and stop strategy '{stopStrategy.Name}'.");
 
@@ -98,7 +98,7 @@ public class StepWiseEngine : IStepWiseEngine
 
     private async IAsyncEnumerable<StepRunAndResult> ExecuteStepAsync(
         Step step,
-        Dictionary<string, StepVariable> inputs,
+        IEnumerable<StepVariable> inputs,
         [EnumeratorCancellation]
         CancellationToken ct = default)
     {
@@ -110,7 +110,13 @@ public class StepWiseEngine : IStepWiseEngine
         // add inputs to context
         foreach (var input in inputs)
         {
-            _context[input.Key] = input.Value;
+            if (_context.TryGetValue(input.Name, out var value) && value.Generation > input.Generation)
+            {
+                _logger?.LogInformation($"Skipping adding input '{input.Name}' to the context because a newer version already exists.");
+                continue;
+            }
+
+            _context[input.Name] = input;
         }
 
         // produce initial steps
@@ -288,7 +294,7 @@ public class StepWiseEngine : IStepWiseEngine
                 {
                     _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {stepRun}.");
                     _logger?.LogDebug($"[Runner {runnerId}]: {stepRun} result is '{res}'.");
-                    var stepVariable = StepVariable.Create(res, stepRun.Generation);
+                    var stepVariable = StepVariable.Create(stepRun.StepName, res, stepRun.Generation);
                     _stepResultQueue.Add(StepRunAndResult.Create(stepRun, stepVariable));
                 }
             }

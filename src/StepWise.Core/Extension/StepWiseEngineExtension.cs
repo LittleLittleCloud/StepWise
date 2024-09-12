@@ -18,7 +18,7 @@ public static class StepWiseEngineExtension
     public static async Task<TResult> ExecuteAsync<TResult>(
         this IStepWiseEngine engine,
         string targetStepName,
-        Dictionary<string, StepVariable>? inputs = null,
+        IEnumerable<StepVariable>? inputs = null,
         bool earlyStop = true,
         int? maxSteps = null,
         CancellationToken ct = default)
@@ -57,7 +57,7 @@ public static class StepWiseEngineExtension
     public static async IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
         this IStepWiseEngine engine,
         string targetStepName,
-        Dictionary<string, StepVariable>? inputs = null,
+        IEnumerable<StepVariable>? inputs = null,
         bool earlyStop = true,
         int? maxSteps = null,
         [EnumeratorCancellation]

@@ -47,7 +47,7 @@ public class StepAndWorkflowTests
     }
 
     [Fact]
-    public async void ItReturnNullWhenParameterIsMissing()
+    public async Task ItReturnNullWhenParameterIsMissing()
     {
         var step = Step.CreateFromMethod(GetWeather);
 
@@ -61,7 +61,7 @@ public class StepAndWorkflowTests
 
 
     [Fact]
-    public async void ItCreateStepFromGetWeather()
+    public async Task ItCreateStepFromGetWeather()
     {
         var step = Step.CreateFromMethod(GetWeather);
 
@@ -105,15 +105,16 @@ public class StepAndWorkflowTests
         // because the return type is not Task<T>
         var act = () => Step.CreateFromMethod(GetDate);
 
-        act.Should().Throw<ArgumentException>().WithMessage("The return type of the step method must be Task<T>.");
+        act.Should().Throw<ArgumentException>().WithMessage("The return type of the step method must be Task<> or Task.");
     }
 
     [Fact]
-    public async Task ItThrowExceptionWhenCreatingStepFromDoNothing()
+    public async Task ItCreatingStepFromDoNothing()
     {
-        // because the return type is not Task<T>
-        var act = () => Step.CreateFromMethod(DoNothing);
+        var step = Step.CreateFromMethod(DoNothing);
 
-        act.Should().Throw<ArgumentException>().WithMessage("The return type of the step method must be Task<T>.");
+        step.Name.Should().Be(nameof(DoNothing));
+        step.InputParameters.Should().BeEmpty();
+        step.OutputType.Should().Be(typeof(Task));
     }
 }

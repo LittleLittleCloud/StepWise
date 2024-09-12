@@ -85,11 +85,9 @@ public class GuessNumberWorkflowTest
         var workflow = Workflow.CreateFromInstance(this);
         var engine = new StepWiseEngine(workflow, logger: _logger);
 
-        var context = new Dictionary<string, StepVariable>()
-        {
-            [nameof(InputNumber)] = StepVariable.Create(5)
-        };
-        await foreach (var stepResult in engine.ExecuteAsync(nameof(FinalResult), context))
+        var context = new Dictionary<string, StepVariable>();
+        StepVariable[] inputs = [StepVariable.Create(nameof(InputNumber), 5)];
+        await foreach (var stepResult in engine.ExecuteAsync(nameof(FinalResult), inputs))
         {
             var name = stepResult.StepName;
             var result = stepResult.Result;

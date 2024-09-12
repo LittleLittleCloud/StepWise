@@ -7,13 +7,14 @@ namespace StepWise.Core;
 
 public class Step
 {
-    internal Step(string name, List<Parameter> inputParameters, Type outputType, List<string> dependencies, Delegate stepMethod)
+    internal Step(string name, string description, List<Parameter> inputParameters, Type outputType, List<string> dependencies, Delegate stepMethod)
     {
         Name = name;
         InputParameters = inputParameters;
         OutputType = outputType;
         Dependencies = dependencies;
         StepMethod = stepMethod;
+        Description = description;
     }
 
     public static Step CreateFromMethod(Delegate stepMethod)
@@ -24,9 +25,9 @@ public class Step
         var outputType = stepMethod.Method.ReturnType;
 
         // the outputType must be an awaitable type
-        if (!outputType.IsGenericType || outputType.GetGenericTypeDefinition() != typeof(Task<>))
+        if ((!outputType.IsGenericType || outputType.GetGenericTypeDefinition() != typeof(Task<>)) && outputType != typeof(Task))
         {
-            throw new ArgumentException("The return type of the step method must be Task<T>.");
+            throw new ArgumentException("The return type of the step method must be Task<> or Task.");
         }
 
         // get the input parameters
@@ -51,7 +52,7 @@ public class Step
             inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep, hasDefaultValue, param.DefaultValue));
         }
 
-        return new Step(name, inputParameters, outputType, dependencies, stepMethod);
+        return new Step(name, string.Empty, inputParameters, outputType, dependencies, stepMethod);
     }
 
     public string Name { get; set; }
@@ -59,6 +60,8 @@ public class Step
     public Type OutputType { get; set; }
     public List<string> Dependencies { get; set; }
     public Delegate StepMethod { get; set; }
+
+    public string Description { get; set; }
 
     public bool IsExecuctionConditionSatisfied(Dictionary<string, StepVariable> inputs)
     {
@@ -149,20 +152,23 @@ public class Step
 
 public class StepVariable
 {
-    public StepVariable(int generation, object value)
+    public StepVariable(string name, int generation, object value)
     {
         Generation = generation;
         Value = value;
+        Name = name;
     }
 
-    public static StepVariable Create(object value, int generation = 0)
+    public static StepVariable Create(string name, object value, int generation = 0)
     {
-        return new StepVariable(generation, value);
+        return new StepVariable(name, generation, value);
     }
 
     public int Generation { get; set; }
 
     public object Value { get; set; }
+
+    public string Name { get; set; }
 
     /// <summary>
     /// A convenient method to cast the result to the specified type.
@@ -191,6 +197,8 @@ public class StepRun
     }
 
     public Step Step => _step;
+
+    public string StepName => _step.Name;
 
     public int Generation => _generation;
 

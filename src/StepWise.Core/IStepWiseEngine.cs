@@ -6,12 +6,11 @@ namespace StepWise.Core;
 public interface IStepWiseEngine
 {
     /// <summary>
-    /// Execute the workflow until the target step is reached or no further steps can be executed.
-    /// If the <paramref name="earlyStop"/> is true, the workflow will stop as soon as the target step is reached and completed.
-    /// Otherwise, the workflow will continue to execute until no further steps can be executed.
+    /// Execute the workflow until the stop strategy is satisfied or no further steps can be executed.
+    /// </summary>
     IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
         string targetStep,
-        Dictionary<string, StepVariable>? inputs = null,
+        IEnumerable<StepVariable>? inputs = null,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         CancellationToken ct = default);
 }

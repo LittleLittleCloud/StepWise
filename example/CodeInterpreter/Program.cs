@@ -41,10 +41,7 @@ var codeInterpreter = new Workflow(agent, kernel);
 var engine = StepWiseEngine.CreateFromInstance(codeInterpreter, maxConcurrency: 1, logger);
 
 var task = "use python to switch my system to dark mode";
-var input = new Dictionary<string, StepVariable>
-{
-    ["task"] = StepVariable.Create(task),
-};
+StepVariable[] input = [StepVariable.Create("task", task)];
 
 await foreach (var stepResult in engine.ExecuteAsync(nameof(Workflow.GenerateReply), input))
 {
