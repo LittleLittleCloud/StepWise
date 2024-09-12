@@ -22,11 +22,7 @@ public class GuessNumberWorkflowTest
     public GuessNumberWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = LoggerFactory.Create(builder =>
-        {
-            builder.AddConsole();
-        })
-    .CreateLogger(nameof(GuessNumberWorkflowTest));
+        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(GuessNumberWorkflowTest));
     }
 
     [Step]
