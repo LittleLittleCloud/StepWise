@@ -1,0 +1,96 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": ["src/**/*.csproj"],
+          "src": "../",
+          "exclude": [
+            "**/bin/**",
+            "**/obj/**"
+          ]
+        }
+      ],
+      "dest": "api",
+      "includePrivateMembers": false,
+      "disableGitFeatures": false,
+      "disableDefaultFilter": false,
+      "noRestore": false,
+      "namespaceLayout": "flattened",
+      "memberLayout": "samePage",
+      "allowCompilationErrors": false,
+      "filter": "filterConfig.yml"
+    }
+  ],
+    "build": {
+      "content": [
+        {
+          "files": [
+            "api/**.yml",
+            "api/index.md"
+          ]
+        },
+        {
+          "files": [
+            "article/**.md",
+            "article/**/toc.yml",
+            "toc.yml",
+            "**/toc.yml",
+            "get_start/**.md",
+            "release_notes/**.md",
+            "*.md"
+          ]
+        },
+        {
+          "files": [
+            "**.md"
+          ],
+          "src": "../article",
+          "dest": "article"
+        }
+      ],
+      "resource": [
+        {
+          "files": [
+            "favicon.ico"
+          ]
+        },
+        {
+          "files": [
+            "**.*"
+          ],
+          "src": "../asset",
+          "dest": "asset"
+        }
+      ],
+      "sitemap": {
+        "baseUrl": "https://littlelittlecloud.github.io/StepWise",
+        "priority": 0.5,
+        "changefreq": "daily"
+      },
+      "output": "_site",
+      "globalMetadataFiles": [],
+      "fileMetadataFiles": [],
+      "template": [
+        "default",
+        "modern",
+        "template"
+      ],
+      "globalMetadata":{
+        "_appTitle": "StepWise",
+        "_appName": "StepWise",
+        "_appLogoPath": "asset/stepwise-logo-20-20.svg",
+        "_gitContribute": {
+          "repo": "https://github.com/LittleLittleCloud/StepWise.git",
+          "branch": "main"
+        },
+        "_enableSearch": true,
+        "_disableBreadcrumb": true,
+        "_disableContribution": false,
+        "_gitUrlPattern": "github"
+      },
+      "postProcessors": [],
+      "keepFileLink": false,
+      "disableGitFeatures": false
+    }
+  }
