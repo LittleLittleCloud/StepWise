@@ -28,6 +28,15 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         global-json-file: global.json
+        - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '22.x'
+    - name: build webui
+      run: |
+        cd stepwise-studio
+        npm install
+        npm run build
     - name: Restore dependencies
       run: |
         dotnet restore -bl
