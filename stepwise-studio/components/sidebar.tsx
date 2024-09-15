@@ -1,4 +1,3 @@
-"use client"
 // sidebar component
 // | StepWise Studio |
 // | ---------------- |
@@ -39,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     }, []);
 
     return (
-        <div className="flex flex-col h-screen p-4 shadow-xl">
+        <div className="flex flex-col h-screen p-4 shadow-xl bg-background">
             {/* top bar */}
             <span className="text-x font-bold text-nowrap">StepWise Studio</span>
             <Divider />
@@ -50,9 +49,9 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                         key={index}
                         className={cn('flex items-center py-1 gap-2 rounded-lg',
                             // hover
-                            'hover:bg-secondary/5 cursor-pointer',
+                            'hover:bg-accent/50 cursor-pointer',
                             // selected
-                            selectedWorkflow === workflow ? 'bg-secondary/5' : ''
+                            selectedWorkflow === workflow ? 'bg-accent' : ''
                         )}
                         onClick={() => setSelectedWorkflow(workflow)}
                     >

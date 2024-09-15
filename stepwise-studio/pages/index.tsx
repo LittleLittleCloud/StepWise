@@ -1,7 +1,7 @@
 import Image from "next/image";
 import localFont from "next/font/local";
 import Sidebar from "@/components/sidebar";
-import { StepDTO, WorkflowDTO } from "@/stepwise-client";
+import { StepDTO, StepRunAndResultDTO, WorkflowDTO } from "@/stepwise-client";
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -13,6 +13,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Workflow from "@/components/workflow";
+import StepRunSidebar from "@/components/step-run-sidebar";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -94,10 +95,98 @@ const dummyWorkflow: WorkflowDTO = {
   ],
 }
 
+const dummyCompletedStepRuns: StepRunAndResultDTO[] = [
+  {
+    stepRun: {
+      step: {
+        name: "A",
+        description: "First step of the workflow",
+      },
+      variables: [
+        {
+          name: "A",
+          type: "number",
+          displayValue: "1",
+        },
+      ],
+      generation: 0,
+    },
+    result: {
+      name: "A",
+      type: "number",
+      displayValue: "1",
+      generation: 0,
+    },
+  },
+  {
+    stepRun: {
+      step: {
+        name: "B",
+        description: "Second step of the workflow",
+        dependencies: ["A"],
+        variables: ["A"],
+      },
+      variables: [
+        {
+          name: "A",
+          type: "number",
+          displayValue: "1",
+        },
+        {
+          name: "B",
+          type: "number",
+          displayValue: "2",
+        },
+      ],
+      generation: 1,
+    },
+    result: {
+      name: "B",
+      type: "number",
+      displayValue: "2",
+      generation: 1,
+    },
+  },
+  {
+    stepRun: {
+      step: {
+        name: "C",
+        description: "Final step of the workflow",
+        dependencies: ["A", "B"],
+        variables: ["A", "B"],
+      },
+      variables: [
+        {
+          name: "A",
+          type: "number",
+          displayValue: "1",
+        },
+        {
+          name: "B",
+          type: "number",
+          displayValue: "2",
+        },
+        {
+          name: "C",
+          type: "number",
+          displayValue: "3",
+        },
+      ],
+      generation: 2,
+    },
+    result: {
+      name: "C",
+      type: "number",
+      displayValue: "3",
+      generation: 2,
+    },
+  },
+];
+
 export default function Home() {
   return (
     <div
-      className={`bg-foreground w-full flex min-h-screen text-background ${geistSans} ${geistMono}`}
+      className={`w-full flex bg-accent gap-5 min-h-screen ${geistSans} ${geistMono}`}
     >
         <Sidebar
           user="Test"
@@ -105,6 +194,7 @@ export default function Home() {
         <div className="flex flex-col items-center gap-8 w-full h-screen">
           <Workflow dto={dummyWorkflow} />
         </div>
+        <StepRunSidebar stepRuns={dummyCompletedStepRuns} />
     </div>
   );
 }

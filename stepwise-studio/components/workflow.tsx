@@ -22,47 +22,7 @@ import StepNode from './step-node';
 import dagre from 'dagre';
 import { Button } from './ui/button';
 import { LayoutGrid } from 'lucide-react';
-
-const initialNodes: Node<StepDTO>[] = [
-    {
-        id: 'A',
-        type: 'stepNode',
-        position: { x: 250, y: 5 },
-        data: {
-            name: 'A',
-            description: 'First step of the workflow',
-            variables: ['a'],
-        },
-    },
-    {
-        id: 'B',
-        type: 'stepNode',
-        position: { x: 100, y: 150 },
-        data: {
-            name: 'B',
-            description: 'Second step of the workflow',
-            dependencies: ['a'],
-            variables: ['b'],
-        },
-    },
-    {
-        id: 'C',
-        type: 'stepNode',
-        position: { x: 400, y: 150 },
-        data: {
-            name: 'C',
-            description: 'Final step of the workflow',
-            dependencies: ['a', 'b'],
-            variables: ['c'],
-        },
-    },
-];
-
-const initialEdges: Edge[] = [
-    { id: 'e1-2', source: 'A', target: 'B', sourceHandle: 'A', targetHandle: 'B-a' },
-    { id: 'e1-3', source: 'A', target: 'C', sourceHandle: 'A', targetHandle: 'C-a' },
-    { id: 'e2-3', source: 'B', target: 'C', sourceHandle: 'B', targetHandle: 'C-b' },
-];
+import { useTheme } from 'next-themes';
 
 const minimapStyle = {
     height: 120,
@@ -73,7 +33,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
     dagreGraph.setDefaultEdgeLabel(() => ({}));
     dagreGraph.setGraph({ rankdir: direction });
 
-    var maxNodeWidth = nodes.reduce((max, node) => Math.max(max, node.width ?? 0), 200);
+    var maxNodeWidth = nodes.reduce((max, node) => Math.max(max, node.width ?? 0), 100);
     var maxNodeHeight = nodes.reduce((max, node) => Math.max(max, node.height ?? 0), 200);
 
     nodes.forEach((node) => {
@@ -125,6 +85,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, _] = useEdgesState([]);
     const { fitView } = useReactFlow();
+    const {theme} = useTheme();
 
     const nodeTypes = useMemo(() => ({
         stepNode: StepNode,
@@ -202,7 +163,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 {/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
                 <MiniMap style={minimapStyle} zoomable pannable />
                 <div className="absolute left-2 top-2 z-10">
-                    <Button onClick={onLayout} className="flex items-center gap-2">
+                    <Button
+                        variant={"default"}
+                        onClick={onLayout}
+                        className="flex items-center gap-2 shadow-sm">
                         <LayoutGrid className="h-4 w-4" />
                         Layout
                     </Button>
