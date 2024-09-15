@@ -117,7 +117,7 @@ var host = Host.CreateDefaultBuilder()
 await host.StartAsync();
 ```
 
-Then, use `StepWiseClient` to interact with the StepWise server:
+Then, use `StepWiseClient` to add workflows to StepWise UI:
 
 ```csharp
 var stepWiseClient = host.Services.GetRequiredService<StepWiseClient>();
