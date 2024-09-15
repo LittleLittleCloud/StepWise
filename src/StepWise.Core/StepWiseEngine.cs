@@ -30,7 +30,7 @@ public class StepWiseEngine : IStepWiseEngine
     }
 
     public async IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
-        string targetStep,
+        string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         [EnumeratorCancellation]
@@ -40,7 +40,7 @@ public class StepWiseEngine : IStepWiseEngine
         stopStrategy ??= new NeverStopStopStrategy();
         this._logger?.LogInformation($"Starting the workflow engine with target step '{targetStep}' and stop strategy '{stopStrategy.Name}'.");
 
-        var step = _workflow.Steps[targetStep] ?? throw new Exception($"Step '{targetStep}' not found in the workflow.");
+        var step = targetStep != null ? _workflow.Steps[targetStep] : null;
         var stepResults = new List<StepRunAndResult>();
         await foreach (var stepResult in ExecuteStepAsync(step, inputs, ct))
         {
@@ -97,7 +97,7 @@ public class StepWiseEngine : IStepWiseEngine
     }
 
     private async IAsyncEnumerable<StepRunAndResult> ExecuteStepAsync(
-        Step step,
+        Step? step,
         IEnumerable<StepVariable> inputs,
         [EnumeratorCancellation]
         CancellationToken ct = default)
@@ -120,7 +120,7 @@ public class StepWiseEngine : IStepWiseEngine
         }
 
         // produce initial steps
-        var steps = this.ResolveDependencies(step.Name);
+        var steps = step != null ? this.ResolveDependencies(step.Name) : _workflow.Steps.Values.ToList();
         var currentContext = _context.ToDictionary(x => x.Key, x => x.Value);
         foreach (var s in steps)
         {
