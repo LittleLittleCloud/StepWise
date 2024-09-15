@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.Build.NoTargets/3.7.56">
   <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
   <PropertyGroup>
-    <AssemblyName>LittleLittleCloud.StepWise.WebUI</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <IncludeSymbols>false</IncludeSymbols>

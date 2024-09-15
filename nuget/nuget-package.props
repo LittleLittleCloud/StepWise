@@ -7,7 +7,7 @@
     <Product>StepWise</Product>
     <Description>A powerful C# library for building and executing workflows</Description>
     <PackageTags>AI, Artificial Intelligence, SDK</PackageTags>
-    <PackageId>$(AssemblyName)</PackageId>
+    <PackageId>LittleLittleCloud.$(AssemblyName)</PackageId>
 
     <!-- Required license, copyright, and repo information. Packages can override. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
