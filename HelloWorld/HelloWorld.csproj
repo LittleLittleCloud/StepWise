@@ -8,8 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\StepWise.Core\StepWise.Core.csproj" />
-    <ProjectReference Include="..\src\StepWise.WebAPI\StepWise.WebAPI.csproj" />
+    <ProjectReference Include="..\src\StepWise\StepWise.csproj" />
   </ItemGroup>
 
 </Project>

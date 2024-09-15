@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>LittleLittleCloud.StepWise</AssemblyName>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\StepWise.Core\StepWise.Core.csproj" />
+    <ProjectReference Include="..\StepWise.WebAPI\StepWise.WebAPI.csproj" />
+    <ProjectReference Include="..\StepWise.WebUI\StepWise.WebUI.csproj" />
+  </ItemGroup>
+
+</Project>

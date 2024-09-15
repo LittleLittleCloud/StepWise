@@ -9,7 +9,7 @@ using StepWise.Core;
 using StepWise.WebAPI;
 
 var host = Host.CreateDefaultBuilder()
-    .UseEnvironment("Development")
+    //.UseEnvironment("Development")
     .ConfigureWebHostDefaults(webBuilder =>
     {
         webBuilder.UseUrls("http://localhost:5123");
