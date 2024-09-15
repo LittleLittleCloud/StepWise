@@ -1,14 +1,24 @@
 import { StepDTO } from '@/stepwise-client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Button, buttonVariants } from './ui/button';
 import { cn } from '@/lib/utils';
 import { CircleUserRound, Play, RotateCcw, SquareFunction } from 'lucide-react';
 import Divider from './divider';
 
-const StepNode: React.FC<NodeProps<StepDTO>> = ({ data }) => {
+export interface StepNodeProps {
+    data: StepDTO;
+    onRunClick: (step: StepDTO) => void;
+}
+const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
+    const [data, setData] = useState<StepDTO>(prop.data.data);
+
+    useEffect(() => {
+        setData(prop.data.data);
+    }, []);
+
     return (
-        <div className="rounded-md shadow-md p-2 w-28 bg-background/50 group ">
+        <div className="rounded-md shadow-md p-2 bg-background/50 group ">
             {/* settings bar */}
             {/* appear when hover */}
             <div
@@ -18,6 +28,7 @@ const StepNode: React.FC<NodeProps<StepDTO>> = ({ data }) => {
                     variant={"outline"}
                     size={"xxsIcon"}
                     className='m-0 p-0'
+                    onClick={() => prop.data.onRunClick(data)}
                 >
                     <Play/>
                 </Button>

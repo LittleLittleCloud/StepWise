@@ -18,15 +18,13 @@ import ReactFlow, {
     NodeChange
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import StepNode from './step-node';
+import StepNode, { StepNodeProps } from './step-node';
 import dagre from 'dagre';
 import { Button } from './ui/button';
 import { LayoutGrid } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
-const minimapStyle = {
-    height: 120,
-};
+
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
     const dagreGraph = new dagre.graphlib.Graph();
@@ -78,32 +76,42 @@ function getPosition(point: { x: number, y: number }) {
 }
 
 export interface WorkflowProps {
-    dto: WorkflowDTO;
+    dto: WorkflowDTO | undefined;
+    onStepNodeRunClick?: (step: StepDTO) => void;
 }
 
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, _] = useEdgesState([]);
     const { fitView } = useReactFlow();
-    const {theme} = useTheme();
+    const { theme } = useTheme();
 
     const nodeTypes = useMemo(() => ({
         stepNode: StepNode,
     }), []);
 
+    const onStepNodeRunClick = (step: StepDTO) => {
+        props.onStepNodeRunClick?.(step);
+    }
+
     useEffect(() => {
-        var nodes = props.dto.steps?.map((step) => {
+        if (!props.dto) return;
+
+        var nodes = props.dto?.steps?.map((step) => {
             return {
                 id: step.name,
                 type: 'stepNode',
                 position: { x: 250, y: 5 },
                 width: 200,
                 height: 200,
-                data: step,
+                data: {
+                    data: step,
+                    onRunClick: onStepNodeRunClick,
+                } as StepNodeProps,
             };
-        }) as Node<StepDTO>[];
+        }) as Node<StepNodeProps>[];
 
-        var edges = props.dto.steps?.reduce((edges, step) => {
+        var edges = props.dto?.steps?.reduce((edges, step) => {
             return edges.concat(step.dependencies?.map((dep) => {
                 return {
                     id: `${step.name}-${dep}`,
@@ -125,7 +133,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
         setNodes(layoutedNodes);
         setEdges(layoutedEdges);
-    }, []);
+    }, [props.dto]);
 
 
     const onNodesChangeRestricted = useCallback((changes: NodeChange[]) => {
@@ -147,6 +155,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             fitView();
         });
     }, [nodes, edges, setNodes, setEdges, fitView]);
+
+    const minimapStyle = {
+        height: 60,
+        width: 100,
+        background: theme === 'light' ? '#777' : '#111',
+    };
 
     return (
         <div
@@ -179,7 +193,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 const Workflow: React.FC<WorkflowProps> = (props) => {
     return (
         <ReactFlowProvider>
-            <WorkflowInner dto={props.dto} />
+            <WorkflowInner {...props} />
         </ReactFlowProvider>
     );
 };

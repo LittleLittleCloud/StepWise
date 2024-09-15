@@ -10,12 +10,106 @@ using StepWise.Core;
 
 namespace StepWise.WebAPI;
 
+public class StepWiseClient
+{
+    private readonly ILogger<StepWiseClient>? _logger;
+    private readonly ConcurrentDictionary<string, Workflow> _workflows = new();
+    public StepWiseClient(ILogger<StepWiseClient>? logger = null)
+    {
+        _logger = logger;
+    }
+
+    // get workflow
+    public Workflow? GetWorkflow(string workflowName)
+    {
+        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        {
+            return null;
+        }
+
+        return workflow;
+    }
+
+    // add workflow
+    public void AddWorkflow(Workflow workflow)
+    {
+        _workflows[workflow.Name] = workflow;
+    }
+
+    public void RemoveWorkflow(string workflowName)
+    {
+        _workflows.TryRemove(workflowName, out _);
+    }
+
+    // list workflows
+    public IEnumerable<Workflow> ListWorkflow()
+    {
+        return _workflows.Values;
+    }
+
+    // get step
+    public Step? GetStep(string workflowName, string stepName)
+    {
+        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        {
+            return null;
+        }
+
+        if (!workflow.Steps.TryGetValue(stepName, out var step))
+        {
+            return null;
+        }
+
+        return step;
+    }
+
+    // execute step
+    public async IAsyncEnumerable<StepRunAndResult> ExecuteStep(string workflowName, string stepName)
+    {
+        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        {
+            yield break;
+        }
+
+        if (!workflow.Steps.TryGetValue(stepName, out var step))
+        {
+            yield break;
+        }
+
+        var engine = new StepWiseEngine(workflow, logger: _logger);
+
+        var stopStrategy = new EarlyStopStrategy(stepName);
+
+        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, stopStrategy: stopStrategy))
+        {
+            yield return stepRunAndResult;
+        }
+    }
+
+    // list steps
+    public IEnumerable<Step> ListSteps(string workflowName)
+    {
+        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        {
+            return Enumerable.Empty<Step>();
+        }
+
+        return workflow.Steps.Values;
+    }
+}
+
 [ApiController]
 [Route("api/v1/[controller]/[action]")]
 internal class StepWiseControllerV1 : ControllerBase
 {
     private readonly ILogger<StepWiseControllerV1>? _logger = null;
-    private readonly ConcurrentDictionary<string, Workflow> _workflows = new();
+    private readonly StepWiseClient _client;
+
+    public StepWiseControllerV1(StepWiseClient client, ILogger<StepWiseControllerV1>? logger = null)
+    {
+        _client = client;
+        _logger = logger;
+    }
 
     [HttpGet]
     public IActionResult Get()
@@ -41,12 +135,9 @@ internal class StepWiseControllerV1 : ControllerBase
     [HttpGet]
     public async Task<ActionResult<StepDTO>> GetStep(string workflowName, string stepName)
     {
-        if (!_workflows.TryGetValue(workflowName, out var workflow))
-        {
-            return NotFound($"Workflow {workflowName} not found");
-        }
+        var step = _client.GetStep(workflowName, stepName);
 
-        if (!workflow.Steps.TryGetValue(stepName, out var step))
+        if (step is null)
         {
             return NotFound($"Step {stepName} not found in workflow {workflowName}");
         }
@@ -57,7 +148,8 @@ internal class StepWiseControllerV1 : ControllerBase
     [HttpGet]
     public async Task<ActionResult<WorkflowDTO>> GetWorkflow(string workflowName)
     {
-        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        var workflow = _client.GetWorkflow(workflowName);
+        if (workflow is null)
         {
             return NotFound($"Workflow {workflowName} not found");
         }
@@ -69,17 +161,16 @@ internal class StepWiseControllerV1 : ControllerBase
     [HttpGet]
     public async Task<ActionResult<WorkflowDTO[]>> ListWorkflow()
     {
-        return Ok(_workflows.Values.Select(WorkflowDTO.FromWorkflow).ToArray());
+        var workflows = _client.ListWorkflow();
+
+        _logger?.LogInformation($"List workflows: {workflows.Count()}");
+        return Ok(workflows.Select(WorkflowDTO.FromWorkflow).ToArray());
     }
 
     [HttpPost]
     public async IAsyncEnumerable<StepRunAndResultDTO> ExecuteStep(string workflow, string step)
     {
-        var workflowInstance = _workflows[workflow];
-        var stepInstance = workflowInstance.Steps[step];
-        var engine = new StepWiseEngine(workflowInstance, logger: _logger);
-
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(step))
+        await foreach (var stepRunAndResult in _client.ExecuteStep(workflow, step))
         {
             yield return StepRunAndResultDTO.FromStepRunAndResult(stepRunAndResult.StepRun, stepRunAndResult.Result);
         }

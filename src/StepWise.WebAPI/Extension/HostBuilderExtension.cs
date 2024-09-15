@@ -1,4 +1,4 @@
-// Copyright (c) LittleLittleCloud. All rights reserved.
+﻿// Copyright (c) LittleLittleCloud. All rights reserved.
 // HostBuilderExtension.cs
 
 using System.Reflection;
@@ -14,12 +14,21 @@ public static class HostBuilderExtension
 {
     public static IHostBuilder UseStepWiseServer(this IHostBuilder hostBuilder)
     {
+        hostBuilder.ConfigureServices(services =>
+        {
+            services.AddSingleton<StepWiseClient>();
+        });
+
         return hostBuilder.ConfigureWebHost(webBuilder =>
         {
             webBuilder.ConfigureServices(services =>
             {
                 services
                 .AddControllers()
+                .AddMvcOptions(options =>
+                {
+                    options.EnableEndpointRouting = false;
+                })
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Add(new StepWiseControllerV1Provider());
@@ -51,6 +60,7 @@ public static class HostBuilderExtension
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
+                app.UseMvc();
                 app.UseHttpsRedirection();
                 app.UseDefaultFiles();
                 app.UseStaticFiles();

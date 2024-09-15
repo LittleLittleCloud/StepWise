@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes'
 import { StepRunAndResultDTO, StepRunDTO, WorkflowDTO } from '@/stepwise-client';
@@ -28,8 +28,8 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
     }, [props.stepRun]);
 
     return (
-        <div className="flex flex-col gap-2 p-2 bg-accent rounded-lg">
-            <div className="flex justify-between items-center">
+        <div className="flex w-full flex-col gap-2 p-2 bg-accent rounded-lg">
+            <div className="flex justify-between items-center  flex-wrap gap-2">
             <div className="flex items-center">
                 <div
                     className={cn(buttonVariants(
@@ -41,20 +41,22 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
                 >
                     <SquareFunction size={16} />
                 </div>
-                <span className="text-sm font-semibold">{props.stepRun.stepRun?.step?.name}</span>
+                <span className="text-xs">{stepRun.stepRun?.step?.name}</span>
             </div>
                 <Badge
                     variant="pink"
                     size={"sm"}
                     className='p-1 text-xs'
-                    >{props.stepRun.result?.type}
+                    >{stepRun.result?.type}
                 </Badge>
             </div>
             
             {/* display text value if exist */}
-            {props.stepRun.result?.displayValue && (
-                <div className="flex flex-col justify-between bg-background rounded-lg px-2">
-                    <Markdown>{props.stepRun.result?.displayValue}</Markdown>
+            {stepRun.result?.displayValue && (
+                <div className="flex flex-col justify-between bg-background rounded-lg px-2 overflow-x-auto">
+                    <Markdown
+                        className='text-xs text-nowarp'
+                    >{stepRun.result?.displayValue}</Markdown>
                 </div>
             )}
         </div>
@@ -62,14 +64,13 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 }
 
 const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
-    const [stepRuns, setStepRuns] = useState<StepRunAndResultDTO[]>(props.stepRuns);
-
+    const [stepRuns, setStepRuns] = useState<StepRunAndResultDTO[]>([]);
     useEffect(() => {
         setStepRuns(props.stepRuns);
     }, [props.stepRuns]);
 
     return (
-        <div className="flex flex-col w-80 h-screen p-4 shadow-xl bg-background rounded-lg">
+        <div className="flex flex-col w-80 h-screen h-max-screen p-4 shadow-xl bg-background rounded-lg overflow-y-auto">
             {/* top bar */}
             <span className="text-x font-bold text-nowrap">Completed StepRun</span>
             {/* stepRuns */}

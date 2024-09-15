@@ -19,10 +19,13 @@ import { buttonVariants } from './ui/button';
 import { CircleUserRound } from 'lucide-react';
 import { Network } from 'lucide-react';
 import Divider from './divider';
+import { Badge } from './ui/badge';
 
 interface SidebarProps {
     user: string;
+    version: string;
     workflows: WorkflowDTO[];
+    onWorkflowSelect: (workflow: WorkflowDTO) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
@@ -35,12 +38,24 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         setUsername(props.user);
         setWorkflows(props.workflows);
         setSelectedWorkflow(props.workflows[0]);
-    }, []);
+    }, [props.user, props.workflows]);
+
+    const selectWorkflowHander = (workflow: WorkflowDTO) => {
+        setSelectedWorkflow(workflow);
+        props.onWorkflowSelect(workflow);
+    }
 
     return (
         <div className="flex flex-col h-screen p-4 shadow-xl bg-background">
             {/* top bar */}
             <span className="text-x font-bold text-nowrap">StepWise Studio</span>
+            <div>
+                <Badge
+                    variant="pink"
+                    size="sm"
+                    className="text-xs">{props.version}</Badge>
+            </div>
+
             <Divider />
             {/* workflows */}
             <div className="flex flex-col grow mb-4 gap-2">
@@ -53,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                             // selected
                             selectedWorkflow === workflow ? 'bg-accent' : ''
                         )}
-                        onClick={() => setSelectedWorkflow(workflow)}
+                        onClick={() => selectWorkflowHander(workflow)}
                     >
                         <div className={buttonVariants(
                             {
