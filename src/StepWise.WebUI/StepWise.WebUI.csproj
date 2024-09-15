@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.Build.NoTargets/3.7.56">
-
+  <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
   <PropertyGroup>
     <AssemblyName>LittleLittleCloud.StepWise.WebUI</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <IncludeSymbols>false</IncludeSymbols>
-    <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <ContentTargetFolders>contentFiles</ContentTargetFolders>
@@ -14,8 +13,6 @@
     <Description>This package the build artifact (wwwroot) of StepWise WebUI</Description>
     <WwwrootExists>False</WwwrootExists>
   </PropertyGroup>
-
-  <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
 
   <ItemGroup>
     <Content Include="$(RepoRoot)\stepwise-studio\out\**\*">
