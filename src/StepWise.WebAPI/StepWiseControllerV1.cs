@@ -64,23 +64,39 @@ public class StepWiseClient
     }
 
     // execute step
-    public async IAsyncEnumerable<StepRunAndResult> ExecuteStep(string workflowName, string stepName)
+    public async IAsyncEnumerable<StepRunAndResult> ExecuteStep(
+        string workflowName,
+        string? stepName = null,
+        int? maxSteps = null,
+        int maxParallel = 1)
     {
         if (!_workflows.TryGetValue(workflowName, out var workflow))
         {
             yield break;
         }
 
-        if (!workflow.Steps.TryGetValue(stepName, out var step))
+        var engine = new StepWiseEngine(workflow, maxParallel, logger: _logger);
+
+        var stopStragety = new StopStrategyPipeline();
+
+        if (stepName is not null && workflow.Steps.TryGetValue(stepName, out var step))
         {
-            yield break;
+            var earlyStopStrategy = new EarlyStopStrategy(stepName);
+            stopStragety.AddStrategy(earlyStopStrategy);
+
+            this._logger?.LogInformation($"Early stop strategy added for step {stepName}");
         }
 
-        var engine = new StepWiseEngine(workflow, logger: _logger);
+        if (maxSteps is not null)
+        {
+            var maxStepsStopStrategy = new MaxStepsStopStrategy(maxSteps.Value);
+            stopStragety.AddStrategy(maxStepsStopStrategy);
 
-        var stopStrategy = new EarlyStopStrategy(stepName);
+            this._logger?.LogInformation($"Max steps stop strategy added for {maxSteps} steps");
+        }
 
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, stopStrategy: stopStrategy))
+
+        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, stopStrategy: stopStragety))
         {
             yield return stepRunAndResult;
         }
@@ -168,9 +184,13 @@ internal class StepWiseControllerV1 : ControllerBase
     }
 
     [HttpPost]
-    public async IAsyncEnumerable<StepRunAndResultDTO> ExecuteStep(string workflow, string step)
+    public async IAsyncEnumerable<StepRunAndResultDTO> ExecuteStep(
+        string workflow,
+        string? step = null,
+        int? maxSteps = null,
+        int maxParallel = 1)
     {
-        await foreach (var stepRunAndResult in _client.ExecuteStep(workflow, step))
+        await foreach (var stepRunAndResult in _client.ExecuteStep(workflow, step, maxSteps, maxParallel))
         {
             yield return StepRunAndResultDTO.FromStepRunAndResult(stepRunAndResult.StepRun, stepRunAndResult.Result);
         }

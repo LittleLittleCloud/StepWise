@@ -195,8 +195,9 @@ if (process.env.NODE_ENV === 'development') {
 
 
 export default function Home() {
-  const [completedStepRuns, setCompletedStepRuns] = useState<StepRunAndResultDTO[]>([]);
+  const [completedStepRuns, setCompletedStepRuns] = useState<Map<string, StepRunAndResultDTO[]>>(new Map());
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowDTO | undefined>(undefined);
+  const [selectedCompletedStepRuns, setSelectedCompletedStepRuns] = useState<StepRunAndResultDTO[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDTO[]>([]);
   const [version, setVersion] = useState<string | null>(null);
 
@@ -205,7 +206,17 @@ export default function Home() {
       .then((res) => {
         console.log("Got workflows: ", res.data);
         setWorkflows([...res.data ?? []]);
+        var maps = new Map<string, StepRunAndResultDTO[]>();
+        res.data?.forEach((workflow) => {
+          if (workflow.name === null || workflow.name === undefined) {
+            return;
+          }
+          maps.set(workflow.name, []);
+        });
+
+        setCompletedStepRuns(maps);
         setSelectedWorkflow(res.data?.[0] ?? undefined);
+        setSelectedCompletedStepRuns([]);
       })
       .catch((err) => {
         console.error("Error getting workflows: ", err);
@@ -216,11 +227,11 @@ export default function Home() {
   }, []);
 
 
-  const StepNodeRunClick = async (step: StepDTO) => {
+  const StepNodeRunClick = async (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
     console.log("Run step: ", step);
 
-    if (step.name === null || selectedWorkflow?.name === null) {
-      console.error("Step name or workflow name is undefined");
+    if (selectedWorkflow?.name === null) {
+      console.error("workflow name is undefined");
       return;
     }
 
@@ -228,8 +239,10 @@ export default function Home() {
       var res = await postApiV1StepWiseControllerV1ExecuteStep(
         {
           query: {
-            step: step.name,
+            step: step?.name ?? undefined,
             workflow: selectedWorkflow?.name,
+            maxParallel: maxParallelRun,
+            maxSteps: maxSteps,
           }
         }
       )
@@ -249,11 +262,34 @@ export default function Home() {
       return;
     }
 
-    setCompletedStepRuns((prev) => [...prev, ...res.data ?? []]);
+    setCompletedStepRuns((prev) => {
+      var newMap = new Map(prev);
+      var stepRuns = newMap.get(selectedWorkflow?.name!) ?? [];
+      var newData = res.data ?? [];
+      newData.forEach((data) => {
+        stepRuns.push(data);
+      });
+      newMap.set(selectedWorkflow?.name!, stepRuns);
+      return newMap;
+    });
   }
+
+  useEffect(() => {
+    console.log("Selected workflow: ", selectedWorkflow);
+    setSelectedCompletedStepRuns(completedStepRuns.get(selectedWorkflow?.name!) ?? []);
+  }, [completedStepRuns, selectedWorkflow]);
 
   const selectedWorkflowHandler = (workflow: WorkflowDTO) => {
     setSelectedWorkflow(workflow);
+    setSelectedCompletedStepRuns(completedStepRuns.get(workflow.name!) ?? []);
+  }
+
+  const onResetStepRunResult = (workflow: WorkflowDTO) => {
+    setCompletedStepRuns((prev) => {
+      var newMap = new Map(prev);
+      newMap.set(workflow.name!, []);
+      return newMap;
+    });
   }
 
 
@@ -270,9 +306,10 @@ export default function Home() {
         <Workflow
           dto={selectedWorkflow}
           onStepNodeRunClick={StepNodeRunClick}
+          onResetStepRunResult={onResetStepRunResult}
         />
       </div>
-      <StepRunSidebar stepRuns={completedStepRuns} />
+      <StepRunSidebar stepRuns={selectedCompletedStepRuns} />
     </div>
   );
 }

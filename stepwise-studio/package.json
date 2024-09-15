@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "openapi-ts": "openapi-ts"
+    "openapi-ts": "openapi-ts -c @hey-api/client-fetch -i ../schema/StepWiseControllerV1.schema.json -o stepwise-client"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",

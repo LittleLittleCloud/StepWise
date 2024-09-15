@@ -9,7 +9,7 @@ public interface IStepWiseEngine
     /// Execute the workflow until the stop strategy is satisfied or no further steps can be executed.
     /// </summary>
     IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
-        string targetStep,
+        string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         CancellationToken ct = default);
@@ -27,11 +27,11 @@ public interface IStepWiseEngineStopStrategy
 /// </summary>
 public class StopStrategyPipeline : IStepWiseEngineStopStrategy
 {
-    private readonly IStepWiseEngineStopStrategy[] _strategies;
+    private readonly List<IStepWiseEngineStopStrategy> _strategies;
 
     public StopStrategyPipeline(params IStepWiseEngineStopStrategy[] strategies)
     {
-        _strategies = strategies;
+        _strategies = strategies.ToList();
     }
 
     public string Name => this.ToString();
@@ -45,6 +45,11 @@ public class StopStrategyPipeline : IStepWiseEngineStopStrategy
     {
         // [stragegy1]=>[strategy2]=>[strategy3]
         return string.Join("=>", _strategies.Select(x => x.Name));
+    }
+
+    public void AddStrategy(IStepWiseEngineStopStrategy strategy)
+    {
+        _strategies.Add(strategy);
     }
 }
 

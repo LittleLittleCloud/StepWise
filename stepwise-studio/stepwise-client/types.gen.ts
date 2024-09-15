@@ -66,6 +66,8 @@ export type GetApiV1StepWiseControllerV1ListWorkflowError = unknown;
 
 export type PostApiV1StepWiseControllerV1ExecuteStepData = {
     query?: {
+        maxParallel?: number;
+        maxSteps?: number;
         step?: string;
         workflow?: string;
     };

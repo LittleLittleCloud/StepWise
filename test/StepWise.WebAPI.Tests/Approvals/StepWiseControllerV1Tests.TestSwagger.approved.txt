@@ -186,6 +186,23 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "maxSteps",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "maxParallel",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
           }
         ],
         "responses": {

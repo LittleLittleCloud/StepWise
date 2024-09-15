@@ -23,6 +23,7 @@ import dagre from 'dagre';
 import { Button } from './ui/button';
 import { LayoutGrid } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { ControlBar } from './control-bar';
 
 
 
@@ -77,12 +78,19 @@ function getPosition(point: { x: number, y: number }) {
 
 export interface WorkflowProps {
     dto: WorkflowDTO | undefined;
-    onStepNodeRunClick?: (step: StepDTO) => void;
+    onStepNodeRunClick?: (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => void;
+    onResetStepRunResult?: (workflow: WorkflowDTO) => void;
+    maxParallelRun?: number;
+    maxStep?: number;
+    setMaxParallelRun?: (maxParallelRun: number) => void;
+    setMaxStep?: (maxStep: number) => void;
 }
 
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, _] = useEdgesState([]);
+    const [maxStep, setMaxStep] = useState<number>(10);
+    const [maxParallelRun, setMaxParallelRun] = useState<number>(1);
     const { fitView } = useReactFlow();
     const { theme } = useTheme();
 
@@ -90,9 +98,21 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         stepNode: StepNode,
     }), []);
 
-    const onStepNodeRunClick = (step: StepDTO) => {
-        props.onStepNodeRunClick?.(step);
+    const onStepNodeRunClick = (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
+        props.onStepNodeRunClick?.(step, maxParallelRun, maxSteps);
     }
+
+    useEffect(() => {
+        if (props.maxParallelRun) {
+            setMaxParallelRun(props.maxParallelRun);
+        }
+    }, [props.maxParallelRun]);
+
+    useEffect(() => {
+        if (props.maxStep) {
+            setMaxStep(props.maxStep);
+        }
+    }, [props.maxStep]);
 
     useEffect(() => {
         if (!props.dto) return;
@@ -106,7 +126,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 height: 200,
                 data: {
                     data: step,
-                    onRunClick: onStepNodeRunClick,
+                    onRunClick: (step: StepDTO) => onStepNodeRunClick(step, maxParallelRun, maxStep),
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];
@@ -133,7 +153,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
         setNodes(layoutedNodes);
         setEdges(layoutedEdges);
-    }, [props.dto]);
+    }, [props.dto, maxStep, maxParallelRun]);
 
 
     const onNodesChangeRestricted = useCallback((changes: NodeChange[]) => {
@@ -154,7 +174,17 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         window.requestAnimationFrame(() => {
             fitView();
         });
-    }, [nodes, edges, setNodes, setEdges, fitView]);
+    }, [nodes, edges, setNodes, setEdges, fitView]);t 
+
+    const onMaxStepsChange = (maxSteps: number) => {
+        setMaxStep(maxSteps);
+        props.setMaxStep?.(maxSteps);
+    };
+
+    const onMaxParallelChange = (maxParallelRun: number) => {
+        setMaxParallelRun(maxParallelRun);
+        props.setMaxParallelRun?.(maxParallelRun);
+    };
 
     const minimapStyle = {
         height: 60,
@@ -164,8 +194,19 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
     return (
         <div
-            className='w-full h-full bg-accent/10'
+            className='w-full h-full bg-accent/10 items-center justify-center flex'
         >
+            <div className="z-10 absolute top-0">
+                    <ControlBar
+                        maxParallel={maxParallelRun}
+                        maxSteps={maxStep}
+                        onMaxParallelChange={onMaxParallelChange}
+                        onMaxStepsChange={onMaxStepsChange}
+                        onResetStepRunResultClick={() => props.onResetStepRunResult?.(props.dto!)}
+                        onAutoLayoutClick={onLayout}
+                        onRunClick={() => onStepNodeRunClick(undefined, maxParallelRun, maxStep)}
+                    />
+                </div>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -176,15 +217,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 <Controls />
                 {/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
                 <MiniMap style={minimapStyle} zoomable pannable />
-                <div className="absolute left-2 top-2 z-10">
-                    <Button
-                        variant={"default"}
-                        onClick={onLayout}
-                        className="flex items-center gap-2 shadow-sm">
-                        <LayoutGrid className="h-4 w-4" />
-                        Layout
-                    </Button>
-                </div>
+                
             </ReactFlow>
         </div>
     );

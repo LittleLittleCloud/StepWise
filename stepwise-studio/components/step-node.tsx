@@ -18,7 +18,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }, []);
 
     return (
-        <div className="rounded-md shadow-md p-2 bg-background/50 group ">
+        <div className="rounded-md shadow-md p-2 bg-background/50 group min-w-32">
             {/* settings bar */}
             {/* appear when hover */}
             <div
