@@ -174,7 +174,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         window.requestAnimationFrame(() => {
             fitView();
         });
-    }, [nodes, edges, setNodes, setEdges, fitView]);t 
+    }, [nodes, edges, setNodes, setEdges, fitView]);
 
     const onMaxStepsChange = (maxSteps: number) => {
         setMaxStep(maxSteps);
