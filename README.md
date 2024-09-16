@@ -99,9 +99,9 @@ stopwatch.Stop();
 stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
 ```
 
-## Quick start with StepWise UI
+## Visualize stepwise workflow
 
-StepWise UI is a built-in WebUI for visualizing and executing workflows. To use StepWise UI, simply adding the following code to your project:
+StepWise UI is a built-in WebUI for visualizing and executing workflows. To use StepWise UI, simply add the following code to your project:
 
 ```csharp
 // program.cs
