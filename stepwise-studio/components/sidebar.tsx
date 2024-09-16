@@ -14,12 +14,14 @@ import { useTheme } from 'next-themes'
 import { WorkflowDTO } from '@/stepwise-client';
 import Workflow from './workflow';
 import ThemeSwitch from './theme-switch';
-import { Icon, Moon } from 'lucide-react';
+import { Github, Icon, LucideGithub, Moon } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { CircleUserRound } from 'lucide-react';
 import { Network } from 'lucide-react';
 import Divider from './divider';
 import { Badge } from './ui/badge';
+import StepWiseIcon from '@/public/stepwise-logo.svg';
+import Image from 'next/image';
 
 interface SidebarProps {
     user: string;
@@ -48,7 +50,13 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     return (
         <div className="flex flex-col h-screen p-4 shadow-xl bg-background">
             {/* top bar */}
-            <span className="text-x font-bold text-nowrap">StepWise Studio</span>
+            <div className="flex items-center gap-2 mb-2">
+                <Image
+                    src={StepWiseIcon}
+                    alt="StepWise Logo"
+                 className="w-6 h-6" />
+                <span className="text-x font-bold text-nowrap">StepWise</span>
+            </div>
             <div>
                 <Badge
                     variant="pink"
@@ -62,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {workflows.map((workflow, index) => (
                     <div
                         key={index}
-                        className={cn('flex items-center py-1 gap-2 rounded-lg',
+                        className={cn('flex items-center py-1 pr-2 gap-2 rounded-lg',
                             // hover
                             'hover:bg-accent/50 cursor-pointer',
                             // selected
