@@ -14,7 +14,7 @@ StepWise is a powerful and flexible C# library for defining and executing workfl
 
 - Automatic dependency resolution between steps
 - Parallel execution of independent steps
-- StepWise UI: A built-in WebUI for visualizing and executing workflows. This allows you define workflow in a code-first approach and execute it in a visual way.
+- Visualization: StepWise provides a built-in WebUI for visualizing and executing workflows. This allows you define workflow in a code-first approach and execute it in a visualize way.
 
 ## Quick Start
 
