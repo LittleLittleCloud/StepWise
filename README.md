@@ -3,7 +3,7 @@
 
 <div align="center">
 
-<img src="./asset/stepwise-logo-svg.svg" alt="StepWise Logo" width="100">
+<img src="./asset/stepwise-logo.svg" alt="StepWise Logo" width="100">
 
 # StepWise
 </div>

@@ -3,7 +3,8 @@
 import { ChangeEvent, FC, useState } from "react";
 import { buttonVariants } from "./ui/button";
 import { cn } from "@/lib/utils";
-import { icons, Layout, LayoutGrid, Play, RotateCcw } from 'lucide-react';
+import { GithubIcon, icons, Layout, LayoutGrid, Play, RotateCcw } from 'lucide-react';
+import Link from "next/link";
 
 interface ControlBarProps {
     onRunClick: () => void;
@@ -32,10 +33,9 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
                     <button
                         className={cn(buttonVariants(
                             {
-                                variant: "outline",
+                                variant: "ghost",
                                 size: "tinyIcon",
-                            }),
-                            "hover:bg-accent/50",
+                            })
                         )}
                         onClick={props.onRunClick}
                     >
@@ -44,7 +44,7 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
                     <button
                         className={cn(buttonVariants(
                             {
-                                variant: "outline",
+                                variant: "ghost",
                                 size: "tinyIcon",
                             }),
                         )}
@@ -81,7 +81,7 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
                 <button
                     className={cn(buttonVariants(
                         {
-                            variant: "outline",
+                            variant: "ghost",
                             size: "tinyIcon",
                         }),
                     )}
@@ -89,6 +89,18 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
                 >
                     <LayoutGrid size={iconSize} />
                 </button>
+                <Link
+                    href={"https://github.com/LittleLittleCloud/StepWise"}
+                    className={cn(buttonVariants(
+                        {
+                            variant: "ghost",
+                            size: "tinyIcon",
+                        }),
+                    )}
+                    target="_blank"
+                >
+                    <GithubIcon size={iconSize} />
+                </Link>
             </div>
         </div>
     );
