@@ -21,6 +21,13 @@ public static class HostBuilderExtension
 
         return hostBuilder.ConfigureWebHost(webBuilder =>
         {
+            // fix https://github.com/LittleLittleCloud/StepWise/issues/28
+
+            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+            var assemblyDirectory = Path.GetDirectoryName(assemblyLocation) ?? Environment.CurrentDirectory;
+            var webRoot = Path.Combine(assemblyDirectory, "wwwroot");
+            webBuilder.UseWebRoot(webRoot);
+
             webBuilder.ConfigureServices(services =>
             {
                 services
