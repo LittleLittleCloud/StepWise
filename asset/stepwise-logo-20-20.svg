@@ -1,12 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="20pt" height="20pt" viewBox="0 0 200 200">
-  <!-- Background circle with blue border -->
-  <circle cx="100" cy="100" r="90" fill="#e6f3e6" stroke="#1e5aad" stroke-width="4"/>
-  
-  <!-- Steps (rounded rectangles) with gradient colors -->
-  <rect x="80" y="140" width="40" height="20" rx="5" ry="5" fill="#1e5aad" />
-  <rect x="60" y="110" width="80" height="20" rx="5" ry="5" fill="#4a90e2" />
-  <rect x="40" y="80" width="120" height="20" rx="5" ry="5" fill="#7cb9e8" />
-  
-  <!-- Arrow -->
-  <path d="M100 70 L85 40 L115 40 Z" fill="#0d2f6b" />
+<svg xmlns="http://www.w3.org/2000/svg" width="20pt" height="20pt" viewBox="0 0 530 530">
+<g filter="url(#filter0_d_69_46)">
+<rect x="14" y="10" width="500" height="500" rx="50" fill="#5577FF" fill-opacity="0.79" shape-rendering="crispEdges"/>
+<rect x="9" y="5" width="510" height="510" rx="55" stroke="#7B68EE" stroke-width="10" shape-rendering="crispEdges"/>
+<path d="M209 75C209 58.4315 222.431 45 239 45H429C445.569 45 459 58.4315 459 75V90C459 106.569 445.569 120 429 120H239C222.431 120 209 106.569 209 90V75Z" fill="#D9D9D9"/>
+<path d="M80 70C80 56.1929 91.1929 45 105 45H155C168.807 45 180 56.1929 180 70V95C180 108.807 168.807 120 155 120H105C91.1929 120 80 108.807 80 95V70Z" fill="#02D297"/>
+<path d="M359 190C359 176.193 370.193 165 384 165H434C447.807 165 459 176.193 459 190V215C459 228.807 447.807 240 434 240H384C370.193 240 359 228.807 359 215V190Z" fill="#FD71AF"/>
+<path d="M78.5 311C78.5 297.193 89.6929 286 103.5 286H153.5C167.307 286 178.5 297.193 178.5 311V336C178.5 349.807 167.307 361 153.5 361H103.5C89.6929 361 78.5 349.807 78.5 336V311Z" fill="#02D297"/>
+<path d="M358 430C358 416.193 369.193 405 383 405H433C446.807 405 458 416.193 458 430V455C458 468.807 446.807 480 433 480H383C369.193 480 358 468.807 358 455V430Z" fill="#FD71AF"/>
+<rect x="80" y="165" width="250" height="75" rx="30" fill="#D9D9D9"/>
+<rect x="208" y="285" width="250" height="75" rx="30" fill="#D9D9D9"/>
+<path d="M81 435C81 418.431 94.4315 405 111 405H301C317.569 405 331 418.431 331 435V450C331 466.569 317.569 480 301 480H111C94.4315 480 81 466.569 81 450V435Z" fill="#D9D9D9"/>
+</g>
+<defs>
+<filter id="filter0_d_69_46" x="0" y="0" width="528" height="528" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="2"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_69_46"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_69_46" result="shape"/>
+</filter>
+</defs>
 </svg>
