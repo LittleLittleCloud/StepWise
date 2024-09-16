@@ -7,7 +7,7 @@ By wisely, it means that the `StepWiseEngine` can automatically resolve the depe
 
 ## Key Concept And Notion
 
-Before we dive into the implementation details, let's first clarify some key concepts and notions. We will use these concepts and notions throughout the rest of the document.
+Before we dive into the implementation details, let's first clarify some key concepts and notions. We will use these concepts and notions to express a stepwise workflow and its execution process throughout the rest of the document.
 
 - `Variable`: Represented by small characters (e.g., `a`, `b`, `c`), variables are the basic units of data in the StepWiseEngine.
 - `Step`: Denoted by capital letters, steps are operations that can accept variables as input and optionally return variables as output. Steps can have optional inputs, indicated by a question mark (e.g., `A(b?, c) -> a?`).
