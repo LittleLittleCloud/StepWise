@@ -24,64 +24,22 @@ import { Button } from './ui/button';
 import { LayoutGrid } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ControlBar } from './control-bar';
+import { getLayoutedElements } from '@/lib/utils';
 
-
-
-const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
-    const dagreGraph = new dagre.graphlib.Graph();
-    dagreGraph.setDefaultEdgeLabel(() => ({}));
-    dagreGraph.setGraph({ rankdir: direction });
-
-    var maxNodeWidth = nodes.reduce((max, node) => Math.max(max, node.width ?? 0), 100);
-    var maxNodeHeight = nodes.reduce((max, node) => Math.max(max, node.height ?? 0), 200);
-
-    nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: node.width, height: maxNodeHeight });
-    });
-
-    edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
-    });
-
-    dagre.layout(dagreGraph);
-
-    nodes.forEach((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-        node.targetPosition = Position.Left;
-        node.sourcePosition = Position.Right;
-        node.position = {
-            x: nodeWithPosition.x - maxNodeWidth / 2,
-            y: nodeWithPosition.y - maxNodeHeight / 2,
-        };
-    });
-
-    const layoutedEdges = edges.map((edge) => {
-        const points = dagreGraph.edge(edge.source, edge.target).points;
-        return {
-            ...edge,
-            // Use the points from Dagre to define the edge path
-            sourcePosition: points[0] ? getPosition(points[0]) : 'bottom',
-            targetPosition: points[points.length - 1] ? getPosition(points[points.length - 1]) : 'top',
-        };
-    });
-
-    return { nodes, edges: layoutedEdges };
+export type WorkflowLayout = {
+    stepPositions: { [key: string]: { x: number; y: number } };
+    stepSizes: { [key: string]: { width: number; height: number } };
+};
+export type WorkflowData = WorkflowDTO & WorkflowLayout & {
+    maxParallelRun?: number;
+    maxSteps?: number;
 };
 
-function getPosition(point: { x: number, y: number }) {
-    // This is a simplified example. You might need more complex logic depending on your graph structure.
-    if (point.y === 0) return 'top';
-    if (point.y === 1) return 'bottom';
-    if (point.x === 0) return 'left';
-    return 'right';
-}
-
 export interface WorkflowProps {
-    dto: WorkflowDTO | undefined;
+    dto: WorkflowData | undefined;
     onStepNodeRunClick?: (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => void;
-    onResetStepRunResult?: (workflow: WorkflowDTO) => void;
-    maxParallelRun?: number;
-    maxStep?: number;
+    onResetStepRunResult?: (workflow: WorkflowData) => void;
+    onWorkflowChange?: (workflow: WorkflowData) => void;
     setMaxParallelRun?: (maxParallelRun: number) => void;
     setMaxStep?: (maxStep: number) => void;
 }
@@ -89,49 +47,54 @@ export interface WorkflowProps {
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, _] = useEdgesState([]);
-    const [maxStep, setMaxStep] = useState<number>(10);
-    const [maxParallelRun, setMaxParallelRun] = useState<number>(1);
+    const [maxStep, setMaxStep] = useState<number>(props.dto?.maxSteps ?? 1);
+    const [maxParallelRun, setMaxParallelRun] = useState<number>(props.dto?.maxParallelRun ?? 10);
     const { fitView } = useReactFlow();
     const { theme } = useTheme();
+    const [workflow, setWorkflow] = useState<WorkflowData | undefined>(() => props.dto);
+
+    useEffect(() => {
+        setWorkflow(props.dto);
+    }, [props.dto]);
 
     const nodeTypes = useMemo(() => ({
         stepNode: StepNode,
     }), []);
 
-    const onStepNodeRunClick = (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
-        props.onStepNodeRunClick?.(step, maxParallelRun, maxSteps);
+    const onStepNodeRunClick = (step?: StepDTO) => {
+        props.onStepNodeRunClick?.(step, maxParallelRun, maxStep);
     }
 
     useEffect(() => {
-        if (props.maxParallelRun) {
-            setMaxParallelRun(props.maxParallelRun);
+        if (workflow?.maxParallelRun) {
+            setMaxParallelRun(workflow.maxParallelRun);
         }
-    }, [props.maxParallelRun]);
+    }, [workflow?.maxParallelRun]);
 
     useEffect(() => {
-        if (props.maxStep) {
-            setMaxStep(props.maxStep);
+        if (props.dto?.maxSteps) {
+            setMaxStep(props.dto.maxSteps);
         }
-    }, [props.maxStep]);
+    }, [props.dto?.maxSteps]);
 
     useEffect(() => {
-        if (!props.dto) return;
-
-        var nodes = props.dto?.steps?.map((step) => {
+        if (!workflow) return;
+        var nodes = workflow.steps?.map((step) => {
+            var stepPosition = workflow.stepPositions[step.name!];
+            var stepSize = workflow.stepSizes[step.name!];
             return {
+                ...stepSize,
                 id: step.name,
                 type: 'stepNode',
-                position: { x: 250, y: 5 },
-                width: 200,
-                height: 200,
+                position: stepPosition,
                 data: {
                     data: step,
-                    onRunClick: (step: StepDTO) => onStepNodeRunClick(step, maxParallelRun, maxStep),
+                    onRunClick: (step: StepDTO) => onStepNodeRunClick(step),
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];
 
-        var edges = props.dto?.steps?.reduce((edges, step) => {
+        var edges = workflow.steps?.reduce((edges, step) => {
             return edges.concat(step.dependencies?.map((dep) => {
                 return {
                     id: `${step.name}-${dep}`,
@@ -145,15 +108,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             }) ?? []);
         }, [] as Edge[]) ?? [];
 
-        // call layouting to calculate the initial position of the nodes
-        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-            nodes,
-            edges
-        );
+        setNodes(nodes);
+        setEdges(edges);
 
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
-    }, [props.dto, maxStep, maxParallelRun]);
+        props.onWorkflowChange?.(workflow);
+    }, [workflow, fitView]);
 
 
     const onNodesChangeRestricted = useCallback((changes: NodeChange[]) => {
@@ -161,6 +120,30 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         const allowedChanges = changes.filter(
             change => change.type === 'position' || change.type === 'select' || change.type === 'reset' || change.type === 'dimensions'
         );
+
+        for (const change of allowedChanges) {
+            if (change.type === 'position' && change.position) {
+                // update the position of the node in workflow
+                const node = nodes.find(n => n.id === change.id);
+                if (node) {
+                    const newPosition = change.position;
+                    const stepName = node.data.data.name;
+                    if (stepName) {
+                        setWorkflow(prev => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                stepPositions: {
+                                    ...prev.stepPositions,
+                                    [stepName]: newPosition,
+                                },
+                            };
+                        });
+                    }
+                }
+            }
+        }
+
         onNodesChange(allowedChanges);
     }, [onNodesChange]);
 
@@ -173,6 +156,17 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         setEdges([...layoutedEdges]);
         window.requestAnimationFrame(() => {
             fitView();
+        });
+
+        setWorkflow(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                stepPositions: layoutedNodes.reduce((acc, node) => {
+                    acc[node.id] = { x: node.position.x, y: node.position.y };
+                    return acc;
+                }, {} as { [key: string]: { x: number; y: number } }),
+            };
         });
     }, [nodes, edges, setNodes, setEdges, fitView]);
 
@@ -197,16 +191,16 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             className='w-full h-full bg-accent/10 items-center justify-center flex'
         >
             <div className="z-10 absolute top-0">
-                    <ControlBar
-                        maxParallel={maxParallelRun}
-                        maxSteps={maxStep}
-                        onMaxParallelChange={onMaxParallelChange}
-                        onMaxStepsChange={onMaxStepsChange}
-                        onResetStepRunResultClick={() => props.onResetStepRunResult?.(props.dto!)}
-                        onAutoLayoutClick={onLayout}
-                        onRunClick={() => onStepNodeRunClick(undefined, maxParallelRun, maxStep)}
-                    />
-                </div>
+                <ControlBar
+                    maxParallel={maxParallelRun}
+                    maxSteps={maxStep}
+                    onMaxParallelChange={onMaxParallelChange}
+                    onMaxStepsChange={onMaxStepsChange}
+                    onResetStepRunResultClick={() => props.onResetStepRunResult?.(props.dto!)}
+                    onAutoLayoutClick={onLayout}
+                    onRunClick={() => onStepNodeRunClick(undefined)}
+                />
+            </div>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -217,7 +211,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 <Controls />
                 {/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
                 <MiniMap style={minimapStyle} zoomable pannable />
-                
+
             </ReactFlow>
         </div>
     );
