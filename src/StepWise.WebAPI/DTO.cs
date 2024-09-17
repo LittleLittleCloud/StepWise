@@ -25,19 +25,28 @@ public record StepDTO(string Name, string? Description, string[]? Dependencies, 
     }
 }
 
+public record ExceptionDTO(string Message, string? StackTrace)
+{
+    public static ExceptionDTO FromException(Exception exception)
+    {
+        return new ExceptionDTO(exception.Message, exception.StackTrace);
+    }
+}
+
 public record StepRunDTO(
     StepDTO Step,
     VariableDTO[] Variables,
     int Generation,
     string Status,
     VariableDTO? Result,
-    Exception? Exception)
+    ExceptionDTO? Exception)
 {
     public static StepRunDTO FromStepRun(StepRun stepRun)
     {
         var variables = stepRun.Inputs.Values.Select(VariableDTO.FromVariable).ToArray();
         var result = stepRun.Result is null ? null : VariableDTO.FromVariable(stepRun.Result);
-        return new StepRunDTO(StepDTO.FromStep(stepRun.Step), variables, stepRun.Generation, Enum.GetName(stepRun.Status)!, result, stepRun.Exception);
+        var exception = stepRun.Exception is null ? null : ExceptionDTO.FromException(stepRun.Exception);
+        return new StepRunDTO(StepDTO.FromStep(stepRun.Step), variables, stepRun.Generation, Enum.GetName(stepRun.Status)!, result, exception);
     }
 }
 
