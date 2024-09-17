@@ -12,7 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes'
 import { WorkflowDTO } from '@/stepwise-client';
-import Workflow from './workflow';
+import Workflow, { WorkflowData } from './workflow';
 import ThemeSwitch from './theme-switch';
 import { Github, Icon, LucideGithub, Moon } from 'lucide-react';
 import { buttonVariants } from './ui/button';
@@ -26,26 +26,28 @@ import Image from 'next/image';
 interface SidebarProps {
     user: string;
     version: string;
-    workflows: WorkflowDTO[];
-    onWorkflowSelect: (workflow: WorkflowDTO) => void;
+    workflows: WorkflowData[];
+    selectedWorkflow?: WorkflowData;
+    onWorkflowSelect: (workflow: WorkflowData) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
     const [username, setUsername] = useState<string>(props.user);
-    const [workflows, setWorkflows] = useState<WorkflowDTO[]>(props.workflows);
+    const [workflows, setWorkflows] = useState<WorkflowData[]>(props.workflows);
     const iconSize = 14;
-    const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowDTO | null>(null);
+    const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowData | undefined>(undefined);
 
     useEffect(() => {
         setUsername(props.user);
         setWorkflows(props.workflows);
-        setSelectedWorkflow(props.workflows[0]);
-    }, [props.user, props.workflows]);
+        setSelectedWorkflow(props.selectedWorkflow ?? props.workflows[0] ?? undefined);
+    }, [props.user, props.workflows, props.selectedWorkflow]);
 
-    const selectWorkflowHander = (workflow: WorkflowDTO) => {
-        setSelectedWorkflow(workflow);
-        props.onWorkflowSelect(workflow);
-    }
+    useEffect(() => {
+        if (selectedWorkflow) {
+            props.onWorkflowSelect(selectedWorkflow);
+        }
+    }, [selectedWorkflow]);
 
     return (
         <div className="flex flex-col h-screen p-4 shadow-xl bg-background">
@@ -76,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                             // selected
                             selectedWorkflow === workflow ? 'bg-accent' : ''
                         )}
-                        onClick={() => selectWorkflowHander(workflow)}
+                        onClick={() => setSelectedWorkflow(workflow)}
                     >
                         <div className={buttonVariants(
                             {

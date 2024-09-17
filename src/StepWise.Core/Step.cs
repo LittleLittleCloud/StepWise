@@ -181,10 +181,10 @@ public class StepVariable
 
 public enum StepStatus
 {
-    NotStarted,
+    Queue,
     Running,
     Completed,
-    Failed
+    Failed,
 }
 
 /// <summary>
@@ -196,7 +196,7 @@ public class StepRun
     private readonly Step _step;
     private readonly int _generation = 0;
     private readonly Dictionary<string, StepVariable> _inputs = new();
-    private readonly StepStatus _status = StepStatus.NotStarted;
+    private readonly StepStatus _status = StepStatus.Queue;
     private readonly StepVariable? _result = null;
     private readonly Exception? _exception = null;
 
@@ -204,7 +204,7 @@ public class StepRun
         Step step,
         int generation,
         Dictionary<string, StepVariable> inputs,
-        StepStatus status = StepStatus.NotStarted,
+        StepStatus status = StepStatus.Queue,
         StepVariable? result = null,
         Exception? exception = null)
     {
@@ -240,7 +240,7 @@ public class StepRun
 
     public StepRun ToRunningStatus()
     {
-        if (_status != StepStatus.NotStarted)
+        if (_status != StepStatus.Queue)
         {
             throw new InvalidOperationException("The step is not in the not started status.");
         }

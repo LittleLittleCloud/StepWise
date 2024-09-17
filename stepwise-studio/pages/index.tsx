@@ -12,9 +12,10 @@ import ReactFlow, {
   useEdgesState
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import Workflow from "@/components/workflow";
+import Workflow, { WorkflowData } from "@/components/workflow";
 import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
+import { getLayoutedElements } from "@/lib/utils";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -27,74 +28,6 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-const dummyWorkflows: WorkflowDTO[] = [
-  { name: "Workflow 1" },
-  { name: "Workflow 2" },
-  { name: "Workflow 3" },
-];
-
-const initialNodes: Node<StepDTO>[] = [
-  {
-    id: '1',
-    type: 'stepNode',
-    position: { x: 250, y: 5 },
-    data: {
-      name: 'A()',
-      description: 'First step of the workflow',
-      variables: ['a'],
-    },
-  },
-  {
-    id: '2',
-    type: 'stepNode',
-    position: { x: 100, y: 150 },
-    data: {
-      name: 'B(a)',
-      description: 'Second step of the workflow',
-      dependencies: ['a'],
-      variables: ['b'],
-    },
-  },
-  {
-    id: '3',
-    type: 'stepNode',
-    position: { x: 400, y: 150 },
-    data: {
-      name: 'C(a, b)',
-      description: 'Final step of the workflow',
-      dependencies: ['a', 'b'],
-      variables: ['c'],
-    },
-  },
-];
-
-const initialEdges: Edge[] = [
-  { id: 'e1-2', source: '1', target: '2' },
-  { id: 'e1-3', source: '1', target: '3' },
-  { id: 'e2-3', source: '2', target: '3' },
-];
-
-const dummyWorkflow: WorkflowDTO = {
-  name: "Test Workflow",
-  steps: [
-    {
-      name: "A",
-      description: "First step of the workflow",
-    },
-    {
-      name: "B",
-      description: "Second step of the workflow",
-      dependencies: ["A"],
-      variables: ["A"],
-    },
-    {
-      name: "C",
-      description: "Final step of the workflow",
-      dependencies: ["A", "B"],
-      variables: ["A", "B"],
-    },
-  ],
-}
 
 // if env is development, use the local server
 if (process.env.NODE_ENV === 'development') {
@@ -108,16 +41,54 @@ if (process.env.NODE_ENV === 'development') {
 
 export default function Home() {
   const [completedStepRuns, setCompletedStepRuns] = useState<Map<string, StepRunDTO[]>>(new Map());
-  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowDTO | undefined>(undefined);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowData | undefined>(undefined);
   const [selectedCompletedStepRuns, setSelectedCompletedStepRuns] = useState<StepRunDTO[]>([]);
-  const [workflows, setWorkflows] = useState<WorkflowDTO[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
   const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
     getApiV1StepWiseControllerV1ListWorkflow()
       .then((res) => {
         console.log("Got workflows: ", res.data);
-        setWorkflows([...res.data ?? []]);
+
+        var workflows: WorkflowData[] = [];
+
+        for (const workflow of res.data ?? []) {
+          var nodes = workflow.steps?.map((step: StepDTO) => ({
+            id: step.name,
+            width: 200,
+            height: 200,
+            position: { x: 0, y: 0 },
+          })) as Node[];
+
+          var edges = workflow.steps?.reduce((edges, step) => {
+            return edges.concat(step.dependencies?.map((dep) => {
+                return {
+                    id: `${step.name}-${dep}`,
+                    source: dep,
+                    target: step.name,
+                    sourceHandle: dep,
+                    targetHandle: step.name + '-' + dep,
+                    style: { stroke: '#555' },
+                    animated: true,
+                } as Edge;
+            }) ?? []);
+        }, [] as Edge[]) ?? [];
+          var layout= getLayoutedElements(nodes, edges);
+
+          workflows.push({
+            ...workflow,
+            stepSizes: layout.nodes.reduce((acc, node) => {
+              acc[node.id] = { width: 200, height: 200 };
+              return acc;
+            }, {} as { [key: string]: { width: number; height: number } }),
+            stepPositions: layout.nodes.reduce((acc, node) => {
+              acc[node.id] = { x: node.position.x, y: node.position.y };
+              return acc;
+            }, {} as { [key: string]: { x: number; y: number } }),
+          } as WorkflowData);
+        }
+        setWorkflows(workflows);
         var maps = new Map<string, StepRunDTO[]>();
         res.data?.forEach((workflow) => {
           if (workflow.name === null || workflow.name === undefined) {
@@ -127,7 +98,7 @@ export default function Home() {
         });
 
         setCompletedStepRuns(maps);
-        setSelectedWorkflow(res.data?.[0] ?? undefined);
+        setSelectedWorkflow(workflows[0] ?? undefined);
         setSelectedCompletedStepRuns([]);
       })
       .catch((err) => {
@@ -188,15 +159,25 @@ export default function Home() {
 
   useEffect(() => {
     console.log("Selected workflow: ", selectedWorkflow);
+    // update workflow
+    setWorkflows((prev) => {
+      const newWorkflows = [...prev];
+      const index = newWorkflows.findIndex((workflow) => workflow.name === selectedWorkflow?.name);
+      if (index !== -1) {
+        newWorkflows[index] = selectedWorkflow!;
+      }
+      return newWorkflows;
+    });
+      
     setSelectedCompletedStepRuns(completedStepRuns.get(selectedWorkflow?.name!) ?? []);
+    setSelectedWorkflow(selectedWorkflow);
   }, [completedStepRuns, selectedWorkflow]);
 
-  const selectedWorkflowHandler = (workflow: WorkflowDTO) => {
+  const selectedWorkflowHandler = (workflow: WorkflowData) => {
     setSelectedWorkflow(workflow);
-    setSelectedCompletedStepRuns(completedStepRuns.get(workflow.name!) ?? []);
   }
 
-  const onResetStepRunResult = (workflow: WorkflowDTO) => {
+  const onResetStepRunResult = (workflow: WorkflowData) => {
     setCompletedStepRuns((prev) => {
       var newMap = new Map(prev);
       newMap.set(workflow.name!, []);
@@ -213,12 +194,14 @@ export default function Home() {
         user="Test"
         version={version ?? "Unknown"}
         workflows={workflows}
+        selectedWorkflow={selectedWorkflow}
         onWorkflowSelect={selectedWorkflowHandler} />
       <div className="flex flex-col items-center gap-8 w-full h-screen">
         <Workflow
           dto={selectedWorkflow}
           onStepNodeRunClick={StepNodeRunClick}
           onResetStepRunResult={onResetStepRunResult}
+          onWorkflowChange={(workflowData) => setSelectedWorkflow(workflowData)}
         />
       </div>
       <StepRunSidebar stepRuns={selectedCompletedStepRuns} />
