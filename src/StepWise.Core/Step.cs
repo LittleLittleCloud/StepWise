@@ -152,7 +152,7 @@ public class Step
 
 public class StepVariable
 {
-    public StepVariable(string name, int generation, object value)
+    internal StepVariable(string name, int generation, object value)
     {
         Generation = generation;
         Value = value;
@@ -179,6 +179,14 @@ public class StepVariable
     }
 }
 
+public enum StepStatus
+{
+    NotStarted,
+    Running,
+    Completed,
+    Failed
+}
+
 /// <summary>
 /// The step run represents the minimal unit of execute a step.
 /// It contains the step, the generation of the step, and the inputs(parameter) of the step.
@@ -188,12 +196,24 @@ public class StepRun
     private readonly Step _step;
     private readonly int _generation = 0;
     private readonly Dictionary<string, StepVariable> _inputs = new();
+    private readonly StepStatus _status = StepStatus.NotStarted;
+    private readonly StepVariable? _result = null;
+    private readonly Exception? _exception = null;
 
-    private StepRun(Step step, int generation, Dictionary<string, StepVariable> inputs)
+    private StepRun(
+        Step step,
+        int generation,
+        Dictionary<string, StepVariable> inputs,
+        StepStatus status = StepStatus.NotStarted,
+        StepVariable? result = null,
+        Exception? exception = null)
     {
         _step = step;
         _generation = generation;
         _inputs = inputs;
+        _status = status;
+        _result = result;
+        _exception = exception;
     }
 
     public Step Step => _step;
@@ -204,48 +224,64 @@ public class StepRun
 
     public Dictionary<string, StepVariable> Inputs => _inputs;
 
-    public static StepRun Create(Step step, int generation, Dictionary<string, StepVariable>? inputs = null)
+    public StepVariable? Result => _result;
+
+    public Exception? Exception => _exception;
+
+    public StepStatus Status => _status;
+
+    public static StepRun Create(
+        Step step,
+        int generation,
+        Dictionary<string, StepVariable>? inputs = null)
     {
         return new StepRun(step, generation, inputs ?? new Dictionary<string, StepVariable>());
     }
 
-    public async Task<object?> ExecuteAsync(CancellationToken ct = default)
+    public StepRun ToRunningStatus()
     {
-        return await _step.ExecuteAsync(_inputs.ToDictionary(kv => kv.Key, kv => kv.Value.Value), ct);
+        if (_status != StepStatus.NotStarted)
+        {
+            throw new InvalidOperationException("The step is not in the not started status.");
+        }
+
+        return new StepRun(_step, _generation, _inputs, StepStatus.Running, _result, _exception);
+    }
+
+    public StepRun ToCompletedStatus(StepVariable? result = null)
+    {
+        if (_status != StepStatus.Running)
+        {
+            throw new InvalidOperationException("The step is not in the running status.");
+        }
+
+        return new StepRun(_step, _generation, _inputs, StepStatus.Completed, result, _exception);
+    }
+
+    public StepRun ToFailedStatus(Exception ex)
+    {
+        if (_status != StepStatus.Running)
+        {
+            throw new InvalidOperationException("The step is not in the running status.");
+        }
+
+        return new StepRun(_step, _generation, _inputs, StepStatus.Failed, _result, ex);
+    }
+
+    public Task<object?> ExecuteAsync(CancellationToken ct = default)
+    {
+        if (_status != StepStatus.Running)
+        {
+            throw new InvalidOperationException("The step is not in the running status.");
+        }
+
+        return _step.ExecuteAsync(_inputs.ToDictionary(kv => kv.Key, kv => kv.Value.Value), ct);
     }
 
     public override string ToString()
     {
         // format [gen] stepName([gen]input1, [gen]input2, ...)
         var inputs = string.Join(", ", _inputs.Select(kv => $"{kv.Key}[{_inputs[kv.Key].Generation}]"));
-        return $"{_step.Name}[{_generation}]({inputs})";
-    }
-}
-
-public class StepRunAndResult
-{
-    public StepRunAndResult(StepRun stepBean, StepVariable? result)
-    {
-        StepRun = stepBean;
-        Result = result;
-    }
-
-    public static StepRunAndResult Create(StepRun stepBean, StepVariable? result = null)
-    {
-        return new StepRunAndResult(stepBean, result);
-    }
-
-    public StepRun StepRun { get; }
-
-    public string StepName => StepRun.Step.Name;
-
-    /// <summary>
-    /// The result of the step. It can be null if the step doesn't return a value.
-    /// </summary>
-    public StepVariable? Result { get; }
-
-    public override string ToString()
-    {
-        return $"{StepRun} => {Result?.Value}";
+        return $"{_step.Name}[{_generation}]({inputs})[status: {_status}]";
     }
 }

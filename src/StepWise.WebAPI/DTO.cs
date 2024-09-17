@@ -25,13 +25,19 @@ public record StepDTO(string Name, string? Description, string[]? Dependencies, 
     }
 }
 
-public record StepRunDTO(StepDTO Step, VariableDTO[] Variables, int Generation)
+public record StepRunDTO(
+    StepDTO Step,
+    VariableDTO[] Variables,
+    int Generation,
+    string Status,
+    VariableDTO? Result,
+    Exception? Exception)
 {
     public static StepRunDTO FromStepRun(StepRun stepRun)
     {
         var variables = stepRun.Inputs.Values.Select(VariableDTO.FromVariable).ToArray();
-        return new StepRunDTO(StepDTO.FromStep(stepRun.Step), variables, stepRun.Generation);
-
+        var result = stepRun.Result is null ? null : VariableDTO.FromVariable(stepRun.Result);
+        return new StepRunDTO(StepDTO.FromStep(stepRun.Step), variables, stepRun.Generation, Enum.GetName(stepRun.Status)!, result, stepRun.Exception);
     }
 }
 

@@ -54,7 +54,7 @@ public static class StepWiseEngineExtension
     /// If the <paramref name="earlyStop"/> is true, the workflow will stop as soon as the target step is reached and completed.
     /// Otherwise, the workflow will continue to execute until no further steps can be executed.
     /// </summary>
-    public static async IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
+    public static async IAsyncEnumerable<StepRun> ExecuteAsync(
         this IStepWiseEngine engine,
         string targetStepName,
         IEnumerable<StepVariable>? inputs = null,
@@ -79,9 +79,9 @@ public static class StepWiseEngineExtension
 
         maxSteps ??= int.MaxValue;
 
-        await foreach (var stepResult in engine.ExecuteAsync(targetStepName, inputs, stopStrategy, ct))
+        await foreach (var stepRun in engine.ExecuteAsync(targetStepName, inputs, stopStrategy, ct))
         {
-            yield return stepResult;
+            yield return stepRun;
         }
     }
 }

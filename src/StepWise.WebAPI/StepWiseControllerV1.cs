@@ -64,7 +64,7 @@ public class StepWiseClient
     }
 
     // execute step
-    public async IAsyncEnumerable<StepRunAndResult> ExecuteStep(
+    public async IAsyncEnumerable<StepRun> ExecuteStep(
         string workflowName,
         string? stepName = null,
         int? maxSteps = null,
@@ -184,15 +184,15 @@ internal class StepWiseControllerV1 : ControllerBase
     }
 
     [HttpPost]
-    public async IAsyncEnumerable<StepRunAndResultDTO> ExecuteStep(
+    public async IAsyncEnumerable<StepRunDTO> ExecuteStep(
         string workflow,
         string? step = null,
         int? maxSteps = null,
         int maxParallel = 1)
     {
-        await foreach (var stepRunAndResult in _client.ExecuteStep(workflow, step, maxSteps, maxParallel))
+        await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel))
         {
-            yield return StepRunAndResultDTO.FromStepRunAndResult(stepRunAndResult.StepRun, stepRunAndResult.Result);
+            yield return StepRunDTO.FromStepRun(stepRun);
         }
     }
 }

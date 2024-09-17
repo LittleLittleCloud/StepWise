@@ -8,7 +8,7 @@ public interface IStepWiseEngine
     /// <summary>
     /// Execute the workflow until the stop strategy is satisfied or no further steps can be executed.
     /// </summary>
-    IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
+    IAsyncEnumerable<StepRun> ExecuteAsync(
         string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
         IStepWiseEngineStopStrategy? stopStrategy = null,
@@ -19,7 +19,7 @@ public interface IStepWiseEngineStopStrategy
 {
     string Name { get; }
 
-    bool ShouldStop(StepRunAndResult[] stepResult);
+    bool ShouldStop(StepRun[] stepResult);
 }
 
 /// <summary>
@@ -36,7 +36,7 @@ public class StopStrategyPipeline : IStepWiseEngineStopStrategy
 
     public string Name => this.ToString();
 
-    public bool ShouldStop(StepRunAndResult[] stepResult)
+    public bool ShouldStop(StepRun[] stepResult)
     {
         return _strategies.Any(x => x.ShouldStop(stepResult));
     }
@@ -54,7 +54,7 @@ public class StopStrategyPipeline : IStepWiseEngineStopStrategy
 }
 
 /// <summary>
-/// Stop strategy that stops the workflow after a certain number of steps.
+/// Stop strategy that stops the workflow after a certain number of steps are completed or failed.
 /// </summary>
 public class MaxStepsStopStrategy : IStepWiseEngineStopStrategy
 {
@@ -67,9 +67,9 @@ public class MaxStepsStopStrategy : IStepWiseEngineStopStrategy
 
     public string Name => nameof(MaxStepsStopStrategy);
 
-    public bool ShouldStop(StepRunAndResult[] stepResult)
+    public bool ShouldStop(StepRun[] stepResult)
     {
-        return stepResult.Length >= _maxSteps;
+        return stepResult.Where(x => x.Status == StepStatus.Completed || x.Status == StepStatus.Failed).Count() >= _maxSteps;
     }
 }
 
@@ -87,7 +87,7 @@ public class EarlyStopStrategy : IStepWiseEngineStopStrategy
 
     public string Name => nameof(EarlyStopStrategy);
 
-    public bool ShouldStop(StepRunAndResult[] stepResult)
+    public bool ShouldStop(StepRun[] stepResult)
     {
         return stepResult.Any(x => x.StepName == _targetStep && x.Result != null);
     }
@@ -95,21 +95,21 @@ public class EarlyStopStrategy : IStepWiseEngineStopStrategy
 
 public class DelegateStopStrategy : IStepWiseEngineStopStrategy
 {
-    private readonly Func<StepRunAndResult[], bool> _shouldStop;
+    private readonly Func<StepRun[], bool> _shouldStop;
 
-    private DelegateStopStrategy(Func<StepRunAndResult[], bool> shouldStop)
+    private DelegateStopStrategy(Func<StepRun[], bool> shouldStop)
     {
         _shouldStop = shouldStop;
     }
 
     public string Name => nameof(DelegateStopStrategy);
 
-    public static DelegateStopStrategy Create(Func<StepRunAndResult[], bool> shouldStop)
+    public static DelegateStopStrategy Create(Func<StepRun[], bool> shouldStop)
     {
         return new DelegateStopStrategy(shouldStop);
     }
 
-    public bool ShouldStop(StepRunAndResult[] stepResult)
+    public bool ShouldStop(StepRun[] stepResult)
     {
         return _shouldStop(stepResult);
     }
@@ -122,7 +122,7 @@ public class NeverStopStopStrategy : IStepWiseEngineStopStrategy
 {
     public string Name => nameof(NeverStopStopStrategy);
 
-    public bool ShouldStop(StepRunAndResult[] stepResult)
+    public bool ShouldStop(StepRun[] stepResult)
     {
         return false;
     }

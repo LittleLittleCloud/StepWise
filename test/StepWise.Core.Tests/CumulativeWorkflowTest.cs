@@ -108,12 +108,15 @@ public class CumulativeWorkflowTest
     public async Task CumulativeWorkflow()
     {
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, maxConcurrency: 3, _logger);
-        var steps = new List<string>();
+        var completedSteps = new List<string>();
         await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(E)))
         {
             var stepName = stepResult.StepName;
             var value = stepResult.Result;
-            steps.Add(stepName);
+            if (stepResult.Status == StepStatus.Completed)
+            {
+                completedSteps.Add(stepName);
+            }
 
             if (stepName == nameof(E) && value?.As<string>() is string result)
             {
@@ -121,6 +124,6 @@ public class CumulativeWorkflowTest
             }
         }
 
-        steps.Should().Equal([nameof(A), nameof(B), nameof(C), nameof(D), nameof(E)]);
+        completedSteps.Should().Equal([nameof(A), nameof(B), nameof(C), nameof(D), nameof(E)]);
     }
 }

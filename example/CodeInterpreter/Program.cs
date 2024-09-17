@@ -38,14 +38,16 @@ var agent = new OpenAIChatAgent(
     .RegisterMessageConnector();
 
 var codeInterpreter = new Workflow(agent, kernel);
-var engine = StepWiseEngine.CreateFromInstance(codeInterpreter, maxConcurrency: 1, logger);
+var engine = StepWiseEngine.CreateFromInstance(codeInterpreter, maxConcurrency: 1);
 
 var task = "use python to switch my system to dark mode";
 StepVariable[] input = [StepVariable.Create("task", task)];
 
-await foreach (var stepResult in engine.ExecuteAsync(nameof(Workflow.GenerateReply), input))
+await foreach (var stepRun in engine.ExecuteAsync(nameof(Workflow.GenerateReply), input))
 {
-    if (stepResult.StepName == nameof(Workflow.GenerateReply) && stepResult.Result?.As<string>() is string reply)
+    Console.WriteLine(stepRun);
+
+    if (stepRun.StepName == nameof(Workflow.GenerateReply) && stepRun.Status == StepStatus.Completed && stepRun.Result?.As<string>() is string reply)
     {
         Console.WriteLine($"Final Reply: {reply}");
         break;
