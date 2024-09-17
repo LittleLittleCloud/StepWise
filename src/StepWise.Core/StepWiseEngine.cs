@@ -29,7 +29,7 @@ public class StepWiseEngine : IStepWiseEngine
         return new StepWiseEngine(workflow, maxConcurrency, logger);
     }
 
-    public async IAsyncEnumerable<StepRunAndResult> ExecuteAsync(
+    public async IAsyncEnumerable<StepRun> ExecuteAsync(
         string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
         IStepWiseEngineStopStrategy? stopStrategy = null,
@@ -41,16 +41,16 @@ public class StepWiseEngine : IStepWiseEngine
         this._logger?.LogInformation($"Starting the workflow engine with target step '{targetStep}' and stop strategy '{stopStrategy.Name}'.");
 
         var step = targetStep != null ? _workflow.Steps[targetStep] : null;
-        var stepResults = new List<StepRunAndResult>();
-        await foreach (var stepResult in ExecuteStepAsync(step, inputs, ct))
+        var stepResults = new List<StepRun>();
+        await foreach (var stepRun in ExecuteStepAsync(step, inputs, ct))
         {
-            yield return stepResult;
+            yield return stepRun;
 
             // check early stop
-            stepResults.Add(stepResult);
+            stepResults.Add(stepRun);
             if (stopStrategy.ShouldStop(stepResults.ToArray()))
             {
-                _logger?.LogInformation($"Stop strategy '{stopStrategy.Name}' has been triggered when reaching step '{stepResult}'.");
+                _logger?.LogInformation($"Stop strategy '{stopStrategy.Name}' has been triggered when reaching step '{stepRun}'.");
                 break;
             }
         }
@@ -96,7 +96,7 @@ public class StepWiseEngine : IStepWiseEngine
         return executionPlan;
     }
 
-    private async IAsyncEnumerable<StepRunAndResult> ExecuteStepAsync(
+    private async IAsyncEnumerable<StepRun> ExecuteStepAsync(
         Step? step,
         IEnumerable<StepVariable> inputs,
         [EnumeratorCancellation]
@@ -105,7 +105,7 @@ public class StepWiseEngine : IStepWiseEngine
         int _busyTaskRunners = 0;
         var _context = new ConcurrentDictionary<string, StepVariable>();
         using var _stepsTaskQueue = new BlockingCollection<StepRun>();
-        using var _stepResultQueue = new BlockingCollection<StepRunAndResult>();
+        using var _stepResultQueue = new BlockingCollection<StepRun>();
 
         // add inputs to context
         foreach (var input in inputs)
@@ -133,7 +133,9 @@ public class StepWiseEngine : IStepWiseEngine
             if (s.IsExecuctionConditionSatisfied(currentContext))
             {
                 _logger?.LogInformation($"Adding initial step '{s.Name}' to the task queue.");
-                _stepsTaskQueue.Add(StepRun.Create(s, 0, currentContext));
+                var stepRun = StepRun.Create(s, 0, currentContext);
+                _stepsTaskQueue.Add(stepRun);
+                _stepResultQueue.Add(stepRun);
             }
         }
 
@@ -165,12 +167,16 @@ public class StepWiseEngine : IStepWiseEngine
             });
         }));
 
-        foreach (var stepResult in _stepResultQueue.GetConsumingEnumerable(ct))
+        foreach (var stepRun in _stepResultQueue.GetConsumingEnumerable(ct))
         {
-            yield return stepResult;
+            yield return stepRun;
 
-            var stepRun = stepResult.StepRun;
-            var res = stepResult.Result;
+            if (stepRun.Status != StepStatus.Completed)
+            {
+                continue;
+            }
+
+            var res = stepRun.Result;
             if (res != null)
             {
                 _logger?.LogInformation($"Updating context with the {stepRun}");
@@ -225,6 +231,7 @@ public class StepWiseEngine : IStepWiseEngine
                     {
                         _logger?.LogInformation($"Adding {s} to the task queue.");
                         _stepsTaskQueue.Add(s);
+                        _stepResultQueue.Add(s);
                     }
                 }
                 else
@@ -263,7 +270,7 @@ public class StepWiseEngine : IStepWiseEngine
         StepRun stepRun,
         BlockingCollection<StepRun> _stepsTaskQueue,
         ConcurrentDictionary<string, StepVariable> _context,
-        BlockingCollection<StepRunAndResult> _stepResultQueue,
+        BlockingCollection<StepRun> _stepRunQueue,
         CancellationToken ct = default)
     {
         await Task.Yield();
@@ -279,23 +286,29 @@ public class StepWiseEngine : IStepWiseEngine
             // scenario 2
             // run the step by calling the step.ExecuteAsync method
             // the step.ExecuteAsync will short-circuit if the dependencies are not met
-            _logger?.LogInformation($"[Runner {runnerId}]: Running {stepRun}.");
+            var runningStep = stepRun.ToRunningStatus();
+            _logger?.LogInformation($"[Runner {runnerId}]: Running {runningStep}.");
+            _stepRunQueue.Add(runningStep);
+
             try
             {
-                var res = await stepRun.ExecuteAsync(ct);
+                var res = await runningStep.ExecuteAsync(ct);
                 // if res is null, it means the step is not ready to run, or not producing any result
                 // maybe the dependencies are not met, maybe the executor function returns null.
                 if (res == null)
                 {
-                    _logger?.LogInformation($"[Runner {runnerId}]: {stepRun} returns null.");
-                    _stepResultQueue.Add(StepRunAndResult.Create(stepRun));
+                    _logger?.LogInformation($"[Runner {runnerId}]: {runningStep} returns null.");
+                    var resultStep = runningStep.ToCompletedStatus();
+                    _stepRunQueue.Add(resultStep);
                 }
                 else
                 {
-                    _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {stepRun}.");
+                    _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {runningStep}.");
                     _logger?.LogDebug($"[Runner {runnerId}]: {stepRun} result is '{res}'.");
                     var stepVariable = StepVariable.Create(stepRun.StepName, res, stepRun.Generation);
-                    _stepResultQueue.Add(StepRunAndResult.Create(stepRun, stepVariable));
+                    var resultStep = runningStep.ToCompletedStatus(stepVariable);
+
+                    _stepRunQueue.Add(resultStep);
                 }
             }
             catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))
@@ -308,9 +321,10 @@ public class StepWiseEngine : IStepWiseEngine
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, $"[Runner {runnerId}]: Error running {stepRun}");
+                _logger?.LogError(ex, $"[Runner {runnerId}]: Error running {runningStep}");
+                var failedStep = runningStep.ToFailedStatus(ex);
 
-                throw;
+                _stepRunQueue.Add(failedStep);
             }
         }
     }

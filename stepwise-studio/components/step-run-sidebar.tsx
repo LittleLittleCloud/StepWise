@@ -1,7 +1,7 @@
 import React, { use, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes'
-import { StepRunAndResultDTO, StepRunDTO, WorkflowDTO } from '@/stepwise-client';
+import { StepRunDTO, WorkflowDTO } from '@/stepwise-client';
 import Workflow from './workflow';
 import ThemeSwitch from './theme-switch';
 import { Icon, Moon, SquareFunction } from 'lucide-react';
@@ -13,15 +13,15 @@ import { Badge } from './ui/badge';
 import { Markdown } from './markdown';
 
 interface StepRunSidebarProps {
-    stepRuns: StepRunAndResultDTO[];
+    stepRuns: StepRunDTO[];
 }
 
 interface StepRunProps {
-    stepRun: StepRunAndResultDTO;
+    stepRun: StepRunDTO;
 }
 
 const StepRunCard: React.FC<StepRunProps> = (props) => {
-    const [stepRun, setStepRun] = useState<StepRunAndResultDTO>(props.stepRun);
+    const [stepRun, setStepRun] = useState<StepRunDTO>(props.stepRun);
 
     useEffect(() => {
         setStepRun(props.stepRun);
@@ -29,28 +29,41 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 
     return (
         <div className="flex w-full flex-col gap-2 p-2 bg-accent rounded-lg">
-            <div className="flex justify-between items-center  flex-wrap gap-2">
-            <div className="flex items-center">
-                <div
-                    className={cn(buttonVariants(
-                        {
-                            variant: "outline",
-                            size: "tinyIcon",
-                        }),
-                    )}
-                >
-                    <SquareFunction size={16} />
+            <div className="flex justify-between gap-2 flex-col">
+                <div className="flex items-center">
+                    <div
+                        className={cn(buttonVariants(
+                            {
+                                variant: "outline",
+                                size: "tinyIcon",
+                            }),
+                        )}
+                    >
+                        <SquareFunction size={16} />
+                    </div>
+                    <span className="text-xs">{stepRun?.step?.name}</span>
                 </div>
-                <span className="text-xs">{stepRun.stepRun?.step?.name}</span>
+                <div className='flex gap-2' >
+                    
+                    <Badge
+                        variant="green"
+                        size={"sm"}
+                        className='p-1 text-xs'
+                    >{stepRun?.status}
+                    </Badge>
+                    {
+                        stepRun.result?.type && (
+                            <Badge
+                                variant="pink"
+                                size={"sm"}
+                                className='p-1 text-xs'
+                            >{stepRun.result?.type}
+                            </Badge>
+                        )
+                    }
+                </div>
             </div>
-                <Badge
-                    variant="pink"
-                    size={"sm"}
-                    className='p-1 text-xs'
-                    >{stepRun.result?.type}
-                </Badge>
-            </div>
-            
+
             {/* display text value if exist */}
             {stepRun.result?.displayValue && (
                 <div className="flex flex-col justify-between bg-background rounded-lg px-2 overflow-x-auto">
@@ -64,7 +77,7 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 }
 
 const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
-    const [stepRuns, setStepRuns] = useState<StepRunAndResultDTO[]>([]);
+    const [stepRuns, setStepRuns] = useState<StepRunDTO[]>([]);
     useEffect(() => {
         setStepRuns(props.stepRuns);
     }, [props.stepRuns]);
@@ -72,7 +85,7 @@ const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
     return (
         <div className="flex flex-col w-80 h-screen h-max-screen p-4 shadow-xl bg-background rounded-lg overflow-y-auto">
             {/* top bar */}
-            <span className="text-x font-bold text-nowrap">Completed StepRun</span>
+            <span className="text-x font-bold text-nowrap">StepRun</span>
             {/* stepRuns */}
             <div className="flex flex-col grow mb-4 gap-2">
                 <Divider />

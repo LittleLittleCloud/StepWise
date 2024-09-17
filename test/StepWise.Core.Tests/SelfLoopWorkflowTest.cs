@@ -74,12 +74,12 @@ public class SelfLoopWorkflowTest
         dependStartSteps.Count().Should().Be(2);
         var engine = new StepWiseEngine(workflow, maxConcurrency: 1, _logger);
 
-        var stepAndResult = new List<StepRunAndResult>();
+        var stepRun = new List<StepRun>();
         await foreach (var stepRunAndResult in engine.ExecuteAsync(nameof(End), maxSteps: 10))
         {
             if (stepRunAndResult.Result != null)
             {
-                stepAndResult.Add(stepRunAndResult);
+                stepRun.Add(stepRunAndResult);
             }
         }
 
@@ -91,24 +91,24 @@ public class SelfLoopWorkflowTest
         // AddNumberByOne, 5
         // End, Done!
 
-        stepAndResult.Should().HaveCount(6);
+        stepRun.Should().HaveCount(6);
 
-        stepAndResult[0].StepName.Should().Be(nameof(Start));
-        stepAndResult[0].Result!.As<int>().Should().Be(1);
+        stepRun[0].StepName.Should().Be(nameof(Start));
+        stepRun[0].Result!.As<int>().Should().Be(1);
 
-        stepAndResult[1].StepName.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[1].Result!.As<int>().Should().Be(2);
+        stepRun[1].StepName.Should().Be(nameof(AddNumberByOne));
+        stepRun[1].Result!.As<int>().Should().Be(2);
 
-        stepAndResult[2].StepName.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[2].Result!.As<int>().Should().Be(3);
+        stepRun[2].StepName.Should().Be(nameof(AddNumberByOne));
+        stepRun[2].Result!.As<int>().Should().Be(3);
 
-        stepAndResult[3].StepName.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[3].Result!.As<int>().Should().Be(4);
+        stepRun[3].StepName.Should().Be(nameof(AddNumberByOne));
+        stepRun[3].Result!.As<int>().Should().Be(4);
 
-        stepAndResult[4].StepName.Should().Be(nameof(AddNumberByOne));
-        stepAndResult[4].Result!.As<int>().Should().Be(5);
+        stepRun[4].StepName.Should().Be(nameof(AddNumberByOne));
+        stepRun[4].Result!.As<int>().Should().Be(5);
 
-        stepAndResult[5].StepName.Should().Be(nameof(End));
-        stepAndResult[5].Result!.As<string>().Should().Be("Done!");
+        stepRun[5].StepName.Should().Be(nameof(End));
+        stepRun[5].Result!.As<string>().Should().Be("Done!");
     }
 }

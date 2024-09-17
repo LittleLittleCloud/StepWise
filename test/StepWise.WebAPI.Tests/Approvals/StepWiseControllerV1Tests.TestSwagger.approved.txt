@@ -213,7 +213,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/StepRunAndResultDTO"
+                    "$ref": "#/components/schemas/StepRunDTO"
                   }
                 }
               },
@@ -221,7 +221,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/StepRunAndResultDTO"
+                    "$ref": "#/components/schemas/StepRunDTO"
                   }
                 }
               },
@@ -229,7 +229,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/StepRunAndResultDTO"
+                    "$ref": "#/components/schemas/StepRunDTO"
                   }
                 }
               }
@@ -241,6 +241,20 @@
   },
   "components": {
     "schemas": {
+      "ExceptionDTO": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "stackTrace": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "StepDTO": {
         "type": "object",
         "properties": {
@@ -269,18 +283,6 @@
         },
         "additionalProperties": false
       },
-      "StepRunAndResultDTO": {
-        "type": "object",
-        "properties": {
-          "stepRun": {
-            "$ref": "#/components/schemas/StepRunDTO"
-          },
-          "result": {
-            "$ref": "#/components/schemas/VariableDTO"
-          }
-        },
-        "additionalProperties": false
-      },
       "StepRunDTO": {
         "type": "object",
         "properties": {
@@ -297,6 +299,16 @@
           "generation": {
             "type": "integer",
             "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "result": {
+            "$ref": "#/components/schemas/VariableDTO"
+          },
+          "exception": {
+            "$ref": "#/components/schemas/ExceptionDTO"
           }
         },
         "additionalProperties": false
