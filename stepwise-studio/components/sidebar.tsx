@@ -27,7 +27,7 @@ interface SidebarProps {
     user: string;
     version: string;
     workflows: WorkflowData[];
-    selectedWorkflow: WorkflowData | null;
+    selectedWorkflow?: WorkflowData;
     onWorkflowSelect: (workflow: WorkflowData) => void;
 }
 
@@ -48,10 +48,6 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
             props.onWorkflowSelect(selectedWorkflow);
         }
     }, [selectedWorkflow]);
-
-    const selectWorkflowHander = (workflow: WorkflowData) => {
-        setSelectedWorkflow(workflow);
-    }
 
     return (
         <div className="flex flex-col h-screen p-4 shadow-xl bg-background">
