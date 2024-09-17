@@ -1,7 +1,7 @@
 import Image from "next/image";
 import localFont from "next/font/local";
 import Sidebar from "@/components/sidebar";
-import { client, getApiV1StepWiseControllerV1ListWorkflow, getApiV1StepWiseControllerV1Version, postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunAndResultDTO, WorkflowDTO } from "@/stepwise-client";
+import { client, getApiV1StepWiseControllerV1ListWorkflow, getApiV1StepWiseControllerV1Version, postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunDTO, WorkflowDTO } from "@/stepwise-client";
 import ReactFlow, {
   Background,
   Controls,
@@ -96,94 +96,6 @@ const dummyWorkflow: WorkflowDTO = {
   ],
 }
 
-const dummyCompletedStepRuns: StepRunAndResultDTO[] = [
-  {
-    stepRun: {
-      step: {
-        name: "A",
-        description: "First step of the workflow",
-      },
-      variables: [
-        {
-          name: "A",
-          type: "number",
-          displayValue: "1",
-        },
-      ],
-      generation: 0,
-    },
-    result: {
-      name: "A",
-      type: "number",
-      displayValue: "1",
-      generation: 0,
-    },
-  },
-  {
-    stepRun: {
-      step: {
-        name: "B",
-        description: "Second step of the workflow",
-        dependencies: ["A"],
-        variables: ["A"],
-      },
-      variables: [
-        {
-          name: "A",
-          type: "number",
-          displayValue: "1",
-        },
-        {
-          name: "B",
-          type: "number",
-          displayValue: "2",
-        },
-      ],
-      generation: 1,
-    },
-    result: {
-      name: "B",
-      type: "number",
-      displayValue: "2",
-      generation: 1,
-    },
-  },
-  {
-    stepRun: {
-      step: {
-        name: "C",
-        description: "Final step of the workflow",
-        dependencies: ["A", "B"],
-        variables: ["A", "B"],
-      },
-      variables: [
-        {
-          name: "A",
-          type: "number",
-          displayValue: "1",
-        },
-        {
-          name: "B",
-          type: "number",
-          displayValue: "2",
-        },
-        {
-          name: "C",
-          type: "number",
-          displayValue: "3",
-        },
-      ],
-      generation: 2,
-    },
-    result: {
-      name: "C",
-      type: "number",
-      displayValue: "3",
-      generation: 2,
-    },
-  },
-];
-
 // if env is development, use the local server
 if (process.env.NODE_ENV === 'development') {
   const originalConfig = client.getConfig();
@@ -195,9 +107,9 @@ if (process.env.NODE_ENV === 'development') {
 
 
 export default function Home() {
-  const [completedStepRuns, setCompletedStepRuns] = useState<Map<string, StepRunAndResultDTO[]>>(new Map());
+  const [completedStepRuns, setCompletedStepRuns] = useState<Map<string, StepRunDTO[]>>(new Map());
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowDTO | undefined>(undefined);
-  const [selectedCompletedStepRuns, setSelectedCompletedStepRuns] = useState<StepRunAndResultDTO[]>([]);
+  const [selectedCompletedStepRuns, setSelectedCompletedStepRuns] = useState<StepRunDTO[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowDTO[]>([]);
   const [version, setVersion] = useState<string | null>(null);
 
@@ -206,7 +118,7 @@ export default function Home() {
       .then((res) => {
         console.log("Got workflows: ", res.data);
         setWorkflows([...res.data ?? []]);
-        var maps = new Map<string, StepRunAndResultDTO[]>();
+        var maps = new Map<string, StepRunDTO[]>();
         res.data?.forEach((workflow) => {
           if (workflow.name === null || workflow.name === undefined) {
             return;
