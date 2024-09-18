@@ -37,7 +37,7 @@
             "article/**/toc.yml",
             "toc.yml",
             "**/toc.yml",
-            "get_start/**.md",
+            "getting_start/**.md",
             "release_notes/**.md",
             "*.md"
           ]
@@ -51,6 +51,12 @@
         }
       ],
       "resource": [
+        {
+          "files": [
+            "image/**.*",
+            "asset/**.*"
+          ]
+        },
         {
           "files": [
             "favicon.ico"
