@@ -25,14 +25,6 @@ var helloWorldWorkflow = Workflow.CreateFromInstance(new HelloWorld());
 var loopWorkflow = Workflow.CreateFromInstance(new Loop());
 var cumulativeWorkflow = Workflow.CreateFromInstance(new Cumulative());
 
-var prepareDinner = new PrepareDinner();
-var engine = StepWiseEngine.CreateFromInstance(prepareDinner, maxConcurrency: 5);
-
-await foreach (var result in engine.ExecuteAsync(nameof(PrepareDinner.ServeDinner)))
-{
-    Console.WriteLine(result);
-}
-
 stepWiseClient.AddWorkflow(helloWorldWorkflow);
 stepWiseClient.AddWorkflow(loopWorkflow);
 stepWiseClient.AddWorkflow(cumulativeWorkflow);
