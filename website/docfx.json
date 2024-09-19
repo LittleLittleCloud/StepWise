@@ -38,6 +38,7 @@
             "toc.yml",
             "**/toc.yml",
             "getting_start/**.md",
+            "getting_start/**.yml",
             "release_notes/**.md",
             "*.md"
           ]
