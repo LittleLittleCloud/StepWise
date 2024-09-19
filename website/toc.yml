@@ -6,3 +6,6 @@
   
 - name: Release Notes
   href: release_notes/
+
+- name: Gallery
+  href: getting_start/gallery.yml

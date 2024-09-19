@@ -1,0 +1,30 @@
+﻿### YamlMime:Dashboard
+---
+documentType: dashboard
+contributionLink: https://github.com/LittleLittleCloud/StepWise/edit/main/website/getting_start/gallery.yml
+items:
+  - name: Hello World
+    description: A stepwise workflow that prints "Hello World".
+    type: Internal
+    thumbnail: ../image/gallery-hello-world.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/HelloWorld.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/HelloWorld.cs"
+  - name: Cumulative
+    description: A cumulative workflow.
+    type: Internal
+    thumbnail: ../image/gallery-cumulative.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Cumulative.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Cumulative.cs"
+
+  - name: Prepare Dinner
+    description: A stepwise workflow that prepares dinner in parallel.
+    type: Internal
+    thumbnail: ../image/gallery-prepare-dinner.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/PrepareDinner.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/PrepareDinner.cs"

@@ -12,6 +12,9 @@
 - name: Publish Workflow
   href: publish-workflow.md
 
+- name: Gallery
+  href: gallery.yml
+
 - name: Further Reading
 - name: Deep Dive to Stepwise Engine
   href: deep_dive_to_stepwise_engine.md
