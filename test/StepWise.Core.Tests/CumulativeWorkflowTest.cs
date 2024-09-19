@@ -138,6 +138,46 @@ public class CumulativeWorkflowTest
     }
 
     [Fact]
+    public async Task ItShouldReturnMissingInputWhenRunStepCAsync()
+    {
+        // when preparing input parameter for C, the generation of b must be newer than a
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var inputs = new[]
+        {
+            StepVariable.Create(nameof(A), "a", generation: 2),
+            StepVariable.Create(nameof(B), "b", generation: 1),
+        };
+
+        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(C), inputs).ToBlockingEnumerable().ToList();
+
+        completedSteps.Count().Should().Be(1);
+        completedSteps[0].StepName.Should().Be(nameof(C));
+        completedSteps[0].Status.Should().Be(StepStatus.MissingInput);
+    }
+
+    [Fact]
+    public async Task ItShouldCompleteStepCAsync()
+    {
+        // when preparing input parameter for C, the generation of b must be newer than a
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var inputs = new[]
+        {
+            StepVariable.Create(nameof(A), "a", generation: 1),
+            StepVariable.Create(nameof(B), "b", generation: 2),
+        };
+
+        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(C), inputs).ToBlockingEnumerable().ToList();
+
+        completedSteps.Count().Should().Be(3);
+        completedSteps[0].StepName.Should().Be(nameof(C));
+        completedSteps[0].Status.Should().Be(StepStatus.Queue);
+        completedSteps[1].Status.Should().Be(StepStatus.Running);
+        completedSteps[2].Status.Should().Be(StepStatus.Completed);
+        completedSteps[2].Result!.As<string>().Should().Be("c");
+        completedSteps[2].Generation.Should().Be(3);
+    }
+
+    [Fact]
     public async Task ItShouldCompleteStepAAsync()
     {
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
