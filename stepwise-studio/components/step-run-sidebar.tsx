@@ -29,8 +29,8 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 
     return (
         <div className="flex w-full flex-col gap-2 p-2 bg-accent rounded-lg">
-            <div className="flex justify-between gap-2 flex-col">
-                <div className="flex items-center">
+            <div className="flex justify-between flex-wrap  gap-2">
+                <div className="flex items-center gap-2">
                     <div
                         className={cn(buttonVariants(
                             {
@@ -42,9 +42,11 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
                         <SquareFunction size={16} />
                     </div>
                     <span className="text-xs">{stepRun?.step?.name}</span>
+
                 </div>
-                <div className='flex gap-2' >
-                    
+
+                <div className='flex flex-nowrap gap-2' >
+
                     <Badge
                         variant="green"
                         size={"sm"}
