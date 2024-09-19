@@ -83,7 +83,7 @@ const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
     }, [props.stepRuns]);
 
     return (
-        <div className="flex flex-col w-80 h-screen h-max-screen p-4 shadow-xl bg-background rounded-lg overflow-y-auto">
+        <div className="flex flex-col h-screen h-max-screen p-4 shadow-xl bg-background rounded-lg overflow-y-auto">
             {/* top bar */}
             <span className="text-x font-bold text-nowrap">StepRun</span>
             {/* stepRuns */}

@@ -17,6 +17,12 @@ import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
 import { getLayoutedElements } from "@/lib/utils";
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -196,15 +202,28 @@ export default function Home() {
         workflows={workflows}
         selectedWorkflow={selectedWorkflow}
         onWorkflowSelect={selectedWorkflowHandler} />
-      <div className="flex flex-col items-center gap-8 w-full h-screen">
-        <Workflow
-          dto={selectedWorkflow}
-          onStepNodeRunClick={StepNodeRunClick}
-          onResetStepRunResult={onResetStepRunResult}
-          onWorkflowChange={(workflowData) => setSelectedWorkflow(workflowData)}
-        />
-      </div>
-      <StepRunSidebar stepRuns={selectedCompletedStepRuns} />
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="flex w-full h-screen"
+        >
+          <ResizablePanel>
+            <div className="flex flex-col items-center gap-8 h-screen">
+              <Workflow
+                dto={selectedWorkflow}
+                onStepNodeRunClick={StepNodeRunClick}
+                onResetStepRunResult={onResetStepRunResult}
+                onWorkflowChange={(workflowData) => setSelectedWorkflow(workflowData)}
+              />
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle={true} />
+          <ResizablePanel
+            defaultSize={20}
+            minSize={20}
+            >
+            <StepRunSidebar stepRuns={selectedCompletedStepRuns} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
     </div>
   );
 }
