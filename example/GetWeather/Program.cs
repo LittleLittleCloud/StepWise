@@ -11,7 +11,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
 });
 
 var getWeather = new Workflow();
-var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<StepWiseEngine>());
+var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger<StepWiseEngine>());
 
 StepVariable[] input =
 [

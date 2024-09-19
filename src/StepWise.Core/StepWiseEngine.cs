@@ -14,24 +14,25 @@ public class StepWiseEngine : IStepWiseEngine
 {
     private readonly Workflow _workflow;
     private readonly ILogger? _logger = null;
-    private readonly int _maxConcurrency = 1;
 
-    public StepWiseEngine(Workflow workflow, int maxConcurrency = 1, ILogger? logger = null)
+    public Workflow Workflow => _workflow;
+
+    public StepWiseEngine(Workflow workflow, ILogger? logger = null)
     {
         _workflow = workflow;
         _logger = logger;
-        _maxConcurrency = maxConcurrency;
     }
 
-    public static StepWiseEngine CreateFromInstance(object instance, int maxConcurrency = 1, ILogger? logger = null)
+    public static StepWiseEngine CreateFromInstance(object instance, ILogger? logger = null)
     {
         var workflow = Workflow.CreateFromInstance(instance);
-        return new StepWiseEngine(workflow, maxConcurrency, logger);
+        return new StepWiseEngine(workflow, logger);
     }
 
     public async IAsyncEnumerable<StepRun> ExecuteAsync(
         string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
+        int maxConcurrency = 1,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         [EnumeratorCancellation]
         CancellationToken ct = default)
@@ -42,7 +43,7 @@ public class StepWiseEngine : IStepWiseEngine
 
         var step = targetStep != null ? _workflow.Steps[targetStep] : null;
         var stepResults = new List<StepRun>();
-        await foreach (var stepRun in ExecuteStepAsync(step, inputs, ct))
+        await foreach (var stepRun in ExecuteStepAsync(step, inputs, maxConcurrency, ct))
         {
             yield return stepRun;
 
@@ -96,13 +97,26 @@ public class StepWiseEngine : IStepWiseEngine
         return executionPlan;
     }
 
-    private async IAsyncEnumerable<StepRun> ExecuteStepAsync(
+    private IAsyncEnumerable<StepRun> ExecuteStepAsync(
         Step? step,
         IEnumerable<StepVariable> inputs,
+        int maxConcurrency = 1,
+        CancellationToken ct = default)
+    {
+        var steps = step != null ? this.ResolveDependencies(step.Name) : _workflow.Steps.Values.ToList();
+
+        return ExecuteStepsAsync(steps, inputs, maxConcurrency, ct);
+    }
+
+    private async IAsyncEnumerable<StepRun> ExecuteStepsAsync(
+        IEnumerable<Step> steps,
+        IEnumerable<StepVariable> inputs,
+        int maxConcurrency = 1,
         [EnumeratorCancellation]
         CancellationToken ct = default)
     {
         int _busyTaskRunners = 0;
+        int generation = 0;
         var _context = new ConcurrentDictionary<string, StepVariable>();
         using var _stepsTaskQueue = new BlockingCollection<StepRun>();
         using var _stepResultQueue = new BlockingCollection<StepRun>();
@@ -120,8 +134,12 @@ public class StepWiseEngine : IStepWiseEngine
         }
 
         // produce initial steps
-        var steps = step != null ? this.ResolveDependencies(step.Name) : _workflow.Steps.Values.ToList();
         var currentContext = _context.ToDictionary(x => x.Key, x => x.Value);
+        generation = currentContext switch
+        {
+            { Count: > 0 } => currentContext.Values.Max(x => x.Generation) + 1,
+            _ => 0
+        };
         foreach (var s in steps)
         {
             // continue if step's name already exists in the context
@@ -133,22 +151,29 @@ public class StepWiseEngine : IStepWiseEngine
             if (s.IsExecuctionConditionSatisfied(currentContext))
             {
                 _logger?.LogInformation($"Adding initial step '{s.Name}' to the task queue.");
-                var stepRun = StepRun.Create(s, 0, currentContext);
+                var stepRun = StepRun.Create(s, generation, currentContext);
                 _stepsTaskQueue.Add(stepRun);
+                _stepResultQueue.Add(stepRun);
+                generation++;
+            }
+            else
+            {
+                _logger?.LogInformation($"Skipping adding initial step '{s.Name}' to the task queue because the execution condition is not satisfied.");
+                var stepRun = StepRun.Create(s, 0, currentContext).ToMissingInput();
                 _stepResultQueue.Add(stepRun);
             }
         }
 
-        if (_stepsTaskQueue.Count == 0)
+        if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0)
         {
             _logger?.LogInformation($"No steps to execute. Exiting.");
             yield break;
         }
 
-        _logger?.LogInformation($"Starting the workflow engine with max concurrency {_maxConcurrency}.");
+        _logger?.LogInformation($"Starting the workflow engine with max concurrency {maxConcurrency}.");
 
         // execute steps
-        var executeStepTask = Task.WhenAll(Enumerable.Range(0, _maxConcurrency).Select(i =>
+        var executeStepTask = Task.WhenAll(Enumerable.Range(0, maxConcurrency).Select(i =>
         {
             return Task.Run(async () =>
             {
@@ -157,6 +182,7 @@ public class StepWiseEngine : IStepWiseEngine
                     try
                     {
                         Interlocked.Increment(ref _busyTaskRunners);
+                        _logger?.LogInformation($"Runner {i} is executing {stepRun}. busy task runners: {_busyTaskRunners}");
                         await ExecuteSingleStepAsync(i, stepRun, _stepsTaskQueue, _context, _stepResultQueue, ct);
                     }
                     finally
@@ -167,97 +193,83 @@ public class StepWiseEngine : IStepWiseEngine
             });
         }));
 
-        foreach (var stepRun in _stepResultQueue.GetConsumingEnumerable(ct))
+        while (true)
         {
-            yield return stepRun;
-
-            if (stepRun.Status != StepStatus.Completed)
+            if (_stepResultQueue.TryTake(out var stepRun, 1000, ct))
             {
-                continue;
-            }
-
-            var res = stepRun.Result;
-            if (res != null)
-            {
-                _logger?.LogInformation($"Updating context with the {stepRun}");
-                _context[stepRun.Step.Name] = res;
-
-                var dependSteps = _workflow.GetAllDependSteps(stepRun.Step);
-
-                // remove the variables that depend on the current step
-                var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
-                var contextGeneration = Math.Max(stepRun.Generation + 1, filteredContext.Max(kv => kv.Value.Generation) + 1);
-
-                // update task queue with the next steps
-                // find all steps that takes the result as input
-                var nextSteps = _workflow.Steps.Values.Where(x => x.InputParameters.Any(p => p.SourceStep == stepRun.Step.Name)).ToList();
-                var stepsToAdd = new List<StepRun>();
-                foreach (var nextStep in nextSteps)
+                yield return stepRun;
+                if (stepRun.Status == StepStatus.Completed && stepRun.Result is StepVariable res)
                 {
-                    var nextStepRun = StepRun.Create(nextStep, contextGeneration, filteredContext);
-                    if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
+                    _logger?.LogInformation($"Updating context with the {stepRun}");
+                    _context[stepRun.Step.Name] = res;
+
+                    var dependSteps = _workflow.GetAllDependSteps(stepRun.Step);
+
+                    // remove the variables that depend on the current step
+                    var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
+
+                    // update task queue with the next steps
+                    // find all steps that takes the result as input
+                    var nextSteps = _workflow.Steps.Values.Where(x => x.InputParameters.Any(p => p.SourceStep == stepRun.Step.Name)).ToList();
+                    var stepsToAdd = new List<StepRun>();
+                    foreach (var nextStep in nextSteps)
                     {
-                        // log filter context
-                        foreach (var kv in filteredContext)
+                        generation += 1;
+
+                        var nextStepRun = StepRun.Create(nextStep, generation, filteredContext);
+
+                        if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
                         {
-                            _logger?.LogInformation($"Filtered context: {kv.Key}[{kv.Value.Generation}]");
+                            // log filter context
+                            foreach (var kv in filteredContext)
+                            {
+                                _logger?.LogInformation($"Filtered context: {kv.Key}[{kv.Value.Generation}]");
+                            }
+
+                            _logger?.LogInformation($"Skipping adding {nextStepRun} because of missing prerequisites.");
+
+                            var missingDependencyRun = nextStepRun.ToMissingInput();
+                            _stepResultQueue.Add(missingDependencyRun);
+                            continue;
                         }
 
-                        _logger?.LogInformation($"Skipping adding {nextStepRun} because of missing prerequisites.");
-                        continue;
+                        stepsToAdd.Add(nextStepRun);
                     }
 
-                    // check if the step has already been executed
-                    if (_context.TryGetValue(nextStep.Name, out var nextValue) && nextValue.Generation >= contextGeneration)
+                    if (stepsToAdd.Count > 0)
                     {
-                        _logger?.LogInformation($"Skipping {nextStepRun} has already been executed.");
-                        continue;
+                        // if contains self-loop (stepsToAdd contains the current step), move that step to the end
+                        if (stepsToAdd.Any(x => x.Step.Name == stepRun.Step.Name))
+                        {
+                            var selfLoopStep = stepsToAdd.First(x => x.Step.Name == stepRun.Step.Name);
+                            stepsToAdd.Remove(selfLoopStep);
+                            stepsToAdd.Add(selfLoopStep);
+                        }
+
+                        foreach (var s in stepsToAdd)
+                        {
+                            _logger?.LogInformation($"Adding {s} to the task queue.");
+                            _stepsTaskQueue.Add(s);
+                            _stepResultQueue.Add(s);
+                        }
                     }
-
-                    stepsToAdd.Add(nextStepRun);
-                }
-
-                if (stepsToAdd.Count > 0)
-                {
-                    // if contains self-loop (stepsToAdd contains the current step), move that step to the end
-                    if (stepsToAdd.Any(x => x.Step.Name == stepRun.Step.Name))
+                    else
                     {
-                        var selfLoopStep = stepsToAdd.First(x => x.Step.Name == stepRun.Step.Name);
-                        stepsToAdd.Remove(selfLoopStep);
-                        stepsToAdd.Add(selfLoopStep);
-                    }
-
-                    foreach (var s in stepsToAdd)
-                    {
-                        _logger?.LogInformation($"Adding {s} to the task queue.");
-                        _stepsTaskQueue.Add(s);
-                        _stepResultQueue.Add(s);
-                    }
-                }
-                else
-                {
-                    _logger?.LogInformation($"No steps to add to the task queue.");
-
-                    // check if the task queue is empty and there is no busy task runner
-                    if (_stepsTaskQueue.Count == 0 && _busyTaskRunners == 0 && _stepResultQueue.Count == 0)
-                    {
-                        _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
-                        _stepsTaskQueue.CompleteAdding();
-                        _stepResultQueue.CompleteAdding();
+                        _logger?.LogInformation($"No steps to add to the task queue.");
                     }
                 }
             }
-            else
+            else if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
             {
-                if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
-                {
-                    _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
+                _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
 
-                    _stepsTaskQueue.CompleteAdding();
-                    _stepResultQueue.CompleteAdding();
-                }
+                _stepsTaskQueue.CompleteAdding();
+                _stepResultQueue.CompleteAdding();
+
+                break;
             }
         }
+
 
         _logger?.LogInformation($"Workflow engine has completed.");
         _stepsTaskQueue.CompleteAdding();
@@ -288,10 +300,10 @@ public class StepWiseEngine : IStepWiseEngine
             // the step.ExecuteAsync will short-circuit if the dependencies are not met
             var runningStep = stepRun.ToRunningStatus();
             _logger?.LogInformation($"[Runner {runnerId}]: Running {runningStep}.");
-            _stepRunQueue.Add(runningStep);
 
             try
             {
+                _stepRunQueue.Add(runningStep);
                 var res = await runningStep.ExecuteAsync(ct);
                 // if res is null, it means the step is not ready to run, or not producing any result
                 // maybe the dependencies are not met, maybe the executor function returns null.
@@ -329,4 +341,25 @@ public class StepWiseEngine : IStepWiseEngine
         }
     }
 
+    public async IAsyncEnumerable<StepRun> ExecuteStepsAsync(
+        IEnumerable<Step> steps,
+        IEnumerable<StepVariable>? inputs = null,
+        int maxConcurrency = 1,
+        IStepWiseEngineStopStrategy? stopStrategy = null,
+        [EnumeratorCancellation]
+        CancellationToken ct = default)
+    {
+        inputs ??= [];
+        stopStrategy ??= new NeverStopStopStrategy();
+        await foreach (var stepRun in ExecuteStepsAsync(steps, inputs, maxConcurrency, ct))
+        {
+            yield return stepRun;
+
+            if (stopStrategy.ShouldStop([stepRun]))
+            {
+                _logger?.LogInformation($"Stop strategy '{stopStrategy.Name}' has been triggered when reaching step '{stepRun}'.");
+                break;
+            }
+        }
+    }
 }

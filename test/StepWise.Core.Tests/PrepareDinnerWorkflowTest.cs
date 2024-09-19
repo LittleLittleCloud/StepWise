@@ -65,10 +65,10 @@ public class PrepareDinnerWorkflowTest
     public async Task ItPrepareDinnerConcurrentlyAsync()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new StepWiseEngine(workflow, maxConcurrency: 10);
+        var engine = new StepWiseEngine(workflow);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), [StepVariable.Create(nameof(ChopVegetables), value)]);
+        var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), maxConcurrency: 3, inputs: [StepVariable.Create(nameof(ChopVegetables), value)]);
 
         stopwatch.Stop();
 
@@ -82,7 +82,7 @@ public class PrepareDinnerWorkflowTest
     public async Task ItPrepareDinnerStepByStepAsync()
     {
         var workflow = Workflow.CreateFromInstance(this);
-        var engine = new StepWiseEngine(workflow, maxConcurrency: 1);
+        var engine = new StepWiseEngine(workflow);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = await engine.ExecuteAsync<string>(nameof(ServeDinner), [StepVariable.Create(nameof(ChopVegetables), new string[] { "tomato", "onion", "garlic" })]);

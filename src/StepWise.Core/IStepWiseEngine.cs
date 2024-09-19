@@ -11,8 +11,21 @@ public interface IStepWiseEngine
     IAsyncEnumerable<StepRun> ExecuteAsync(
         string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
+        int maxConcurrency = 1,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Execute the workflow until the stop strategy is satisfied or no further steps can be executed.
+    /// </summary>
+    IAsyncEnumerable<StepRun> ExecuteStepsAsync(
+        IEnumerable<Step> steps,
+        IEnumerable<StepVariable>? inputs = null,
+        int maxConcurrency = 1,
+        IStepWiseEngineStopStrategy? stopStrategy = null,
+        CancellationToken ct = default);
+
+    Workflow Workflow { get; }
 }
 
 public interface IStepWiseEngineStopStrategy

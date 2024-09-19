@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
+using StepWise.Core.Extension;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,11 +34,7 @@ public class CumulativeWorkflowTest
     public CumulativeWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = LoggerFactory.Create(builder =>
-        {
-            builder.AddConsole();
-        })
-            .CreateLogger(nameof(CumulativeWorkflowTest));
+        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(SelfLoopWorkflowTest));
     }
 
     [Step]
@@ -107,7 +104,7 @@ public class CumulativeWorkflowTest
     [Fact]
     public async Task CumulativeWorkflow()
     {
-        var workflowEngine = StepWiseEngine.CreateFromInstance(this, maxConcurrency: 3, _logger);
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
         var completedSteps = new List<string>();
         await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(E)))
         {
@@ -125,5 +122,34 @@ public class CumulativeWorkflowTest
         }
 
         completedSteps.Should().Equal([nameof(A), nameof(B), nameof(C), nameof(D), nameof(E)]);
+    }
+
+    [Fact]
+    public async Task ItShouldReturnMissingInputWhenRunStepEAsync()
+    {
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(E)).ToBlockingEnumerable().ToList();
+
+        completedSteps.Count().Should().Be(1);
+
+        // the first steprun would be E()  missing input
+        completedSteps[0].StepName.Should().Be(nameof(E));
+        completedSteps[0].Status.Should().Be(StepStatus.MissingInput);
+    }
+
+    [Fact]
+    public async Task ItShouldCompleteStepAAsync()
+    {
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(A)).ToBlockingEnumerable().ToList();
+
+        completedSteps.Count().Should().Be(3);
+
+        // the first steprun would be E()  missing input
+        completedSteps[0].StepName.Should().Be(nameof(A));
+        completedSteps[0].Status.Should().Be(StepStatus.Queue);
+        completedSteps[1].Status.Should().Be(StepStatus.Running);
+        completedSteps[2].Status.Should().Be(StepStatus.Completed);
+        completedSteps[2].Result!.As<string>().Should().Be("a");
     }
 }

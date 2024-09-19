@@ -72,7 +72,7 @@ public class SelfLoopWorkflowTest
         var startStep = workflow.Steps[nameof(Start)];
         var dependStartSteps = workflow.GetAllDependSteps(startStep);
         dependStartSteps.Count().Should().Be(2);
-        var engine = new StepWiseEngine(workflow, maxConcurrency: 1, _logger);
+        var engine = new StepWiseEngine(workflow, _logger);
 
         var stepRun = new List<StepRun>();
         await foreach (var stepRunAndResult in engine.ExecuteAsync(nameof(End), maxSteps: 10))

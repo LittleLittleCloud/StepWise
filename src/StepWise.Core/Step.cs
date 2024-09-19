@@ -182,6 +182,7 @@ public class StepVariable
 public enum StepStatus
 {
     Queue,
+    MissingInput,
     Running,
     Completed,
     Failed,
@@ -236,6 +237,16 @@ public class StepRun
         Dictionary<string, StepVariable>? inputs = null)
     {
         return new StepRun(step, generation, inputs ?? new Dictionary<string, StepVariable>());
+    }
+
+    public StepRun ToMissingInput()
+    {
+        if (_status != StepStatus.Queue)
+        {
+            throw new InvalidOperationException("The step is not in the not started status.");
+        }
+
+        return new StepRun(_step, 0, _inputs, StepStatus.MissingInput, _result, _exception);
     }
 
     public StepRun ToRunningStatus()
