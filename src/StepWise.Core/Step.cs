@@ -56,9 +56,13 @@ public class Step
     }
 
     public string Name { get; set; }
+
     public List<Parameter> InputParameters { get; set; }
+
     public Type OutputType { get; set; }
+
     public List<string> Dependencies { get; set; }
+
     public Delegate StepMethod { get; set; }
 
     public string Description { get; set; }
