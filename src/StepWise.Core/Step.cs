@@ -56,14 +56,18 @@ public class Step
     }
 
     public string Name { get; set; }
+
     public List<Parameter> InputParameters { get; set; }
+
     public Type OutputType { get; set; }
+
     public List<string> Dependencies { get; set; }
+
     public Delegate StepMethod { get; set; }
 
     public string Description { get; set; }
 
-    public bool IsExecuctionConditionSatisfied(Dictionary<string, StepVariable> inputs)
+    public bool IsExecuctionConditionSatisfied(IDictionary<string, StepVariable> inputs)
     {
         foreach (var param in InputParameters)
         {
@@ -133,12 +137,21 @@ public class Step
         // execute the step method
         var result = StepMethod.DynamicInvoke(parameters) ?? throw new InvalidOperationException("The step method must return a value.");
 
+        // if the output type is Task, await and return null
+        if (OutputType == typeof(Task))
+        {
+            await (Task)result;
+            return null;
+        }
+
         // if the result is a Task<TResult> then return it
         if (result is Task task)
         {
             await task;
             var property = task.GetType().GetProperty("Result");
-            return property?.GetValue(task);
+            var taskValue = property?.GetValue(task);
+
+            return taskValue;
         }
 
         throw new InvalidOperationException("The step method must return a Task<T>.");
@@ -177,13 +190,20 @@ public class StepVariable
     {
         return (T)Value;
     }
+
+    public override string ToString()
+    {
+        return $"Variable: {Name}[{Generation}]";
+    }
 }
 
-public enum StepStatus
+public enum StepType
 {
     Queue,
+    MissingInput,
     Running,
     Completed,
+    Variable,
     Failed,
 }
 
@@ -193,86 +213,106 @@ public enum StepStatus
 /// </summary>
 public class StepRun
 {
-    private readonly Step _step;
+    private readonly Step? _step;
     private readonly int _generation = 0;
     private readonly Dictionary<string, StepVariable> _inputs = new();
-    private readonly StepStatus _status = StepStatus.Queue;
+    private readonly StepType _stepType = StepType.Queue;
     private readonly StepVariable? _result = null;
     private readonly Exception? _exception = null;
 
     private StepRun(
-        Step step,
+        Step? step,
         int generation,
-        Dictionary<string, StepVariable> inputs,
-        StepStatus status = StepStatus.Queue,
+        Dictionary<string, StepVariable>? inputs,
+        StepType stepType = StepType.Queue,
         StepVariable? result = null,
         Exception? exception = null)
     {
         _step = step;
         _generation = generation;
-        _inputs = inputs;
-        _status = status;
+        _inputs = inputs ?? new Dictionary<string, StepVariable>();
+        _stepType = stepType;
         _result = result;
         _exception = exception;
     }
 
-    public Step Step => _step;
+    public Step? Step => _step;
 
-    public string StepName => _step.Name;
+    public string Name => _step?.Name ?? _result?.Name ?? throw new InvalidOperationException("The step or result is not defined.");
 
     public int Generation => _generation;
 
     public Dictionary<string, StepVariable> Inputs => _inputs;
 
-    public StepVariable? Result => _result;
+    public StepVariable? Variable => _result;
 
     public Exception? Exception => _exception;
 
-    public StepStatus Status => _status;
+    public StepType StepType => _stepType;
 
     public static StepRun Create(
         Step step,
         int generation,
-        Dictionary<string, StepVariable>? inputs = null)
+        IDictionary<string, StepVariable>? inputs = null)
     {
-        return new StepRun(step, generation, inputs ?? new Dictionary<string, StepVariable>());
+        return new StepRun(step, generation, inputs?.ToDictionary(kv => kv.Key, kv => kv.Value) ?? new Dictionary<string, StepVariable>());
     }
 
-    public StepRun ToRunningStatus()
+    public static StepRun CreateVariable(StepVariable variable)
     {
-        if (_status != StepStatus.Queue)
+        return new StepRun(null, variable.Generation, null, StepType.Variable, variable, null);
+    }
+
+    public StepRun ToMissingInput()
+    {
+        if (_stepType != StepType.Queue)
         {
             throw new InvalidOperationException("The step is not in the not started status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepStatus.Running, _result, _exception);
+        return new StepRun(_step, _generation, _inputs, StepType.MissingInput, _result, _exception);
     }
 
-    public StepRun ToCompletedStatus(StepVariable? result = null)
+    public StepRun ToRunningStatus()
     {
-        if (_status != StepStatus.Running)
+        if (_stepType != StepType.Queue)
+        {
+            throw new InvalidOperationException("The step is not in the not started status.");
+        }
+
+        return new StepRun(_step, _generation, _inputs, StepType.Running, _result, _exception);
+    }
+
+    public StepRun ToCompletedStatus()
+    {
+        if (_stepType != StepType.Running)
         {
             throw new InvalidOperationException("The step is not in the running status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepStatus.Completed, result, _exception);
+        return new StepRun(_step, _generation, _inputs, StepType.Completed, _result, _exception);
     }
 
     public StepRun ToFailedStatus(Exception ex)
     {
-        if (_status != StepStatus.Running)
+        if (_stepType != StepType.Running)
         {
             throw new InvalidOperationException("The step is not in the running status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepStatus.Failed, _result, ex);
+        return new StepRun(_step, _generation, _inputs, StepType.Failed, _result, ex);
     }
 
     public Task<object?> ExecuteAsync(CancellationToken ct = default)
     {
-        if (_status != StepStatus.Running)
+        if (_stepType != StepType.Running)
         {
             throw new InvalidOperationException("The step is not in the running status.");
+        }
+
+        if (_step == null)
+        {
+            throw new InvalidOperationException("The step is not defined.");
         }
 
         return _step.ExecuteAsync(_inputs.ToDictionary(kv => kv.Key, kv => kv.Value.Value), ct);
@@ -280,10 +320,15 @@ public class StepRun
 
     public override string ToString()
     {
+        if (this.Step is null && this.StepType == StepType.Variable)
+        {
+            return $"{_result!.Name}[{_result!.Generation}]";
+        }
+
         // format [gen] stepName([gen]input1, [gen]input2, ...)
-        var parameters = this._step.InputParameters.Select(p => p.Name);
+        var parameters = this._step!.InputParameters.Select(p => p.Name);
         var filteredInputs = _inputs.Where(kv => parameters.Contains(kv.Key));
         var inputs = string.Join(", ", filteredInputs.Select(kv => $"{kv.Key}[{_inputs[kv.Key].Generation}]"));
-        return $"{_step.Name}[{_generation}]({inputs})[status: {_status}]";
+        return $"{_step.Name}[{_generation}]({inputs})[status: {_stepType}]";
     }
 }

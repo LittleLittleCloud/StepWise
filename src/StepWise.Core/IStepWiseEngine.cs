@@ -8,11 +8,14 @@ public interface IStepWiseEngine
     /// <summary>
     /// Execute the workflow until the stop strategy is satisfied or no further steps can be executed.
     /// </summary>
-    IAsyncEnumerable<StepRun> ExecuteAsync(
-        string? targetStep = null,
+    IAsyncEnumerable<StepRun> ExecuteStepsAsync(
+        IEnumerable<Step> steps,
         IEnumerable<StepVariable>? inputs = null,
+        int maxConcurrency = 1,
         IStepWiseEngineStopStrategy? stopStrategy = null,
         CancellationToken ct = default);
+
+    Workflow Workflow { get; }
 }
 
 public interface IStepWiseEngineStopStrategy
@@ -69,7 +72,7 @@ public class MaxStepsStopStrategy : IStepWiseEngineStopStrategy
 
     public bool ShouldStop(StepRun[] stepResult)
     {
-        return stepResult.Where(x => x.Status == StepStatus.Completed || x.Status == StepStatus.Failed).Count() >= _maxSteps;
+        return stepResult.Where(x => x.StepType == StepType.Variable || x.StepType == StepType.Failed).Count() >= _maxSteps;
     }
 }
 
@@ -89,7 +92,7 @@ public class EarlyStopStrategy : IStepWiseEngineStopStrategy
 
     public bool ShouldStop(StepRun[] stepResult)
     {
-        return stepResult.Any(x => x.StepName == _targetStep && x.Result != null);
+        return stepResult.Any(x => x.Name == _targetStep && x.Variable != null);
     }
 }
 

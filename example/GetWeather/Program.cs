@@ -4,6 +4,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StepWise.Core;
+using StepWise.Core.Extension;
 
 var loggerFactory = LoggerFactory.Create(builder =>
 {
@@ -11,16 +12,16 @@ var loggerFactory = LoggerFactory.Create(builder =>
 });
 
 var getWeather = new Workflow();
-var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, maxConcurrency: 3, loggerFactory.CreateLogger<StepWiseEngine>());
+var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger<StepWiseEngine>());
 
 StepVariable[] input =
 [
     StepVariable.Create("cities", new string[] { "Seattle", "Redmond" })
 ];
 
-await foreach (var stepRun in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input))
+await foreach (var stepRun in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input, stopStrategy: null))
 {
-    if (stepRun.StepName == nameof(Workflow.GetWeatherAsync) && stepRun.Result?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
+    if (stepRun.Name == nameof(Workflow.GetWeatherAsync) && stepRun.Variable?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
     {
         Console.WriteLine("Weather forecast:");
         foreach (var weather in weathers)

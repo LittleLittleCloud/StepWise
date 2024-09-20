@@ -34,7 +34,7 @@ public record ExceptionDTO(string Message, string? StackTrace)
 }
 
 public record StepRunDTO(
-    StepDTO Step,
+    StepDTO? Step,
     VariableDTO[] Variables,
     int Generation,
     string Status,
@@ -44,9 +44,10 @@ public record StepRunDTO(
     public static StepRunDTO FromStepRun(StepRun stepRun)
     {
         var variables = stepRun.Inputs.Values.Select(VariableDTO.FromVariable).ToArray();
-        var result = stepRun.Result is null ? null : VariableDTO.FromVariable(stepRun.Result);
+        var result = stepRun.Variable is null ? null : VariableDTO.FromVariable(stepRun.Variable);
         var exception = stepRun.Exception is null ? null : ExceptionDTO.FromException(stepRun.Exception);
-        return new StepRunDTO(StepDTO.FromStep(stepRun.Step), variables, stepRun.Generation, Enum.GetName(stepRun.Status)!, result, exception);
+        var stepRunDTO = stepRun.Step is null ? null : StepDTO.FromStep(stepRun.Step);
+        return new StepRunDTO(stepRunDTO, variables, stepRun.Generation, Enum.GetName(stepRun.StepType)!, result, exception);
     }
 }
 

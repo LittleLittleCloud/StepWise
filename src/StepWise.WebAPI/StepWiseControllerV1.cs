@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging;
 using StepWise.Core;
+using StepWise.Core.Extension;
 
 namespace StepWise.WebAPI;
 
@@ -75,7 +76,7 @@ public class StepWiseClient
             yield break;
         }
 
-        var engine = new StepWiseEngine(workflow, maxParallel, logger: _logger);
+        var engine = new StepWiseEngine(workflow, logger: _logger);
 
         var stopStragety = new StopStrategyPipeline();
 
@@ -96,7 +97,7 @@ public class StepWiseClient
         }
 
 
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, stopStrategy: stopStragety))
+        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, maxConcurrency: maxParallel, stopStrategy: stopStragety))
         {
             yield return stepRunAndResult;
         }

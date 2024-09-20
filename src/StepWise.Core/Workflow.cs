@@ -63,7 +63,7 @@ public class Workflow
     /// <summary>
     /// Get all steps that depend on the given step.
     /// </summary>
-    public Step[] GetAllDependSteps(Step step)
+    public IEnumerable<Step> GetAllDependSteps(Step step)
     {
         var visited = new HashSet<string>();
         var dependSteps = new List<Step>();
@@ -89,7 +89,45 @@ public class Workflow
 
         BFS(step);
 
-        return dependSteps.Where(s => s != step).ToArray();
+        return dependSteps.Where(s => s != step);
+    }
+
+    public List<Step> ResolveDependencies(string targetStepName)
+    {
+        var executionPlan = new List<Step>();
+        var visited = new HashSet<string>();
+        var visiting = new HashSet<string>();
+
+        void DFS(Step step)
+        {
+            if (visited.Contains(step.Name))
+            {
+                return;
+            }
+
+            if (visiting.Contains(step.Name))
+            {
+                throw new Exception($"Circular dependency detected in step '{step.Name}'.");
+            }
+
+            visiting.Add(step.Name);
+
+            foreach (var dependency in step.Dependencies)
+            {
+                var dependencyStep = this.Steps[dependency] ?? throw new Exception($"Dependency '{dependency}' not found in the workflow.");
+                DFS(dependencyStep);
+            }
+
+            visiting.Remove(step.Name);
+            visited.Add(step.Name);
+            executionPlan.Add(step);
+        }
+
+        var targetStep = this.Steps[targetStepName] ?? throw new Exception($"Step '{targetStepName}' not found in the workflow.");
+
+        DFS(targetStep);
+
+        return executionPlan;
     }
 
     /// <summary>
