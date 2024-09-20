@@ -1,0 +1,21 @@
+- name: Home
+  href: ../index.md
+
+- name: Installation
+  href: installation.md
+
+- name: Getting Started
+- name: Define Workflow
+  href: define-workflow.md
+- name: Visualize and Run Workflow
+  href: visualize-and-run-workflow.md
+- name: Publish Workflow
+  href: publish-workflow.md
+
+- name: Gallery
+  href: gallery.yml
+
+- name: Further Reading
+- name: Deep Dive to Stepwise Engine
+  href: deep_dive_to_stepwise_engine.md
+  

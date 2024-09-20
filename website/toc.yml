@@ -1,3 +1,5 @@
+- name: Home
+  href: getting_start/
 
 - name: API Reference
   href: api/
@@ -5,5 +7,5 @@
 - name: Release Notes
   href: release_notes/
 
-- name: Article
-  href: article/
+- name: Gallery
+  href: getting_start/gallery.yml
