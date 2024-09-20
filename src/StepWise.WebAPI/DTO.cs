@@ -44,7 +44,7 @@ public record StepRunDTO(
     public static StepRunDTO FromStepRun(StepRun stepRun)
     {
         var variables = stepRun.Inputs.Values.Select(VariableDTO.FromVariable).ToArray();
-        var result = stepRun.Result is null ? null : VariableDTO.FromVariable(stepRun.Result);
+        var result = stepRun.Variable is null ? null : VariableDTO.FromVariable(stepRun.Variable);
         var exception = stepRun.Exception is null ? null : ExceptionDTO.FromException(stepRun.Exception);
         return new StepRunDTO(StepDTO.FromStep(stepRun.Step), variables, stepRun.Generation, Enum.GetName(stepRun.Status)!, result, exception);
     }

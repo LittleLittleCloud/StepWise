@@ -77,7 +77,7 @@ public class SelfLoopWorkflowTest
         var stepRun = new List<StepRun>();
         await foreach (var stepRunAndResult in engine.ExecuteAsync(nameof(End), maxSteps: 10))
         {
-            if (stepRunAndResult.Result != null)
+            if (stepRunAndResult.Variable != null)
             {
                 stepRun.Add(stepRunAndResult);
             }
@@ -93,22 +93,22 @@ public class SelfLoopWorkflowTest
 
         stepRun.Should().HaveCount(6);
 
-        stepRun[0].StepName.Should().Be(nameof(Start));
-        stepRun[0].Result!.As<int>().Should().Be(1);
+        stepRun[0].Name.Should().Be(nameof(Start));
+        stepRun[0].Variable!.As<int>().Should().Be(1);
 
-        stepRun[1].StepName.Should().Be(nameof(AddNumberByOne));
-        stepRun[1].Result!.As<int>().Should().Be(2);
+        stepRun[1].Name.Should().Be(nameof(AddNumberByOne));
+        stepRun[1].Variable!.As<int>().Should().Be(2);
 
-        stepRun[2].StepName.Should().Be(nameof(AddNumberByOne));
-        stepRun[2].Result!.As<int>().Should().Be(3);
+        stepRun[2].Name.Should().Be(nameof(AddNumberByOne));
+        stepRun[2].Variable!.As<int>().Should().Be(3);
 
-        stepRun[3].StepName.Should().Be(nameof(AddNumberByOne));
-        stepRun[3].Result!.As<int>().Should().Be(4);
+        stepRun[3].Name.Should().Be(nameof(AddNumberByOne));
+        stepRun[3].Variable!.As<int>().Should().Be(4);
 
-        stepRun[4].StepName.Should().Be(nameof(AddNumberByOne));
-        stepRun[4].Result!.As<int>().Should().Be(5);
+        stepRun[4].Name.Should().Be(nameof(AddNumberByOne));
+        stepRun[4].Variable!.As<int>().Should().Be(5);
 
-        stepRun[5].StepName.Should().Be(nameof(End));
-        stepRun[5].Result!.As<string>().Should().Be("Done!");
+        stepRun[5].Name.Should().Be(nameof(End));
+        stepRun[5].Variable!.As<string>().Should().Be("Done!");
     }
 }

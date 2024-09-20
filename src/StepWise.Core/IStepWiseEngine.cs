@@ -82,7 +82,7 @@ public class MaxStepsStopStrategy : IStepWiseEngineStopStrategy
 
     public bool ShouldStop(StepRun[] stepResult)
     {
-        return stepResult.Where(x => x.Status == StepStatus.Completed || x.Status == StepStatus.Failed).Count() >= _maxSteps;
+        return stepResult.Where(x => x.Status == StepStatus.Variable || x.Status == StepStatus.Failed).Count() >= _maxSteps;
     }
 }
 
@@ -102,7 +102,7 @@ public class EarlyStopStrategy : IStepWiseEngineStopStrategy
 
     public bool ShouldStop(StepRun[] stepResult)
     {
-        return stepResult.Any(x => x.StepName == _targetStep && x.Result != null);
+        return stepResult.Any(x => x.Name == _targetStep && x.Variable != null);
     }
 }
 

@@ -47,7 +47,7 @@ await foreach (var stepRun in engine.ExecuteAsync(nameof(Workflow.GenerateReply)
 {
     Console.WriteLine(stepRun);
 
-    if (stepRun.StepName == nameof(Workflow.GenerateReply) && stepRun.Status == StepStatus.Completed && stepRun.Result?.As<string>() is string reply)
+    if (stepRun.Name == nameof(Workflow.GenerateReply) && stepRun.Status == StepStatus.Completed && stepRun.Variable?.As<string>() is string reply)
     {
         Console.WriteLine($"Final Reply: {reply}");
         break;

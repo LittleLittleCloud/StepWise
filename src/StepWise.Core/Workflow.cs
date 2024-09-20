@@ -63,7 +63,7 @@ public class Workflow
     /// <summary>
     /// Get all steps that depend on the given step.
     /// </summary>
-    public Step[] GetAllDependSteps(Step step)
+    public IEnumerable<Step> GetAllDependSteps(Step step)
     {
         var visited = new HashSet<string>();
         var dependSteps = new List<Step>();
@@ -89,7 +89,7 @@ public class Workflow
 
         BFS(step);
 
-        return dependSteps.Where(s => s != step).ToArray();
+        return dependSteps.Where(s => s != step);
     }
 
     /// <summary>

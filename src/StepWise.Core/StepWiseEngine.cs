@@ -117,41 +117,29 @@ public class StepWiseEngine : IStepWiseEngine
     {
         int _busyTaskRunners = 0;
         int generation = 0;
-        var _context = new ConcurrentDictionary<string, StepVariable>();
+        var context = new ConcurrentDictionary<string, StepVariable>();
         using var _stepsTaskQueue = new BlockingCollection<StepRun>();
         using var _stepResultQueue = new BlockingCollection<StepRun>();
 
-        // add inputs to context
+        // add inputs to stepResultQueue as StepRun.Variable
         foreach (var input in inputs)
         {
-            if (_context.TryGetValue(input.Name, out var value) && value.Generation > input.Generation)
-            {
-                _logger?.LogInformation($"Skipping adding input '{input.Name}' to the context because a newer version already exists.");
-                continue;
-            }
-
-            _context[input.Name] = input;
+            var stepRun = StepRun.CreateVariable(input);
+            _stepResultQueue.Add(stepRun);
         }
 
-        // produce initial steps
-        var currentContext = _context.ToDictionary(x => x.Key, x => x.Value);
-        generation = currentContext switch
-        {
-            { Count: > 0 } => currentContext.Values.Max(x => x.Generation) + 1,
-            _ => 0
-        };
         foreach (var s in steps)
         {
             // continue if step's name already exists in the context
-            if (_context.ContainsKey(s.Name))
+            if (context.ContainsKey(s.Name))
             {
                 continue;
             }
 
-            if (s.IsExecuctionConditionSatisfied(currentContext))
+            if (s.IsExecuctionConditionSatisfied(context))
             {
                 _logger?.LogInformation($"Adding initial step '{s.Name}' to the task queue.");
-                var stepRun = StepRun.Create(s, generation, currentContext);
+                var stepRun = StepRun.Create(s, generation, context);
                 _stepsTaskQueue.Add(stepRun);
                 _stepResultQueue.Add(stepRun);
                 generation++;
@@ -159,16 +147,29 @@ public class StepWiseEngine : IStepWiseEngine
             else
             {
                 _logger?.LogInformation($"Skipping adding initial step '{s.Name}' to the task queue because the execution condition is not satisfied.");
-                var stepRun = StepRun.Create(s, 0, currentContext).ToMissingInput();
+                var stepRun = StepRun.Create(s, 0, context).ToMissingInput();
                 _stepResultQueue.Add(stepRun);
             }
         }
+
+        // add inputs to context
+        //foreach (var input in inputs)
+        //{
+        //    if (context.TryGetValue(input.Name, out var value) && value.Generation > input.Generation)
+        //    {
+        //        _logger?.LogInformation($"Skipping adding input '{input.Name}' to the context because a newer version already exists.");
+        //        continue;
+        //    }
+
+        //    context[input.Name] = input;
+        //}
 
         if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0)
         {
             _logger?.LogInformation($"No steps to execute. Exiting.");
             yield break;
         }
+
 
         _logger?.LogInformation($"Starting the workflow engine with max concurrency {maxConcurrency}.");
 
@@ -183,7 +184,7 @@ public class StepWiseEngine : IStepWiseEngine
                     {
                         Interlocked.Increment(ref _busyTaskRunners);
                         _logger?.LogInformation($"Runner {i} is executing {stepRun}. busy task runners: {_busyTaskRunners}");
-                        await ExecuteSingleStepAsync(i, stepRun, _stepsTaskQueue, _context, _stepResultQueue, ct);
+                        await ExecuteSingleStepAsync(i, stepRun, _stepsTaskQueue, context, _stepResultQueue, ct);
                     }
                     finally
                     {
@@ -197,8 +198,9 @@ public class StepWiseEngine : IStepWiseEngine
         {
             if (_stepResultQueue.TryTake(out var stepRun, 1000, ct))
             {
+                _logger?.LogInformation($"[StepRun Queue]: Receive {stepRun} from the result queue.");
                 yield return stepRun;
-                if (stepRun.Status == StepStatus.Completed && stepRun.Result is StepVariable res)
+                if (stepRun.Status == StepStatus.Variable && stepRun.Variable is StepVariable res && _workflow.Steps.TryGetValue(res.Name, out var step))
                 {
                     // TODO
                     // Add a test to cover this scenario
@@ -206,23 +208,31 @@ public class StepWiseEngine : IStepWiseEngine
                     // step1: MinusOne
                     // step2: SleepInSeconds([FromStep(nameof(MinusOne))] int number)
                     // skip if there is a newer version of the result in the context
-                    if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
+                    if (context.TryGetValue(res.Name, out var value) && value.Generation > res.Generation)
                     {
-                        _logger?.LogInformation($"Skipping updating context with the result of {stepRun} because a newer version already exists.");
+                        _logger?.LogInformation($"[StepRun Queue]: Skipping updating context with the result of {res} because a newer version already exists.");
                         continue;
                     }
-                    
-                    _logger?.LogInformation($"Updating context with the {stepRun}");
-                    _context[stepRun.Step.Name] = res;
+                    _logger?.LogInformation($"[StepRun Queue] Updating context with Variable: {stepRun}");
+                    context[res.Name] = res;
 
-                    var dependSteps = _workflow.GetAllDependSteps(stepRun.Step);
+                    var dependSteps = _workflow.GetAllDependSteps(step);
 
                     // remove the variables that depend on the current step
-                    var filteredContext = _context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
+                    var filteredContext = context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
+
+                    // log filter context
+                    foreach (var kv in filteredContext)
+                    {
+                        _logger?.LogInformation($"[StepRun Queue]: Filtered context: {kv.Key}[{kv.Value.Generation}]");
+                    }
 
                     // update task queue with the next steps
                     // find all steps that takes the result as input
-                    var nextSteps = _workflow.Steps.Values.Where(x => x.InputParameters.Any(p => p.SourceStep == stepRun.Step.Name)).ToList();
+                    var nextSteps = _workflow.Steps.Values
+                            .Where(x => steps.Any(s => s.Name == x.Name))
+                            .Where(x => x.InputParameters.Any(p => p.SourceStep == res.Name));
+
                     var stepsToAdd = new List<StepRun>();
                     foreach (var nextStep in nextSteps)
                     {
@@ -230,15 +240,15 @@ public class StepWiseEngine : IStepWiseEngine
 
                         var nextStepRun = StepRun.Create(nextStep, generation, filteredContext);
 
+                        if (inputs.Any(input => input.Name == nextStepRun.Name! && input.Generation == nextStepRun.Generation))
+                        {
+                            _logger?.LogInformation($"[StepRun Queue]: Skipping adding {nextStepRun} to the task queue because it already exists in the input.");
+                            continue;
+                        }
+
                         if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
                         {
-                            // log filter context
-                            foreach (var kv in filteredContext)
-                            {
-                                _logger?.LogInformation($"Filtered context: {kv.Key}[{kv.Value.Generation}]");
-                            }
-
-                            _logger?.LogInformation($"Skipping adding {nextStepRun} because of missing prerequisites.");
+                            _logger?.LogInformation($"[StepRun Queue]: Skipping adding {nextStepRun} because of missing prerequisites.");
 
                             var missingDependencyRun = nextStepRun.ToMissingInput();
                             _stepResultQueue.Add(missingDependencyRun);
@@ -251,29 +261,29 @@ public class StepWiseEngine : IStepWiseEngine
                     if (stepsToAdd.Count > 0)
                     {
                         // if contains self-loop (stepsToAdd contains the current step), move that step to the end
-                        if (stepsToAdd.Any(x => x.Step.Name == stepRun.Step.Name))
+                        if (stepsToAdd.Any(x => x.Name == stepRun.Name))
                         {
-                            var selfLoopStep = stepsToAdd.First(x => x.Step.Name == stepRun.Step.Name);
+                            var selfLoopStep = stepsToAdd.First(x => x.Name == stepRun.Name);
                             stepsToAdd.Remove(selfLoopStep);
                             stepsToAdd.Add(selfLoopStep);
                         }
 
                         foreach (var s in stepsToAdd)
                         {
-                            _logger?.LogInformation($"Adding {s} to the task queue.");
+                            _logger?.LogInformation($"[StepRun Queue]: Adding {s} to the task queue.");
                             _stepsTaskQueue.Add(s);
                             _stepResultQueue.Add(s);
                         }
                     }
                     else
                     {
-                        _logger?.LogInformation($"No steps to add to the task queue.");
+                        _logger?.LogInformation($"[StepRun Queue]: No steps to add to the task queue.");
                     }
                 }
             }
             else if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
             {
-                _logger?.LogInformation($"The task queue is empty and there is no busy task runner. Exiting.");
+                _logger?.LogInformation($"[StepRun Queue]: The task queue is empty and there is no busy task runner. Exiting.");
 
                 _stepsTaskQueue.CompleteAdding();
                 _stepResultQueue.CompleteAdding();
@@ -300,10 +310,11 @@ public class StepWiseEngine : IStepWiseEngine
         await Task.Yield();
         // scenario 1
         // if the step has already been executed, or there is a newer version of the step in the task queue
-        // throw exception.
-        if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
+        // this could happen when restoring the workflow engine from a previous state
+        // in this case, we can early stop the execution
+        if (_context.TryGetValue(stepRun.Name!, out var value) && value.Generation > stepRun.Generation)
         {
-            throw new Exception($"[Runner {runnerId}]: The step {stepRun} has already been executed with a newer version. This should not happen.");
+            _logger?.LogInformation($"[Runner {runnerId}]: Skipping {stepRun} because a newer version already exists in the context.");
         }
         else
         {
@@ -311,28 +322,22 @@ public class StepWiseEngine : IStepWiseEngine
             // run the step by calling the step.ExecuteAsync method
             // the step.ExecuteAsync will short-circuit if the dependencies are not met
             var runningStep = stepRun.ToRunningStatus();
-            _logger?.LogInformation($"[Runner {runnerId}]: Running {runningStep}.");
+            _logger?.LogInformation($"[Runner {runnerId}]: Running {stepRun}.");
 
             try
             {
                 _stepRunQueue.Add(runningStep);
                 var res = await runningStep.ExecuteAsync(ct);
-                // if res is null, it means the step is not ready to run, or not producing any result
-                // maybe the dependencies are not met, maybe the executor function returns null.
-                if (res == null)
+                var completedStep = runningStep.ToCompletedStatus();
+                _stepRunQueue.Add(completedStep);
+                _logger?.LogInformation($"[Runner {runnerId}]: {runningStep}");
+                if (res != null)
                 {
-                    _logger?.LogInformation($"[Runner {runnerId}]: {runningStep} returns null.");
-                    var resultStep = runningStep.ToCompletedStatus();
-                    _stepRunQueue.Add(resultStep);
-                }
-                else
-                {
-                    _logger?.LogInformation($"[Runner {runnerId}]: updating context with the result of {runningStep}.");
-                    _logger?.LogDebug($"[Runner {runnerId}]: {stepRun} result is '{res}'.");
-                    var stepVariable = StepVariable.Create(stepRun.StepName, res, stepRun.Generation);
-                    var resultStep = runningStep.ToCompletedStatus(stepVariable);
+                    var stepVariable = StepVariable.Create(stepRun.Name!, res, stepRun.Generation);
+                    var variable = StepRun.CreateVariable(stepVariable);
+                    _logger?.LogDebug($"[Runner {runnerId}]: Add Variable to queue: {variable}.");
 
-                    _stepRunQueue.Add(resultStep);
+                    _stepRunQueue.Add(variable);
                 }
             }
             catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))

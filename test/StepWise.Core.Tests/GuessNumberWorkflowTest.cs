@@ -89,12 +89,12 @@ public class GuessNumberWorkflowTest
         StepVariable[] inputs = [StepVariable.Create(nameof(InputNumber), 5)];
         await foreach (var stepResult in engine.ExecuteAsync(nameof(FinalResult), inputs))
         {
-            var name = stepResult.StepName;
-            var result = stepResult.Result;
+            var name = stepResult.Name;
+            var result = stepResult.Variable;
 
-            if (result is not null)
+            if (stepResult.Status == StepStatus.Variable)
             {
-                context[name] = result;
+                context[name] = result!;
             }
 
             if (name == nameof(FinalResult) && result?.As<string>() is string finalResult)

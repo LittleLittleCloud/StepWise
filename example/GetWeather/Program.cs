@@ -20,7 +20,7 @@ StepVariable[] input =
 
 await foreach (var stepRun in workflowEngine.ExecuteAsync(nameof(Workflow.GetWeatherAsync), input))
 {
-    if (stepRun.StepName == nameof(Workflow.GetWeatherAsync) && stepRun.Result?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
+    if (stepRun.Name == nameof(Workflow.GetWeatherAsync) && stepRun.Variable?.As<Workflow.Weather[]>() is Workflow.Weather[] weathers)
     {
         Console.WriteLine("Weather forecast:");
         foreach (var weather in weathers)

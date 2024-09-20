@@ -41,9 +41,9 @@ public static class StepWiseEngineExtension
         maxSteps ??= int.MaxValue;
         await foreach (var stepResult in engine.ExecuteAsync(targetStepName, inputs, maxConcurrency, stopStrategy, ct))
         {
-            if (stepResult.Result != null && stepResult.StepName == targetStepName)
+            if (stepResult.Variable != null && stepResult.Name == targetStepName)
             {
-                return stepResult.Result.As<TResult>() ?? throw new Exception($"Step '{targetStepName}' did not return the expected result type.");
+                return stepResult.Variable.As<TResult>() ?? throw new Exception($"Step '{targetStepName}' did not return the expected result type.");
             }
         }
 
@@ -114,7 +114,7 @@ public static class StepWiseEngineExtension
             var step = targetStep;
             var stepInputs = inputs?.ToList() ?? new List<StepVariable>();
             var stopStrategy = new StopStrategyPipeline();
-            stopStrategy.AddStrategy(new MaxStepsStopStrategy(1));
+            //stopStrategy.AddStrategy(new MaxStepsStopStrategy(1));
             stopStrategy.AddStrategy(new EarlyStopStrategy(targetStepName));
 
             await foreach (var stepRun in engine.ExecuteStepsAsync([step], stepInputs, maxConcurrency, stopStrategy, ct))
