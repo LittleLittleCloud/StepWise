@@ -200,6 +200,18 @@ public class StepWiseEngine : IStepWiseEngine
                 yield return stepRun;
                 if (stepRun.Status == StepStatus.Completed && stepRun.Result is StepVariable res)
                 {
+                    // TODO
+                    // Add a test to cover this scenario
+                    // for example
+                    // step1: MinusOne
+                    // step2: SleepInSeconds([FromStep(nameof(MinusOne))] int number)
+                    // skip if there is a newer version of the result in the context
+                    if (_context.TryGetValue(stepRun.Step.Name, out var value) && value.Generation > stepRun.Generation)
+                    {
+                        _logger?.LogInformation($"Skipping updating context with the result of {stepRun} because a newer version already exists.");
+                        continue;
+                    }
+                    
                     _logger?.LogInformation($"Updating context with the {stepRun}");
                     _context[stepRun.Step.Name] = res;
 
