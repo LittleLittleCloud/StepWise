@@ -12,6 +12,7 @@ using Microsoft.DotNet.Interactive;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using StepWise.Core;
+using StepWise.Core.Extension;
 
 var loggerFactory = LoggerFactory.Create(builder =>
 {
@@ -43,11 +44,11 @@ var engine = StepWiseEngine.CreateFromInstance(codeInterpreter);
 var task = "use python to switch my system to dark mode";
 StepVariable[] input = [StepVariable.Create("task", task)];
 
-await foreach (var stepRun in engine.ExecuteAsync(nameof(Workflow.GenerateReply), input, maxConcurrency: 1))
+await foreach (var stepRun in engine.ExecuteAsync(nameof(Workflow.GenerateReply), input, maxConcurrency: 1, stopStrategy: null))
 {
     Console.WriteLine(stepRun);
 
-    if (stepRun.Name == nameof(Workflow.GenerateReply) && stepRun.Status == StepType.Completed && stepRun.Variable?.As<string>() is string reply)
+    if (stepRun.Name == nameof(Workflow.GenerateReply) && stepRun.StepType == StepType.Completed && stepRun.Variable?.As<string>() is string reply)
     {
         Console.WriteLine($"Final Reply: {reply}");
         break;
