@@ -281,7 +281,9 @@ public class StepRun
     public override string ToString()
     {
         // format [gen] stepName([gen]input1, [gen]input2, ...)
-        var inputs = string.Join(", ", _inputs.Select(kv => $"{kv.Key}[{_inputs[kv.Key].Generation}]"));
+        var parameters = this._step.InputParameters.Select(p => p.Name);
+        var filteredInputs = _inputs.Where(kv => parameters.Contains(kv.Key));
+        var inputs = string.Join(", ", filteredInputs.Select(kv => $"{kv.Key}[{_inputs[kv.Key].Generation}]"));
         return $"{_step.Name}[{_generation}]({inputs})[status: {_status}]";
     }
 }

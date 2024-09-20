@@ -120,7 +120,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         const allowedChanges = changes.filter(
             change => change.type === 'position' || change.type === 'select' || change.type === 'reset' || change.type === 'dimensions'
         );
-
+        console.log('Allowed changes:', allowedChanges);
         for (const change of allowedChanges) {
             if (change.type === 'position' && change.position) {
                 // update the position of the node in workflow
@@ -145,7 +145,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         }
 
         onNodesChange(allowedChanges);
-    }, [onNodesChange]);
+    }, [onNodesChange, nodes]);
 
     const onLayout = useCallback(() => {
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
