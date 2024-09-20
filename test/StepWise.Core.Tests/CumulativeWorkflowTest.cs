@@ -46,11 +46,12 @@ public class CumulativeWorkflowTest
     [Step]
     [DependOn(nameof(A))]
     public async Task<string> B(
-        [FromStep(nameof(A))] string a)
+        [FromStep(nameof(A))] string a,
+        string? settings = null)
     {
         a.Should().Be("a");
 
-        return "b";
+        return "b" + settings ?? string.Empty;
     }
 
     [Step]
@@ -106,11 +107,11 @@ public class CumulativeWorkflowTest
     {
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
         var completedSteps = new List<string>();
-        await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(E)))
+        await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(E), stopStrategy: null))
         {
             var stepName = stepResult.Name;
             var value = stepResult.Variable;
-            if (stepResult.Status == StepStatus.Completed)
+            if (stepResult.StepType == StepType.Completed)
             {
                 completedSteps.Add(stepName!);
             }
@@ -134,7 +135,7 @@ public class CumulativeWorkflowTest
 
         // the first steprun would be E()  missing input
         completedSteps[0].Name.Should().Be(nameof(E));
-        completedSteps[0].Status.Should().Be(StepStatus.MissingInput);
+        completedSteps[0].StepType.Should().Be(StepType.MissingInput);
     }
 
     [Fact]
@@ -152,16 +153,16 @@ public class CumulativeWorkflowTest
 
         completedSteps.Count().Should().Be(5);
         completedSteps[0].Name.Should().Be(nameof(B));
-        completedSteps[0].Status.Should().Be(StepStatus.Variable);
+        completedSteps[0].StepType.Should().Be(StepType.Variable);
         completedSteps[1].Name.Should().Be(nameof(A));
-        completedSteps[1].Status.Should().Be(StepStatus.Variable);
+        completedSteps[1].StepType.Should().Be(StepType.Variable);
         completedSteps[2].Name.Should().Be(nameof(C)); // C[0]
-        completedSteps[2].Status.Should().Be(StepStatus.MissingInput);
-        completedSteps[3].Name.Should().Be(nameof(C)); // C[1]
-        completedSteps[3].Status.Should().Be(StepStatus.MissingInput);
-        completedSteps[3].Generation.Should().Be(1);
-        completedSteps[4].Name.Should().Be(nameof(C)); // C[2]
-        completedSteps[4].Status.Should().Be(StepStatus.MissingInput);
+        completedSteps[2].StepType.Should().Be(StepType.MissingInput);
+        completedSteps[3].Name.Should().Be(nameof(C)); // C[2]
+        completedSteps[3].StepType.Should().Be(StepType.MissingInput);
+        completedSteps[3].Generation.Should().Be(2);
+        completedSteps[4].Name.Should().Be(nameof(C)); // C[3]
+        completedSteps[4].StepType.Should().Be(StepType.MissingInput);
     }
 
     [Fact]
@@ -179,22 +180,22 @@ public class CumulativeWorkflowTest
 
         completedSteps.Count().Should().Be(8);
         completedSteps[0].Name.Should().Be(nameof(A)); // A[0]
-        completedSteps[0].Status.Should().Be(StepStatus.Variable);
+        completedSteps[0].StepType.Should().Be(StepType.Variable);
         completedSteps[1].Name.Should().Be(nameof(B)); // B[1]
-        completedSteps[1].Status.Should().Be(StepStatus.Variable);
+        completedSteps[1].StepType.Should().Be(StepType.Variable);
         completedSteps[2].Name.Should().Be(nameof(C)); // C[0]
-        completedSteps[2].Status.Should().Be(StepStatus.MissingInput);
+        completedSteps[2].StepType.Should().Be(StepType.MissingInput);
         completedSteps[3].Name.Should().Be(nameof(C)); // C[1](A[0])
-        completedSteps[3].Status.Should().Be(StepStatus.MissingInput);
+        completedSteps[3].StepType.Should().Be(StepType.MissingInput);
         completedSteps[3].Generation.Should().Be(1);
         completedSteps[4].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[4].Status.Should().Be(StepStatus.Queue);
+        completedSteps[4].StepType.Should().Be(StepType.Queue);
         completedSteps[5].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[5].Status.Should().Be(StepStatus.Running);
+        completedSteps[5].StepType.Should().Be(StepType.Running);
         completedSteps[6].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[6].Status.Should().Be(StepStatus.Completed);
+        completedSteps[6].StepType.Should().Be(StepType.Completed);
         completedSteps[7].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[7].Status.Should().Be(StepStatus.Variable);
+        completedSteps[7].StepType.Should().Be(StepType.Variable);
     }
 
     [Fact]
@@ -207,10 +208,26 @@ public class CumulativeWorkflowTest
 
         // the first steprun would be E()  missing input
         completedSteps[0].Name.Should().Be(nameof(A));
-        completedSteps[0].Status.Should().Be(StepStatus.Queue);
-        completedSteps[1].Status.Should().Be(StepStatus.Running);
-        completedSteps[2].Status.Should().Be(StepStatus.Completed);
-        completedSteps[3].Status.Should().Be(StepStatus.Variable);
+        completedSteps[0].StepType.Should().Be(StepType.Queue);
+        completedSteps[1].StepType.Should().Be(StepType.Running);
+        completedSteps[2].StepType.Should().Be(StepType.Completed);
+        completedSteps[3].StepType.Should().Be(StepType.Variable);
         completedSteps[3].Variable!.As<string>().Should().Be("a");
+    }
+
+    [Fact]
+    public async Task ItShouldPassSettingsToStepBAsync()
+    {
+        // when preparing input parameter for C, the generation of b must be newer than a
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var inputs = new[]
+        {
+            StepVariable.Create("settings", "SettingForB", generation: 1),
+            StepVariable.Create(nameof(A), "a", generation: 0),
+        };
+
+        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(B), inputs).ToBlockingEnumerable().ToList();
+        var bResult = completedSteps.First(stepRun => stepRun.StepType == StepType.Variable && stepRun.Name == nameof(B));
+        bResult.Variable!.As<string>().Should().Be("bSettingForB");
     }
 }

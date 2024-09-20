@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging;
 using StepWise.Core;
+using StepWise.Core.Extension;
 
 namespace StepWise.WebAPI;
 

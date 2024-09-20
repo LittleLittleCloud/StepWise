@@ -116,5 +116,9 @@ public class StepAndWorkflowTests
         step.Name.Should().Be(nameof(DoNothing));
         step.InputParameters.Should().BeEmpty();
         step.OutputType.Should().Be(typeof(Task));
+
+        // invoke
+        var res = await step.ExecuteAsync();
+        res.Should().BeNull();
     }
 }

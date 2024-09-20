@@ -29,35 +29,6 @@ public class StepWiseEngine : IStepWiseEngine
         return new StepWiseEngine(workflow, logger);
     }
 
-    public async IAsyncEnumerable<StepRun> ExecuteAsync(
-        string? targetStep = null,
-        IEnumerable<StepVariable>? inputs = null,
-        int maxConcurrency = 1,
-        IStepWiseEngineStopStrategy? stopStrategy = null,
-        [EnumeratorCancellation]
-        CancellationToken ct = default)
-    {
-        inputs ??= [];
-        stopStrategy ??= new NeverStopStopStrategy();
-        this._logger?.LogInformation($"Starting the workflow engine with target step '{targetStep}' and stop strategy '{stopStrategy.Name}'.");
-
-        var step = targetStep != null ? _workflow.Steps[targetStep] : null;
-        var stepResults = new List<StepRun>();
-        await foreach (var stepRun in ExecuteStepAsync(step, inputs, maxConcurrency, ct))
-        {
-            yield return stepRun;
-
-            // check early stop
-            stepResults.Add(stepRun);
-            if (stopStrategy.ShouldStop(stepResults.ToArray()))
-            {
-                _logger?.LogInformation($"Stop strategy '{stopStrategy.Name}' has been triggered when reaching step '{stepRun}'.");
-                break;
-            }
-        }
-    }
-
-
     // retrieve all the steps that need to be executed in order to reach the target step
     private List<Step> ResolveDependencies(string targetStepName)
     {
@@ -95,17 +66,6 @@ public class StepWiseEngine : IStepWiseEngine
         DFS(targetStep);
 
         return executionPlan;
-    }
-
-    private IAsyncEnumerable<StepRun> ExecuteStepAsync(
-        Step? step,
-        IEnumerable<StepVariable> inputs,
-        int maxConcurrency = 1,
-        CancellationToken ct = default)
-    {
-        var steps = step != null ? this.ResolveDependencies(step.Name) : _workflow.Steps.Values.ToList();
-
-        return ExecuteStepsAsync(steps, inputs, maxConcurrency, ct);
     }
 
     private async IAsyncEnumerable<StepRun> ExecuteStepsAsync(
@@ -152,18 +112,6 @@ public class StepWiseEngine : IStepWiseEngine
             }
         }
 
-        // add inputs to context
-        //foreach (var input in inputs)
-        //{
-        //    if (context.TryGetValue(input.Name, out var value) && value.Generation > input.Generation)
-        //    {
-        //        _logger?.LogInformation($"Skipping adding input '{input.Name}' to the context because a newer version already exists.");
-        //        continue;
-        //    }
-
-        //    context[input.Name] = input;
-        //}
-
         if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0)
         {
             _logger?.LogInformation($"No steps to execute. Exiting.");
@@ -200,23 +148,29 @@ public class StepWiseEngine : IStepWiseEngine
             {
                 _logger?.LogInformation($"[StepRun Queue]: Receive {stepRun} from the result queue.");
                 yield return stepRun;
-                if (stepRun.Status == StepStatus.Variable && stepRun.Variable is StepVariable res && _workflow.Steps.TryGetValue(res.Name, out var step))
+                if (stepRun.StepType == StepType.Variable && stepRun.Variable is StepVariable res)
                 {
-                    // TODO
-                    // Add a test to cover this scenario
-                    // for example
-                    // step1: MinusOne
-                    // step2: SleepInSeconds([FromStep(nameof(MinusOne))] int number)
                     // skip if there is a newer version of the result in the context
-                    if (context.TryGetValue(res.Name, out var value) && value.Generation > res.Generation)
+                    if (context.TryGetValue(res.Name, out var value) && value.Generation >= res.Generation)
                     {
                         _logger?.LogInformation($"[StepRun Queue]: Skipping updating context with the result of {res} because a newer version already exists.");
                         continue;
                     }
                     _logger?.LogInformation($"[StepRun Queue] Updating context with Variable: {stepRun}");
                     context[res.Name] = res;
+                    generation = Math.Max(generation, res.Generation);
 
-                    var dependSteps = _workflow.GetAllDependSteps(step);
+                    IEnumerable<Step> dependSteps;
+                    if (_workflow.Steps.TryGetValue(res.Name, out var step) is false)
+                    {
+                        // the variable is not from a step
+                        dependSteps = new List<Step>();
+                    }
+                    else
+                    {
+                        dependSteps = _workflow.GetAllDependSteps(step);
+                    }
+
 
                     // remove the variables that depend on the current step
                     var filteredContext = context.Where(kv => !dependSteps.Any(x => x.Name == kv.Key)).ToDictionary(x => x.Key, x => x.Value);
@@ -231,7 +185,7 @@ public class StepWiseEngine : IStepWiseEngine
                     // find all steps that takes the result as input
                     var nextSteps = _workflow.Steps.Values
                             .Where(x => steps.Any(s => s.Name == x.Name))
-                            .Where(x => x.InputParameters.Any(p => p.SourceStep == res.Name));
+                            .Where(x => x.InputParameters.Any(p => (p.SourceStep ?? p.Name) == res.Name));
 
                     var stepsToAdd = new List<StepRun>();
                     foreach (var nextStep in nextSteps)
