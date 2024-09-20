@@ -43,7 +43,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }, [dividerRef.current, data.dependencies]);
 
     return (
-        <div className="rounded-md shadow-md p-2 bg-background/50 group min-w-32">
+        <div className="rounded-md shadow-md p-1 bg-background/50 group min-w-32">
             {/* settings bar */}
             {/* appear when hover */}
             <div
@@ -82,14 +82,14 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     >
                         <SquareFunction size={10} />
                     </div>
-                    <h2 className="text-xs font-semibold text-nowrap">{data.name}</h2>
+                    <h2 className="text-xs font-semibold text-nowrap pr-5">{data.name}</h2>
                     <Handle
                         type="source"
                         position={Position.Right}
                         // id = name-variable
                         id={`${data.name}`}
                         className="w-2 h-2 border-none bg-green-500"
-                        style={{ top: sourceHandleTopOffset }}
+                        style={{ top: sourceHandleTopOffset, right: 5 }}
                     />
                 </div>
             )}
@@ -98,21 +98,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
             {data.dependencies && data.dependencies.length > 0 && (
                 <div>
                     <div className="border border-primary/40 my-2" />
-                    <div
-                        ref={dividerRef}
-                    >
+                    <div ref={dividerRef}>
                     {
                         data.dependencies.map((dep, index) => (
-                            <div key={index} className="flex gap-1 items-center text-xs pb-1">
-                                <div className={cn(buttonVariants(
-                                    {
-                                        variant: "outline",
-                                        size: "tinyIcon",
-                                    }),
-                                    "w-4 h-4"
-                                )}>
-                                    <SquareFunction size={10} />
-                                </div>
+                            <div key={index} className="flex gap-1 pl-5 pr-5 items-center text-xs pb-1">
                                 <span>{dep}</span>
                                 <Handle
                                     key={index}
@@ -121,7 +110,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                                     // id = name-dep
                                     id={`${data.name}-${dep}`}
                                     className="w-2 h-2 border-none bg-blue-500"
-                                    style={{ top: targetHandleTopOffsets[index] }}
+                                    style={{ top: targetHandleTopOffsets[index], left: 8 }}
                                 />
                             </div>
                         ))
