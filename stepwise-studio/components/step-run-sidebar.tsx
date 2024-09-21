@@ -12,11 +12,11 @@ import Divider from './divider';
 import { Badge } from './ui/badge';
 import { Markdown } from './markdown';
 
-interface StepRunSidebarProps {
+export interface StepRunSidebarProps {
     stepRuns: StepRunDTO[];
 }
 
-interface StepRunProps {
+export interface StepRunProps {
     stepRun: StepRunDTO;
 }
 
@@ -82,7 +82,7 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
     const [stepRuns, setStepRuns] = useState<StepRunDTO[]>([]);
     useEffect(() => {
-        setStepRuns(props.stepRuns);
+        setStepRuns(props.stepRuns ?? []);
     }, [props.stepRuns]);
 
     return (

@@ -197,10 +197,10 @@ public class StepVariable
     }
 }
 
-public enum StepType
+public enum StepRunType
 {
     Queue,
-    MissingInput,
+    NotReady,
     Running,
     Completed,
     Variable,
@@ -216,7 +216,7 @@ public class StepRun
     private readonly Step? _step;
     private readonly int _generation = 0;
     private readonly Dictionary<string, StepVariable> _inputs = new();
-    private readonly StepType _stepType = StepType.Queue;
+    private readonly StepRunType _stepType = StepRunType.Queue;
     private readonly StepVariable? _result = null;
     private readonly Exception? _exception = null;
 
@@ -224,7 +224,7 @@ public class StepRun
         Step? step,
         int generation,
         Dictionary<string, StepVariable>? inputs,
-        StepType stepType = StepType.Queue,
+        StepRunType stepType = StepRunType.Queue,
         StepVariable? result = null,
         Exception? exception = null)
     {
@@ -248,7 +248,7 @@ public class StepRun
 
     public Exception? Exception => _exception;
 
-    public StepType StepType => _stepType;
+    public StepRunType StepType => _stepType;
 
     public static StepRun Create(
         Step step,
@@ -260,52 +260,52 @@ public class StepRun
 
     public static StepRun CreateVariable(StepVariable variable)
     {
-        return new StepRun(null, variable.Generation, null, StepType.Variable, variable, null);
+        return new StepRun(null, variable.Generation, null, StepRunType.Variable, variable, null);
     }
 
     public StepRun ToMissingInput()
     {
-        if (_stepType != StepType.Queue)
+        if (_stepType != StepRunType.Queue)
         {
             throw new InvalidOperationException("The step is not in the not started status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepType.MissingInput, _result, _exception);
+        return new StepRun(_step, _generation, _inputs, StepRunType.NotReady, _result, _exception);
     }
 
     public StepRun ToRunningStatus()
     {
-        if (_stepType != StepType.Queue)
+        if (_stepType != StepRunType.Queue)
         {
             throw new InvalidOperationException("The step is not in the not started status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepType.Running, _result, _exception);
+        return new StepRun(_step, _generation, _inputs, StepRunType.Running, _result, _exception);
     }
 
     public StepRun ToCompletedStatus()
     {
-        if (_stepType != StepType.Running)
+        if (_stepType != StepRunType.Running)
         {
             throw new InvalidOperationException("The step is not in the running status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepType.Completed, _result, _exception);
+        return new StepRun(_step, _generation, _inputs, StepRunType.Completed, _result, _exception);
     }
 
     public StepRun ToFailedStatus(Exception ex)
     {
-        if (_stepType != StepType.Running)
+        if (_stepType != StepRunType.Running)
         {
             throw new InvalidOperationException("The step is not in the running status.");
         }
 
-        return new StepRun(_step, _generation, _inputs, StepType.Failed, _result, ex);
+        return new StepRun(_step, _generation, _inputs, StepRunType.Failed, _result, ex);
     }
 
     public Task<object?> ExecuteAsync(CancellationToken ct = default)
     {
-        if (_stepType != StepType.Running)
+        if (_stepType != StepRunType.Running)
         {
             throw new InvalidOperationException("The step is not in the running status.");
         }
@@ -320,7 +320,7 @@ public class StepRun
 
     public override string ToString()
     {
-        if (this.Step is null && this.StepType == StepType.Variable)
+        if (this.Step is null && this.StepType == StepRunType.Variable)
         {
             return $"{_result!.Name}[{_result!.Generation}]";
         }

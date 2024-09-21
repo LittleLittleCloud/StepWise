@@ -6,17 +6,17 @@ import { cn } from '@/lib/utils';
 import { AlertCircle, AlertOctagon, CheckCircle, CheckCircle2, CircleUserRound, Clock, Loader2, Play, RotateCcw, SquareFunction } from 'lucide-react';
 import Divider from './divider';
 
-export type StepNodeStatus = 'running' | 'error' | 'queue' | 'completed' | 'not-started';
+export type StepNodeStatus = 'Running' | 'Failed' | 'Queue' | 'Completed' | 'NotReady';
 
 export interface StepNodeProps {
     data: StepDTO;
-    status?: 'running' | 'error' | 'queue' | 'completed' | 'not-started';
+    status?: StepNodeStatus;
     // isSelected?: boolean;
     onRunClick: (step: StepDTO) => void;
 }
 
 const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status }) => {
-    const [stepNodeStatus, setStatus] = useState<StepNodeStatus>(status ?? 'not-started');
+    const [stepNodeStatus, setStatus] = useState<StepNodeStatus>(status ?? 'NotReady');
     useEffect(() => {
         setStatus(status);
     }
@@ -26,31 +26,31 @@ const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status 
 
     const getStatusInfo = (status: StepNodeStatus) => {
         switch (status) {
-          case 'not-started':
+          case 'NotReady':
             return { 
               icon: SquareFunction, 
               label: status,
             };
-          case 'queue':
+          case 'Queue':
             return { 
               icon: Clock, 
               label: status,
               animation: 'animate-[spin_3s_linear_infinite]'
             };
-          case 'running':
+          case 'Running':
             return { 
               icon: Loader2, 
               color: 'text-yellow-500',
               label: status,
               animation: 'animate-spin'
             };
-          case 'completed':
+          case 'Completed':
             return { 
               icon: CheckCircle2, 
               color: 'text-green-500', 
               label: status,
             };
-          case 'error':
+          case 'Failed':
             return { 
               icon: AlertCircle, 
               color: 'text-destructive', 
@@ -87,15 +87,15 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     const updateNodeInternals = useUpdateNodeInternals();
     const [sourceHandleTopOffset, setSourceHandleTopOffset] = useState<number>(0);
     const [targetHandleTopOffsets, setTargetHandleTopOffsets] = useState<number[]>([]);
-    const [status, setStatus] = useState<StepNodeStatus>(prop.data.status ?? 'not-started');
+    const [status, setStatus] = useState<StepNodeStatus>(prop.data.status ?? 'NotReady');
     const [isSelected, setIsSelected] = useState<boolean>(prop.selected ?? false);
 
-    const statustransition : StepNodeStatus[] = ['not-started', 'queue', 'running', 'completed', 'error'];
+    const statustransition : StepNodeStatus[] = ['NotReady', 'Queue', 'Running', 'Completed', 'Failed'];
 
     useEffect(() => {
         setData(prop.data.data);
         setTargetHandleTopOffsets(Array(data.dependencies?.length ?? 0).fill(0));
-        setStatus(prop.data.status ?? 'not-started');
+        setStatus(prop.data.status ?? 'NotReady');
         setIsSelected(prop.selected ?? false);
     }, []);
 
@@ -104,13 +104,21 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }
     , [prop.selected]);
 
+    useEffect(() => {
+        setStatus(prop.data.status ?? 'NotReady');
+    }
+    , [prop.data.status]);
+
     const dividerRef = React.useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        updateNodeInternals(prop.id);
+    }
+    , [data, sourceHandleTopOffset, targetHandleTopOffsets, status]);
 
     useEffect(() => {
         if (titleRef.current) {
             setSourceHandleTopOffset(titleRef.current.offsetTop + titleRef.current.offsetHeight / 2);
-
-            updateNodeInternals(prop.id);
         }
     }, [titleRef.current]);
 
@@ -197,28 +205,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     </div>
                 </div>
             )}
-
-            {
-                status && (
-                    <button
-                        className={cn(buttonVariants(
-                            {
-                                variant: "outline",
-                                size: "tinyIcon",
-                            }),
-                            "w-4 h-4"
-                        )}
-                        onClick={() => {
-                            const currentIndex = statustransition.indexOf(status);
-                            const nextIndex = currentIndex + 1;
-                            setStatus(statustransition[nextIndex % statustransition.length]);
-                        }}
-                    >
-                        {status}
-                    </button>
-                )
-            }
-
         </div>
     );
 };

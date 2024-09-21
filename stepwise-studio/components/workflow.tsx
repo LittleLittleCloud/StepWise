@@ -1,4 +1,4 @@
-import { StepDTO, WorkflowDTO } from '@/stepwise-client';
+import { postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunDTO, WorkflowDTO } from '@/stepwise-client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
     Background,
@@ -25,20 +25,20 @@ import { LayoutGrid } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ControlBar } from './control-bar';
 import { getLayoutedElements } from '@/lib/utils';
+import StepRunSidebar, { StepRunSidebarProps } from './step-run-sidebar';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
 
 export type WorkflowLayout = {
     stepPositions: { [key: string]: { x: number; y: number } };
     stepSizes: { [key: string]: { width: number; height: number } };
 };
-export type WorkflowData = WorkflowDTO & WorkflowLayout & {
+export type WorkflowData = WorkflowDTO & WorkflowLayout & StepRunSidebarProps & {
     maxParallelRun?: number;
     maxSteps?: number;
 };
 
 export interface WorkflowProps {
     dto: WorkflowData | undefined;
-    onStepNodeRunClick?: (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => void;
-    onResetStepRunResult?: (workflow: WorkflowData) => void;
     onWorkflowChange?: (workflow: WorkflowData) => void;
     setMaxParallelRun?: (maxParallelRun: number) => void;
     setMaxStep?: (maxStep: number) => void;
@@ -52,18 +52,16 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const { fitView } = useReactFlow();
     const { theme } = useTheme();
     const [workflow, setWorkflow] = useState<WorkflowData | undefined>(() => props.dto);
+    const [completedRunSteps, setCompletedRunSteps] = useState<StepRunDTO[]>(() => props.dto?.stepRuns ?? []);
 
     useEffect(() => {
         setWorkflow(props.dto);
+        setCompletedRunSteps(props.dto?.stepRuns ?? []);
     }, [props.dto]);
 
     const nodeTypes = useMemo(() => ({
         stepNode: StepNode,
     }), []);
-
-    const onStepNodeRunClick = (step?: StepDTO) => {
-        props.onStepNodeRunClick?.(step, maxParallelRun, maxStep);
-    }
 
     useEffect(() => {
         if (workflow?.maxParallelRun) {
@@ -78,11 +76,29 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     }, [props.dto?.maxSteps]);
 
     useEffect(() => {
+        setWorkflow(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                stepRuns: completedRunSteps,
+            };
+        });
+    }
+    , [completedRunSteps]);
+
+    useEffect(() => {
         if (!workflow) return;
         var newNodes = workflow.steps?.map((step) => {
             var stepPosition = workflow.stepPositions[step.name!];
             var stepSize = workflow.stepSizes[step.name!];
             var existingNode = nodes.find(n => n.id === step.name);
+            var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === step.name);
+            console.log("Latest completed run: ", latestCompletedRun);
+            var lastStatus = latestCompletedRun?.status;
+            // if last status is one of ['Running', 'Queue'], then set status to 'NotReady'
+            if (lastStatus === 'Running' || lastStatus === 'Queue') {
+                lastStatus = 'NotReady';
+            }
             return {
                 ...existingNode,
                 ...stepSize,
@@ -91,7 +107,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 position: stepPosition,
                 data: {
                     data: step,
-                    onRunClick: (step: StepDTO) => onStepNodeRunClick(step),
+                    onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, step, maxParallelRun, maxStep),
+                    status: lastStatus ?? 'NotReady',
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];
@@ -114,7 +131,40 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         setEdges(edges);
 
         props.onWorkflowChange?.(workflow);
-    }, [workflow, fitView]);
+    }, [workflow, fitView, maxParallelRun, maxStep,completedRunSteps]);
+
+    const onStepNodeRunClick = async (workflow: WorkflowDTO, step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
+        console.log("Run step: ", step);
+        if (!workflow.name) return;
+        try {
+            var res = await postApiV1StepWiseControllerV1ExecuteStep(
+                {
+                    query: {
+                        step: step?.name ?? undefined,
+                        workflow: workflow?.name,
+                        maxParallel: maxParallelRun,
+                        maxSteps: maxSteps,
+                    }
+                }
+            )
+        }
+        catch (err) {
+            console.error("Error executing step: ", err);
+            return;
+        }
+
+        if (res.error) {
+            console.error("Error executing step: ", res.error);
+            return;
+        }
+
+        if (res.data === undefined) {
+            console.error("No data returned from executing step");
+            return;
+        }
+        var updateStepRuns = [...completedRunSteps, ...res.data];
+        setCompletedRunSteps(updateStepRuns);
+    }
 
 
     const onNodesChangeRestricted = useCallback((changes: NodeChange[]) => {
@@ -192,29 +242,50 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         <div
             className='w-full h-full bg-accent/10 items-center justify-center flex'
         >
-            <div className="z-10 absolute top-0">
-                <ControlBar
-                    maxParallel={maxParallelRun}
-                    maxSteps={maxStep}
-                    onMaxParallelChange={onMaxParallelChange}
-                    onMaxStepsChange={onMaxStepsChange}
-                    onResetStepRunResultClick={() => props.onResetStepRunResult?.(props.dto!)}
-                    onAutoLayoutClick={onLayout}
-                    onRunClick={() => onStepNodeRunClick(undefined)}
-                />
-            </div>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChangeRestricted}
-                nodeTypes={nodeTypes}
-                fitView
-            >
-                <Controls />
-                {/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
-                <MiniMap style={minimapStyle} zoomable pannable />
 
-            </ReactFlow>
+            <ResizablePanelGroup
+                direction='horizontal'
+                className='w-full h-screen flex'
+            >
+                <ResizablePanel>
+                    <div className="flex flex-col items-center gap-8 h-screen">
+                        <div className="z-10 absolute top-0">
+                            <ControlBar
+                                maxParallel={maxParallelRun}
+                                maxSteps={maxStep}
+                                onMaxParallelChange={onMaxParallelChange}
+                                onMaxStepsChange={onMaxStepsChange}
+                                onResetStepRunResultClick={() => setCompletedRunSteps([])}
+                                onAutoLayoutClick={onLayout}
+                                onRunClick={() => onStepNodeRunClick(workflow!, undefined, maxParallelRun, maxStep)}
+                            />
+                        </div>
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChangeRestricted}
+                            nodeTypes={nodeTypes}
+                            fitView
+                        >
+                            <Controls />
+                            {/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
+                            <MiniMap style={minimapStyle} zoomable pannable />
+
+                        </ReactFlow>
+                    </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle={true} />
+                <ResizablePanel
+                    defaultSize={20}
+                    minSize={20}
+                >
+                    <StepRunSidebar
+                        stepRuns={completedRunSteps}
+                    />
+                </ResizablePanel>
+
+            </ResizablePanelGroup>
+
         </div>
     );
 };

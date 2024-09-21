@@ -148,7 +148,7 @@ public class StepWiseEngine : IStepWiseEngine
             {
                 _logger?.LogInformation($"[StepRun Queue]: Receive {stepRun} from the result queue.");
                 yield return stepRun;
-                if (stepRun.StepType == StepType.Variable && stepRun.Variable is StepVariable res)
+                if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is StepVariable res)
                 {
                     // skip if there is a newer version of the result in the context
                     if (context.TryGetValue(res.Name, out var value) && value.Generation >= res.Generation)
