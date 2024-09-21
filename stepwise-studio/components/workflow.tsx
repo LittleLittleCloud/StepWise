@@ -79,10 +79,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
     useEffect(() => {
         if (!workflow) return;
-        var nodes = workflow.steps?.map((step) => {
+        var newNodes = workflow.steps?.map((step) => {
             var stepPosition = workflow.stepPositions[step.name!];
             var stepSize = workflow.stepSizes[step.name!];
+            var existingNode = nodes.find(n => n.id === step.name);
             return {
+                ...existingNode,
                 ...stepSize,
                 id: step.name,
                 type: 'stepNode',
@@ -108,7 +110,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             }) ?? []);
         }, [] as Edge[]) ?? [];
 
-        setNodes(nodes);
+        setNodes(newNodes);
         setEdges(edges);
 
         props.onWorkflowChange?.(workflow);

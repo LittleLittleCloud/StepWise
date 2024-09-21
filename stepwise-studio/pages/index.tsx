@@ -176,11 +176,12 @@ export default function Home() {
     });
       
     setSelectedCompletedStepRuns(completedStepRuns.get(selectedWorkflow?.name!) ?? []);
-    setSelectedWorkflow(selectedWorkflow);
   }, [completedStepRuns, selectedWorkflow]);
 
   const selectedWorkflowHandler = (workflow: WorkflowData) => {
-    setSelectedWorkflow(workflow);
+    setSelectedWorkflow((prev) => {
+      return workflows.find((w) => w.name === workflow.name);
+    });
   }
 
   const onResetStepRunResult = (workflow: WorkflowData) => {
@@ -212,7 +213,14 @@ export default function Home() {
                 dto={selectedWorkflow}
                 onStepNodeRunClick={StepNodeRunClick}
                 onResetStepRunResult={onResetStepRunResult}
-                onWorkflowChange={(workflowData) => setSelectedWorkflow(workflowData)}
+                onWorkflowChange={(workflowData) => setWorkflows((prev) => {
+                  const newWorkflows = [...prev];
+                  const index = newWorkflows.findIndex((workflow) => workflow.name === workflowData.name);
+                  if (index !== -1) {
+                    newWorkflows[index] = workflowData;
+                  }
+                  return newWorkflows;
+                })}
               />
             </div>
           </ResizablePanel>

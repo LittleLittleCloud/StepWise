@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes'
 import { StepRunDTO, WorkflowDTO } from '@/stepwise-client';
 import Workflow from './workflow';
 import ThemeSwitch from './theme-switch';
-import { Icon, Moon, SquareFunction } from 'lucide-react';
+import { Icon, Moon, SquareFunction, VariableIcon } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { CircleUserRound } from 'lucide-react';
 import { Network } from 'lucide-react';
@@ -39,9 +39,10 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
                             }),
                         )}
                     >
-                        <SquareFunction size={16} />
+                        {stepRun?.step && <SquareFunction size={16} />}
+                        {stepRun?.result && <VariableIcon size={16} />}
                     </div>
-                    <span className="text-xs">{stepRun?.step?.name}</span>
+                    <span className="text-xs">{stepRun?.step?.name ?? stepRun?.result?.name}</span>
 
                 </div>
 

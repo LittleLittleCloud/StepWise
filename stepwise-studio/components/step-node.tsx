@@ -3,24 +3,107 @@ import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps, useUpdateNodeInternals } from 'reactflow';
 import { Button, buttonVariants } from './ui/button';
 import { cn } from '@/lib/utils';
-import { CircleUserRound, Play, RotateCcw, SquareFunction } from 'lucide-react';
+import { AlertCircle, AlertOctagon, CheckCircle, CheckCircle2, CircleUserRound, Clock, Loader2, Play, RotateCcw, SquareFunction } from 'lucide-react';
 import Divider from './divider';
+
+export type StepNodeStatus = 'running' | 'error' | 'queue' | 'completed' | 'not-started';
 
 export interface StepNodeProps {
     data: StepDTO;
+    status?: 'running' | 'error' | 'queue' | 'completed' | 'not-started';
+    // isSelected?: boolean;
     onRunClick: (step: StepDTO) => void;
 }
+
+const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status }) => {
+    const [stepNodeStatus, setStatus] = useState<StepNodeStatus>(status ?? 'not-started');
+    useEffect(() => {
+        setStatus(status);
+    }
+    , [status]);
+
+    const size = 12;
+
+    const getStatusInfo = (status: StepNodeStatus) => {
+        switch (status) {
+          case 'not-started':
+            return { 
+              icon: SquareFunction, 
+              label: status,
+            };
+          case 'queue':
+            return { 
+              icon: Clock, 
+              label: status,
+              animation: 'animate-[spin_3s_linear_infinite]'
+            };
+          case 'running':
+            return { 
+              icon: Loader2, 
+              color: 'text-yellow-500',
+              label: status,
+              animation: 'animate-spin'
+            };
+          case 'completed':
+            return { 
+              icon: CheckCircle2, 
+              color: 'text-green-500', 
+              label: status,
+            };
+          case 'error':
+            return { 
+              icon: AlertCircle, 
+              color: 'text-destructive', 
+              label: status,
+            };
+          default:
+            return { 
+              icon: SquareFunction, 
+              label: status,
+            };
+        }
+      };
+
+    const { icon: Icon, color, label, animation } = getStatusInfo(stepNodeStatus);
+
+    return (
+        <div
+            className={cn(buttonVariants(
+                {
+                    variant: "outline",
+                    size: "tinyIcon",
+                }),
+                "w-4 h-4"
+            )}
+        >
+            <Icon size={size} className={cn(color, animation)} aria-label={label} />
+        </div>
+    );
+}
+
 const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     const [data, setData] = useState<StepDTO>(prop.data.data);
     const titleRef = React.useRef<HTMLDivElement>(null);
     const updateNodeInternals = useUpdateNodeInternals();
     const [sourceHandleTopOffset, setSourceHandleTopOffset] = useState<number>(0);
     const [targetHandleTopOffsets, setTargetHandleTopOffsets] = useState<number[]>([]);
+    const [status, setStatus] = useState<StepNodeStatus>(prop.data.status ?? 'not-started');
+    const [isSelected, setIsSelected] = useState<boolean>(prop.selected ?? false);
+
+    const statustransition : StepNodeStatus[] = ['not-started', 'queue', 'running', 'completed', 'error'];
 
     useEffect(() => {
         setData(prop.data.data);
         setTargetHandleTopOffsets(Array(data.dependencies?.length ?? 0).fill(0));
+        setStatus(prop.data.status ?? 'not-started');
+        setIsSelected(prop.selected ?? false);
     }, []);
+
+    useEffect(() => {
+        setIsSelected(prop.selected ?? false);
+    }
+    , [prop.selected]);
+
     const dividerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -43,7 +126,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }, [dividerRef.current, data.dependencies]);
 
     return (
-        <div className="rounded-md shadow-md p-1 bg-background/50 group min-w-32">
+        <div className={cn("border-2 rounded-md shadow-md p-1 bg-background/50 group min-w-32",
+            isSelected ? "border-primary/40" : "border-transparent")}
+            // onClick={() => setIsSelected(!isSelected)}
+        >
             {/* settings bar */}
             {/* appear when hover */}
             <div
@@ -72,15 +158,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                 >
                     <div
                         ref={titleRef}
-                        className={cn(buttonVariants(
-                            {
-                                variant: "outline",
-                                size: "tinyIcon",
-                            }),
-                            "w-4 h-4"
-                        )}
                     >
-                        <SquareFunction size={10} />
+                        <StepNodeStatusIndicator status={status} />
                     </div>
                     <h2 className="text-xs font-semibold text-nowrap pr-5">{data.name}</h2>
                     <Handle
@@ -118,6 +197,27 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     </div>
                 </div>
             )}
+
+            {
+                status && (
+                    <button
+                        className={cn(buttonVariants(
+                            {
+                                variant: "outline",
+                                size: "tinyIcon",
+                            }),
+                            "w-4 h-4"
+                        )}
+                        onClick={() => {
+                            const currentIndex = statustransition.indexOf(status);
+                            const nextIndex = currentIndex + 1;
+                            setStatus(statustransition[nextIndex % statustransition.length]);
+                        }}
+                    >
+                        {status}
+                    </button>
+                )
+            }
 
         </div>
     );
