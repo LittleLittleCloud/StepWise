@@ -35,7 +35,8 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
         switch (type) {
             case 'String':
                 return 'str';
-            case 'Int32' || 'Float32':
+            case 'Int32':
+            case 'Float32':
                 return 'number';
             case 'Boolean':
                 return 'bool';
