@@ -72,7 +72,7 @@ public class StepAndWorkflowTests
         step.InputParameters[0].VariableName.Should().Be(nameof(GetCurrentDateAsync));
         step.InputParameters[1].ParameterName.Should().Be("city");
         step.InputParameters[1].Type.Should().Be(typeof(string));
-        step.InputParameters[1].VariableName.Should().BeNull();
+        step.InputParameters[1].VariableName.Should().Be("city");
 
         step.OutputType.Should().Be(typeof(Task<string>));
         step.Dependencies.Should().Contain(nameof(GetCurrentDateAsync));
