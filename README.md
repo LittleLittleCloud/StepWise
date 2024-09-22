@@ -8,13 +8,13 @@
 # StepWise
 </div>
 
-StepWise is a powerful and flexible C# library for defining and executing workflows. It allows you to break down complex workflows into manageable steps, define dependencies between them, and execute them in the correct order.
+StepWise is a workflow engine build with C# and typescript. In StepWise, you define a workflow in C#, then visualize and execute it in StepWise UI.
 
-## Features
 
-- Automatic dependency resolution between steps
-- Parallel execution of independent steps
-- Visualization: StepWise provides a built-in WebUI for visualizing and executing workflows. This allows you define workflow in a code-first approach and execute it in a visualize way.
+
+https://github.com/user-attachments/assets/c2cb7d68-ccc9-4457-87c1-7aeecbf9df3c
+
+
 
 ## Quick Start
 
