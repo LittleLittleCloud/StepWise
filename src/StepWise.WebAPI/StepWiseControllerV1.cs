@@ -3,6 +3,9 @@
 
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging;
@@ -19,6 +22,8 @@ public class StepWiseClient
     {
         _logger = logger;
     }
+
+    public event EventHandler<StepRunDTO>? StepRunEvent;
 
     // get workflow
     public Workflow? GetWorkflow(string workflowName)
@@ -100,6 +105,7 @@ public class StepWiseClient
         await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, maxConcurrency: maxParallel, stopStrategy: stopStragety))
         {
             yield return stepRunAndResult;
+            StepRunEvent?.Invoke(this, StepRunDTO.FromStepRun(stepRunAndResult));
         }
     }
 
@@ -193,8 +199,60 @@ internal class StepWiseControllerV1 : ControllerBase
     {
         await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel))
         {
-            yield return StepRunDTO.FromStepRun(stepRun);
+            var dto = StepRunDTO.FromStepRun(stepRun);
+
+            yield return dto;
         }
+    }
+
+    [HttpGet]
+    public async Task ExecuteStepSse()
+    {
+        _logger?.LogInformation("ExecuteStepSse");
+        Response.Headers.Append("Content-Type", "text/event-stream");
+        Response.Headers.Append("Content-Type", "text/event-stream");
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+
+        EventHandler<StepRunDTO> eventHandler = (sender, stepRun) =>
+        {
+            _logger?.LogInformation($"StepRunEvent: {stepRun}");
+            var sseEvent = new SSEEvent
+            {
+                Id = DateTime.Now.Ticks.ToString(),
+                Retry = 10,
+                Event = nameof(StepRunDTO),
+                Data = JsonSerializer.Serialize(stepRun),
+            };
+
+            var sseData = Encoding.UTF8.GetBytes(sseEvent.ToString());
+            _logger?.LogInformation($"SSE: {sseEvent}");
+            Response.Body.WriteAsync(sseData);
+            Response.Body.WriteAsync(Encoding.UTF8.GetBytes("\n\n"));
+            Response.Body.FlushAsync();
+        };
+
+        _client.StepRunEvent += eventHandler;
+
+        while (!HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            await Task.Delay(1000);
+        }
+
+        _client.StepRunEvent -= eventHandler;
+    }
+}
+
+public struct SSEEvent
+{
+    public string Id { get; set; }
+    public int Retry { get; set; }
+    public string Event { get; set; }
+    public string Data { get; set; }
+
+    public override string ToString()
+    {
+        return $"id: {Id}\nretry: {Retry}\nevent: {Event}\ndata: {Data}\n\n";
     }
 }
 

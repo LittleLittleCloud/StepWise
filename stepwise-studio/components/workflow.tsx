@@ -1,4 +1,4 @@
-import { postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunDTO, WorkflowDTO } from '@/stepwise-client';
+import { client, postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunDTO, WorkflowDTO } from '@/stepwise-client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
     Background,
@@ -45,7 +45,7 @@ export interface WorkflowProps {
 }
 
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
     const [edges, setEdges, _] = useEdgesState([]);
     const [maxStep, setMaxStep] = useState<number>(props.dto?.maxSteps ?? 1);
     const [maxParallelRun, setMaxParallelRun] = useState<number>(props.dto?.maxParallelRun ?? 10);
@@ -76,15 +76,21 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     }, [props.dto?.maxSteps]);
 
     useEffect(() => {
-        setWorkflow(prev => {
-            if (!prev) return prev;
+        // when stepRun changes, update the status of the step node
+        // using the last stepRun status
+        var updatedNodes = nodes.map(node => {
+            var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === node.id);
+            var lastStatus = latestCompletedRun?.status ?? 'NotReady';
             return {
-                ...prev,
-                stepRuns: completedRunSteps,
-            };
+                ...node,
+                data: {
+                    ...node.data,
+                    status: lastStatus,
+                },
+            } as Node<StepNodeProps>;
         });
-    }
-    , [completedRunSteps]);
+        setNodes(updatedNodes);
+    }, [completedRunSteps]);
 
     useEffect(() => {
         if (!workflow) return;
@@ -92,13 +98,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             var stepPosition = workflow.stepPositions[step.name!];
             var stepSize = workflow.stepSizes[step.name!];
             var existingNode = nodes.find(n => n.id === step.name);
-            var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === step.name);
-            console.log("Latest completed run: ", latestCompletedRun);
-            var lastStatus = latestCompletedRun?.status;
-            // if last status is one of ['Running', 'Queue'], then set status to 'NotReady'
-            if (lastStatus === 'Running' || lastStatus === 'Queue') {
-                lastStatus = 'NotReady';
-            }
+            console.log("Existing node: ", existingNode);
             return {
                 ...existingNode,
                 ...stepSize,
@@ -106,9 +106,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 type: 'stepNode',
                 position: stepPosition,
                 data: {
+                    status: existingNode?.data.status ?? 'NotReady',
                     data: step,
                     onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, step, maxParallelRun, maxStep),
-                    status: lastStatus ?? 'NotReady',
+                    // status: lastStatus ?? 'NotReady',
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];
@@ -131,12 +132,27 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         setEdges(edges);
 
         props.onWorkflowChange?.(workflow);
-    }, [workflow, fitView, maxParallelRun, maxStep,completedRunSteps]);
+    }, [workflow, fitView, maxParallelRun, maxStep]);
 
     const onStepNodeRunClick = async (workflow: WorkflowDTO, step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
         console.log("Run step: ", step);
         if (!workflow.name) return;
         try {
+            var es = new EventSource(`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse`);
+            es.addEventListener("StepRunDTO", async (event) => {
+                var data = JSON.parse(event.data) as StepRunDTO;
+                console.log("Received step run data: ", data);
+                setCompletedRunSteps(prev => [...prev, data]);
+            });
+
+            es.onopen = (_) => {
+                console.log("Connection opened");
+            }
+
+            es.onerror = (event) => {
+                console.log("Error", event);
+            }
+
             var res = await postApiV1StepWiseControllerV1ExecuteStep(
                 {
                     query: {
@@ -147,6 +163,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                     }
                 }
             )
+
+            es.close();
         }
         catch (err) {
             console.error("Error executing step: ", err);
@@ -164,8 +182,30 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         }
         var updateStepRuns = [...completedRunSteps, ...res.data];
         setCompletedRunSteps(updateStepRuns);
-    }
 
+        var updatedWorkfow = {
+            ...workflow,
+            stepRuns: updateStepRuns,
+        } as WorkflowData;
+        setWorkflow(updatedWorkfow);
+
+        setNodes((prev) => {
+            return prev.map(node => {
+                var status = node.data.status;
+                if (node.data.status === 'Running' || node.data.status === 'Queue') {
+                    status = 'NotReady';
+                }
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        status: status,
+                    },
+                }
+            })
+        });
+    }
 
     const onNodesChangeRestricted = useCallback((changes: NodeChange[]) => {
         // Only allow position changes (dragging)
@@ -257,7 +297,9 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                                 onMaxStepsChange={onMaxStepsChange}
                                 onResetStepRunResultClick={() => setCompletedRunSteps([])}
                                 onAutoLayoutClick={onLayout}
-                                onRunClick={() => onStepNodeRunClick(workflow!, undefined, maxParallelRun, maxStep)}
+                                onRunClick={() => {
+                                    onStepNodeRunClick(workflow!, undefined, maxParallelRun, maxStep);
+                                }}
                             />
                         </div>
                         <ReactFlow
