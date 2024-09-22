@@ -79,3 +79,7 @@ export type PostApiV1StepWiseControllerV1ExecuteStepData = {
 export type PostApiV1StepWiseControllerV1ExecuteStepResponse = (Array<StepRunDTO>);
 
 export type PostApiV1StepWiseControllerV1ExecuteStepError = unknown;
+
+export type GetApiV1StepWiseControllerV1ExecuteStepSseResponse = (unknown);
+
+export type GetApiV1StepWiseControllerV1ExecuteStepSseError = unknown;

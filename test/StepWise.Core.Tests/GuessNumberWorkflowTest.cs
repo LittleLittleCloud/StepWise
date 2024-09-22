@@ -92,7 +92,7 @@ public class GuessNumberWorkflowTest
             var name = stepResult.Name;
             var result = stepResult.Variable;
 
-            if (stepResult.StepType == StepType.Variable)
+            if (stepResult.StepType == StepRunType.Variable)
             {
                 context[name] = result!;
             }

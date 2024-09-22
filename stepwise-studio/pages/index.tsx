@@ -46,9 +46,7 @@ if (process.env.NODE_ENV === 'development') {
 
 
 export default function Home() {
-  const [completedStepRuns, setCompletedStepRuns] = useState<Map<string, StepRunDTO[]>>(new Map());
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowData | undefined>(undefined);
-  const [selectedCompletedStepRuns, setSelectedCompletedStepRuns] = useState<StepRunDTO[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
   const [version, setVersion] = useState<string | null>(null);
 
@@ -92,6 +90,7 @@ export default function Home() {
               acc[node.id] = { x: node.position.x, y: node.position.y };
               return acc;
             }, {} as { [key: string]: { x: number; y: number } }),
+            stepRuns: [] as StepRunDTO[],
           } as WorkflowData);
         }
         setWorkflows(workflows);
@@ -103,9 +102,7 @@ export default function Home() {
           maps.set(workflow.name, []);
         });
 
-        setCompletedStepRuns(maps);
         setSelectedWorkflow(workflows[0] ?? undefined);
-        setSelectedCompletedStepRuns([]);
       })
       .catch((err) => {
         console.error("Error getting workflows: ", err);
@@ -115,53 +112,6 @@ export default function Home() {
     });
   }, []);
 
-
-  const StepNodeRunClick = async (step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
-    console.log("Run step: ", step);
-
-    if (selectedWorkflow?.name === null) {
-      console.error("workflow name is undefined");
-      return;
-    }
-
-    try {
-      var res = await postApiV1StepWiseControllerV1ExecuteStep(
-        {
-          query: {
-            step: step?.name ?? undefined,
-            workflow: selectedWorkflow?.name,
-            maxParallel: maxParallelRun,
-            maxSteps: maxSteps,
-          }
-        }
-      )
-    }
-    catch (err) {
-      console.error("Error executing step: ", err);
-      return;
-    }
-
-    if (res.error) {
-      console.error("Error executing step: ", res.error);
-      return;
-    }
-
-    if (res.data === undefined) {
-      console.error("No data returned from executing step");
-      return;
-    }
-
-    setCompletedStepRuns((prev) => {
-      var newMap = new Map(prev);
-      var stepRuns = newMap.get(selectedWorkflow?.name!) ?? [];
-      var newData = res.data ?? [];
-      newData.forEach((data) => {
-        stepRuns.push(data);
-      });
-      newMap.set(selectedWorkflow?.name!, stepRuns);
-      return newMap;
-    });
-  }
 
   useEffect(() => {
     console.log("Selected workflow: ", selectedWorkflow);
@@ -175,22 +125,13 @@ export default function Home() {
       return newWorkflows;
     });
       
-    setSelectedCompletedStepRuns(completedStepRuns.get(selectedWorkflow?.name!) ?? []);
-    setSelectedWorkflow(selectedWorkflow);
-  }, [completedStepRuns, selectedWorkflow]);
+  }, [selectedWorkflow]);
 
   const selectedWorkflowHandler = (workflow: WorkflowData) => {
-    setSelectedWorkflow(workflow);
-  }
-
-  const onResetStepRunResult = (workflow: WorkflowData) => {
-    setCompletedStepRuns((prev) => {
-      var newMap = new Map(prev);
-      newMap.set(workflow.name!, []);
-      return newMap;
+    setSelectedWorkflow((prev) => {
+      return workflows.find((w) => w.name === workflow.name);
     });
   }
-
 
   return (
     <div
@@ -202,28 +143,17 @@ export default function Home() {
         workflows={workflows}
         selectedWorkflow={selectedWorkflow}
         onWorkflowSelect={selectedWorkflowHandler} />
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="flex w-full h-screen"
-        >
-          <ResizablePanel>
-            <div className="flex flex-col items-center gap-8 h-screen">
-              <Workflow
+        <Workflow
                 dto={selectedWorkflow}
-                onStepNodeRunClick={StepNodeRunClick}
-                onResetStepRunResult={onResetStepRunResult}
-                onWorkflowChange={(workflowData) => setSelectedWorkflow(workflowData)}
+                onWorkflowChange={(workflowData) => setWorkflows((prev) => {
+                  const newWorkflows = [...prev];
+                  const index = newWorkflows.findIndex((workflow) => workflow.name === workflowData.name);
+                  if (index !== -1) {
+                    newWorkflows[index] = workflowData;
+                  }
+                  return newWorkflows;
+                })}
               />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle={true} />
-          <ResizablePanel
-            defaultSize={20}
-            minSize={20}
-            >
-            <StepRunSidebar stepRuns={selectedCompletedStepRuns} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
     </div>
   );
 }

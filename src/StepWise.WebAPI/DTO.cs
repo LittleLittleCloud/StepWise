@@ -2,11 +2,20 @@
 // DTO.cs
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using StepWise.Core;
 
 namespace StepWise.WebAPI;
 
-public record VariableDTO(string Name, string Type, string DisplayValue, int Generation)
+public record VariableDTO(
+    [property:JsonPropertyName("name")]
+    string Name,
+    [property:JsonPropertyName("type")]
+    string Type,
+    [property:JsonPropertyName("displayValue")]
+    string DisplayValue,
+    [property:JsonPropertyName("generation")]
+    int Generation)
 {
     public static VariableDTO FromVariable(StepVariable variable)
     {
@@ -15,7 +24,15 @@ public record VariableDTO(string Name, string Type, string DisplayValue, int Gen
         return new VariableDTO(variable.Name, typeString, displayValue, variable.Generation);
     }
 }
-public record StepDTO(string Name, string? Description, string[]? Dependencies, string[]? Variables)
+public record StepDTO(
+    [property:JsonPropertyName("name")]
+    string Name,
+    [property:JsonPropertyName("description")]
+    string? Description,
+    [property:JsonPropertyName("dependencies")]
+    string[]? Dependencies,
+    [property:JsonPropertyName("variables")]
+    string[]? Variables)
 {
     public static StepDTO FromStep(Step step)
     {
@@ -25,7 +42,11 @@ public record StepDTO(string Name, string? Description, string[]? Dependencies, 
     }
 }
 
-public record ExceptionDTO(string Message, string? StackTrace)
+public record ExceptionDTO(
+    [property:JsonPropertyName("message")]
+    string Message,
+    [property:JsonPropertyName("stackTrace")]
+    string? StackTrace)
 {
     public static ExceptionDTO FromException(Exception exception)
     {
@@ -34,11 +55,17 @@ public record ExceptionDTO(string Message, string? StackTrace)
 }
 
 public record StepRunDTO(
+    [property:JsonPropertyName("step")]
     StepDTO? Step,
+    [property:JsonPropertyName("variables")]
     VariableDTO[] Variables,
+    [property:JsonPropertyName("generation")]
     int Generation,
+    [property:JsonPropertyName("status")]
     string Status,
+    [property:JsonPropertyName("result")]
     VariableDTO? Result,
+    [property:JsonPropertyName("exception")]
     ExceptionDTO? Exception)
 {
     public static StepRunDTO FromStepRun(StepRun stepRun)
@@ -51,17 +78,13 @@ public record StepRunDTO(
     }
 }
 
-public record StepRunAndResultDTO(StepRunDTO StepRun, VariableDTO? Result)
-{
-    public static StepRunAndResultDTO FromStepRunAndResult(StepRun stepRun, StepVariable? result = null)
-    {
-        var stepRunDTO = StepRunDTO.FromStepRun(stepRun);
-        var resultDTO = result is null ? null : VariableDTO.FromVariable(result);
-        return new StepRunAndResultDTO(stepRunDTO, resultDTO);
-    }
-}
-
-public record WorkflowDTO(string Name, string? Description, StepDTO[] Steps)
+public record WorkflowDTO(
+    [property:JsonPropertyName("name")]
+    string Name,
+    [property:JsonPropertyName("description")]
+    string? Description,
+    [property:JsonPropertyName("steps")]
+    StepDTO[] Steps)
 {
     public static WorkflowDTO FromWorkflow(Workflow workflow)
     {

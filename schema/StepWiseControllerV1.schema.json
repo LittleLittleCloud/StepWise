@@ -237,6 +237,18 @@
           }
         }
       }
+    },
+    "/api/v1/StepWiseControllerV1/ExecuteStepSse": {
+      "get": {
+        "tags": [
+          "StepWiseControllerV1"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {

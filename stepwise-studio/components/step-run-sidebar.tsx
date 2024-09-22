@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes'
 import { StepRunDTO, WorkflowDTO } from '@/stepwise-client';
 import Workflow from './workflow';
 import ThemeSwitch from './theme-switch';
-import { Icon, Moon, SquareFunction } from 'lucide-react';
+import { Icon, Moon, SquareFunction, VariableIcon } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { CircleUserRound } from 'lucide-react';
 import { Network } from 'lucide-react';
@@ -12,11 +12,11 @@ import Divider from './divider';
 import { Badge } from './ui/badge';
 import { Markdown } from './markdown';
 
-interface StepRunSidebarProps {
+export interface StepRunSidebarProps {
     stepRuns: StepRunDTO[];
 }
 
-interface StepRunProps {
+export interface StepRunProps {
     stepRun: StepRunDTO;
 }
 
@@ -39,9 +39,10 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
                             }),
                         )}
                     >
-                        <SquareFunction size={16} />
+                        {stepRun?.step && <SquareFunction size={16} />}
+                        {stepRun?.result && <VariableIcon size={16} />}
                     </div>
-                    <span className="text-xs">{stepRun?.step?.name}</span>
+                    <span className="text-xs">{stepRun?.step?.name ?? stepRun?.result?.name}</span>
 
                 </div>
 
@@ -81,7 +82,7 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
     const [stepRuns, setStepRuns] = useState<StepRunDTO[]>([]);
     useEffect(() => {
-        setStepRuns(props.stepRuns);
+        setStepRuns(props.stepRuns ?? []);
     }, [props.stepRuns]);
 
     return (

@@ -83,7 +83,7 @@ public class ReviewCodeWorkflowTest
         // write code
         await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
         {
-            if (stepRun.StepType == StepType.Variable && stepRun.Variable is not null)
+            if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
             {
                 variables.Add(stepRun.Variable);
             }
@@ -98,7 +98,7 @@ public class ReviewCodeWorkflowTest
 
         await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
         {
-            if (stepRun.StepType == StepType.Variable && stepRun.Variable is not null)
+            if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
             {
                 variables.Add(stepRun.Variable);
             }
@@ -113,7 +113,7 @@ public class ReviewCodeWorkflowTest
 
         await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
         {
-            if (stepRun.StepType == StepType.Variable && stepRun.Variable is not null)
+            if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
             {
                 variables.Add(stepRun.Variable);
             }
