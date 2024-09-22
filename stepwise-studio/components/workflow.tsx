@@ -81,10 +81,25 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         var updatedNodes = nodes.map(node => {
             var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === node.id);
             var lastStatus = latestCompletedRun?.status ?? 'NotReady';
+            console.log('node parameters: ', node.data.data.parameters);
+            console.log('latestCompletedRun: ', latestCompletedRun);
+
+            var variables = [];
+            var existingVariables = completedRunSteps.filter((run) => run.status === 'Variable')
+                .map((run) => run.result!);
+            for (const param of node.data.data.parameters ?? []) {
+                var variable = existingVariables.findLast((variable) => variable.name === param.variable_name);
+                if (variable) {
+                    variables.push(variable);
+                }
+            }
+
+            console.log('variables: ', variables);
             return {
                 ...node,
                 data: {
                     ...node.data,
+                    variables: variables,
                     status: lastStatus,
                 },
             } as Node<StepNodeProps>;
@@ -106,10 +121,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 type: 'stepNode',
                 position: stepPosition,
                 data: {
+                    ...existingNode?.data,
                     status: existingNode?.data.status ?? 'NotReady',
                     data: step,
                     onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, step, maxParallelRun, maxStep),
-                    // status: lastStatus ?? 'NotReady',
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];

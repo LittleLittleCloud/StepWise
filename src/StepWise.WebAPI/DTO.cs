@@ -13,7 +13,7 @@ public record VariableDTO(
     [property:JsonPropertyName("type")]
     string Type,
     [property:JsonPropertyName("displayValue")]
-    string DisplayValue,
+    string? DisplayValue,
     [property:JsonPropertyName("generation")]
     int Generation)
 {
@@ -24,6 +24,21 @@ public record VariableDTO(
         return new VariableDTO(variable.Name, typeString, displayValue, variable.Generation);
     }
 }
+
+public record ParameterDTO(
+    [property: JsonPropertyName("name")]
+    string Name,
+    [property: JsonPropertyName("parameter_type")]
+    string ParameterType,
+    [property: JsonPropertyName("variable_name")]
+    string variableName)
+{
+    public static ParameterDTO FromParameter(Parameter parameter)
+    {
+        return new ParameterDTO(parameter.ParameterName, parameter.Type.Name, parameter.VariableName);
+    }
+}
+
 public record StepDTO(
     [property:JsonPropertyName("name")]
     string Name,
@@ -31,14 +46,14 @@ public record StepDTO(
     string? Description,
     [property:JsonPropertyName("dependencies")]
     string[]? Dependencies,
-    [property:JsonPropertyName("variables")]
-    string[]? Variables)
+    [property:JsonPropertyName("parameters")]
+    ParameterDTO[]? Parameters)
 {
     public static StepDTO FromStep(Step step)
     {
         var dependencies = step.Dependencies.ToArray();
-        var variables = step.InputParameters.Select(p => p.SourceStep ?? p.Name).ToArray();
-        return new StepDTO(step.Name, step.Description, dependencies, variables);
+        var parameters = step.InputParameters.Select(p => ParameterDTO.FromParameter(p)).ToArray();
+        return new StepDTO(step.Name, step.Description, dependencies, parameters);
     }
 }
 

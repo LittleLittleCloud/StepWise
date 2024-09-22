@@ -185,7 +185,7 @@ public class StepWiseEngine : IStepWiseEngine
                     // find all steps that takes the result as input
                     var nextSteps = _workflow.Steps.Values
                             .Where(x => steps.Any(s => s.Name == x.Name))
-                            .Where(x => x.InputParameters.Any(p => (p.SourceStep ?? p.Name) == res.Name));
+                            .Where(x => x.InputParameters.Any(p => p.VariableName == res.Name));
 
                     var stepsToAdd = new List<StepRun>();
                     foreach (var nextStep in nextSteps)

@@ -5,11 +5,17 @@ export type ExceptionDTO = {
     stackTrace?: (string) | null;
 };
 
+export type ParameterDTO = {
+    name?: (string) | null;
+    parameter_type?: (string) | null;
+    variable_name?: (string) | null;
+};
+
 export type StepDTO = {
     name?: (string) | null;
     description?: (string) | null;
     dependencies?: Array<(string)> | null;
-    variables?: Array<(string)> | null;
+    parameters?: Array<ParameterDTO> | null;
 };
 
 export type StepRunDTO = {
