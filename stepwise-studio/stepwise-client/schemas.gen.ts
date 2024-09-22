@@ -15,6 +15,25 @@ export const ExceptionDTOSchema = {
     additionalProperties: false
 } as const;
 
+export const ParameterDTOSchema = {
+    type: 'object',
+    properties: {
+        name: {
+            type: 'string',
+            nullable: true
+        },
+        parameter_type: {
+            type: 'string',
+            nullable: true
+        },
+        variable_name: {
+            type: 'string',
+            nullable: true
+        }
+    },
+    additionalProperties: false
+} as const;
+
 export const StepDTOSchema = {
     type: 'object',
     properties: {
@@ -33,10 +52,10 @@ export const StepDTOSchema = {
             },
             nullable: true
         },
-        variables: {
+        parameters: {
             type: 'array',
             items: {
-                type: 'string'
+                '$ref': '#/components/schemas/ParameterDTO'
             },
             nullable: true
         }

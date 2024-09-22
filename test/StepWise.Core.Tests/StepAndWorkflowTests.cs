@@ -67,12 +67,12 @@ public class StepAndWorkflowTests
 
         step.Name.Should().Be(nameof(GetWeather));
         step.InputParameters.Should().HaveCount(2);
-        step.InputParameters[0].Name.Should().Be("date");
+        step.InputParameters[0].ParameterName.Should().Be("date");
         step.InputParameters[0].Type.Should().Be(typeof(DateTime));
-        step.InputParameters[0].SourceStep.Should().Be(nameof(GetCurrentDateAsync));
-        step.InputParameters[1].Name.Should().Be("city");
+        step.InputParameters[0].VariableName.Should().Be(nameof(GetCurrentDateAsync));
+        step.InputParameters[1].ParameterName.Should().Be("city");
         step.InputParameters[1].Type.Should().Be(typeof(string));
-        step.InputParameters[1].SourceStep.Should().BeNull();
+        step.InputParameters[1].VariableName.Should().BeNull();
 
         step.OutputType.Should().Be(typeof(Task<string>));
         step.Dependencies.Should().Contain(nameof(GetCurrentDateAsync));

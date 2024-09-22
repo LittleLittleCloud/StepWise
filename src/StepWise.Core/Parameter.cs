@@ -11,20 +11,26 @@ namespace StepWise.Core;
 
 public class Parameter
 {
-    public Parameter(string name, Type type, string? sourceStep, bool hasDefaultValue, object? defaultValue = null)
+    public Parameter(string name, Type type, string? variableName, bool hasDefaultValue, object? defaultValue = null)
     {
-        Name = name;
+        ParameterName = name;
         Type = type;
-        SourceStep = sourceStep;
+        VariableName = variableName ?? name;
         HasDefaultValue = hasDefaultValue;
         DefaultValue = defaultValue;
     }
 
-    public string Name { get; set; }
+    /// <summary>
+    /// Parameter name.
+    /// </summary>
+    public string ParameterName { get; set; }
 
     public Type Type { get; set; }
 
-    public string? SourceStep { get; set; }
+    /// <summary>
+    /// Corresponding variable name accosiated with this parameter.
+    /// </summary>
+    public string VariableName { get; set; }
 
     public bool HasDefaultValue { get; set; }
 

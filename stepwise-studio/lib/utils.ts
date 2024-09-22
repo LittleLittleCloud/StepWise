@@ -16,7 +16,7 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'L
   var maxNodeHeight = nodes.reduce((max, node) => Math.max(max, node.height ?? 0), 10);
 
   nodes.forEach((node) => {
-      dagreGraph.setNode(node.id, { width: node.width, height: maxNodeHeight });
+      dagreGraph.setNode(node.id, { width: node.width, height: node.height });
   });
 
   edges.forEach((edge) => {

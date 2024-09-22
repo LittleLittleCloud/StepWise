@@ -267,6 +267,24 @@
         },
         "additionalProperties": false
       },
+      "ParameterDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "parameter_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "variable_name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "StepDTO": {
         "type": "object",
         "properties": {
@@ -285,10 +303,10 @@
             },
             "nullable": true
           },
-          "variables": {
+          "parameters": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/ParameterDTO"
             },
             "nullable": true
           }

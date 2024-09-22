@@ -76,7 +76,7 @@ public class Step
                 continue;
             }
 
-            if (!inputs.ContainsKey(param.SourceStep ?? param.Name))
+            if (!inputs.ContainsKey(param.VariableName))
             {
                 return false;
             }
@@ -94,7 +94,7 @@ public class Step
                 continue;
             }
 
-            if (!inputs.ContainsKey(param.SourceStep ?? param.Name))
+            if (!inputs.ContainsKey(param.VariableName))
             {
                 return false;
             }
@@ -124,7 +124,7 @@ public class Step
         var parameters = new object?[InputParameters.Count];
         for (int i = 0; i < InputParameters.Count; i++)
         {
-            var key = InputParameters[i].SourceStep ?? InputParameters[i].Name;
+            var key = InputParameters[i].VariableName;
             var input = key switch
             {
                 _ when inputs.ContainsKey(key) => inputs[key],
@@ -326,7 +326,7 @@ public class StepRun
         }
 
         // format [gen] stepName([gen]input1, [gen]input2, ...)
-        var parameters = this._step!.InputParameters.Select(p => p.Name);
+        var parameters = this._step!.InputParameters.Select(p => p.ParameterName);
         var filteredInputs = _inputs.Where(kv => parameters.Contains(kv.Key));
         var inputs = string.Join(", ", filteredInputs.Select(kv => $"{kv.Key}[{_inputs[kv.Key].Generation}]"));
         return $"{_step.Name}[{_generation}]({inputs})[status: {_stepType}]";
