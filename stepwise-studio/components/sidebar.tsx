@@ -14,7 +14,7 @@ import { useTheme } from 'next-themes'
 import { WorkflowDTO } from '@/stepwise-client';
 import Workflow, { WorkflowData } from './workflow';
 import ThemeSwitch from './theme-switch';
-import { Github, Icon, LucideGithub, Moon } from 'lucide-react';
+import { FileTextIcon, Github, Icon, LucideGithub, Moon, Sun } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { CircleUserRound } from 'lucide-react';
 import { Network } from 'lucide-react';
@@ -22,6 +22,7 @@ import Divider from './divider';
 import { Badge } from './ui/badge';
 import StepWiseIcon from '@/public/stepwise-logo.svg';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface SidebarProps {
     user: string;
@@ -36,6 +37,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     const [workflows, setWorkflows] = useState<WorkflowData[]>(props.workflows);
     const iconSize = 14;
     const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowData | undefined>(undefined);
+    const { theme, setTheme, systemTheme } = useTheme()
 
     useEffect(() => {
         setUsername(props.user);
@@ -56,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 <Image
                     src={StepWiseIcon}
                     alt="StepWise Logo"
-                 className="w-6 h-6" />
+                    className="w-6 h-6" />
                 <span className="text-x font-bold text-nowrap">StepWise</span>
             </div>
             <div>
@@ -94,8 +96,25 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
             </div>
             <Divider />
             {/* buttom bar */}
-            <div className="flex flex-col gap-2">
-                <div className="flex justify-between">
+            <div className="flex flex-col gap-1">
+                <Link
+                    href={"https://littlelittlecloud.github.io/StepWise"}
+                    target="_blank"
+                    className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg">
+                    <div className="flex items-center gap-2 ">
+                        <div className={buttonVariants(
+                            {
+                                variant: "outline",
+                                size: "tinyIcon",
+                            }
+                        )}>
+                            <FileTextIcon size={iconSize} />
+                        </div>
+                        <span className="text-sm">Docs</span>
+                    </div>
+                </Link>
+                <div className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
+                    onClick={() => theme === "dark" ? setTheme("light") : setTheme("dark")}>
                     <div className="flex items-center gap-2">
                         <div className={buttonVariants(
                             {
@@ -103,25 +122,10 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                                 size: "tinyIcon",
                             }
                         )}>
-                            <Moon size={iconSize} />
+                            {theme === "dark" ? <Moon size={iconSize} /> : <Sun size={iconSize} />}
                         </div>
                         <span className="text-sm">Theme</span>
                     </div>
-                    <ThemeSwitch />
-                </div>
-                <div className="flex justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className={buttonVariants(
-                            {
-                                variant: "outline",
-                                size: "tinyIcon",
-                            }
-                        )}>
-                            <CircleUserRound size={iconSize} />
-                        </div>
-                        <span className="text-sm">Account</span>
-                    </div>
-                    <span className="text-sm">{username}</span>
                 </div>
             </div>
         </div>
