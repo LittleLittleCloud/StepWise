@@ -1,4 +1,4 @@
-import { ParameterDTO, StepDTO, VariableDTO } from '@/stepwise-client';
+import { ParameterDTO, StepDTO, StepRunDTO, VariableDTO } from '@/stepwise-client';
 import React, { use, useCallback, useEffect, useState } from 'react';
 import { Handle, Position, NodeProps, useUpdateNodeInternals, NodeResizer } from 'reactflow';
 import { Button, buttonVariants } from './ui/button';
@@ -12,11 +12,22 @@ import { VariableCard } from './variable-card';
 
 export type StepNodeStatus = 'Running' | 'Failed' | 'Queue' | 'Completed' | 'NotReady';
 
-export interface StepNodeProps {
-    data: StepDTO;
-    variables?: VariableDTO[];
-    output?: VariableDTO;
-    status?: StepNodeStatus;
+const ToStepNodeStatus = (status: string): StepNodeStatus => {
+    switch (status) {
+        case 'Running':
+            return 'Running';
+        case 'Failed':
+            return 'Failed';
+        case 'Queue':
+            return 'Queue';
+        case 'Completed':
+            return 'Completed';
+        default:
+            return 'NotReady';
+    }
+}
+
+export interface StepNodeProps extends StepRunDTO {
     onRunClick: (step: StepDTO) => void;
     onSubmitOutput: (output: VariableDTO) => void;
 }
@@ -99,29 +110,29 @@ const ConvertStringToStepType = (type: string): StepType => {
 }
 
 const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
-    const [data, setData] = useState<StepDTO>(prop.data.data);
+    const [step, setStep] = useState<StepDTO>(prop.data.step!);
     const stepNodeRef = React.useRef<HTMLDivElement>(null);
     const titleRef = React.useRef<HTMLDivElement>(null);
     const updateNodeInternals = useUpdateNodeInternals();
     const [sourceHandleTopOffset, setSourceHandleTopOffset] = useState<number>(0);
-    const [status, setStatus] = useState<StepNodeStatus>(prop.data.status ?? 'NotReady');
+    const [status, setStatus] = useState<StepNodeStatus>(ToStepNodeStatus(prop.data.status ?? 'NotReady'));
     const [isSelected, setIsSelected] = useState<boolean>(prop.selected ?? false);
-    const [parameters, setParameters] = useState<ParameterDTO[]>(prop.data.data.parameters ?? []);
+    const [parameters, setParameters] = useState<ParameterDTO[]>(prop.data.step?.parameters ?? []);
     const [variables, setVariables] = useState<VariableDTO[]>([]);
     const parameterRefMap = React.useRef<Map<string, HTMLDivElement>>(new Map());
     const [targetHandleTopOffsets, setTargetHandleTopOffsets] = useState<Map<string, number>>(new Map());
     const [output, setOutput] = useState<VariableDTO | undefined>(undefined);
-    const [stepType, setStepType] = useState<StepType>(ConvertStringToStepType(prop.data.data.step_type));
+    const [stepType, setStepType] = useState<StepType | undefined>(ConvertStringToStepType(prop.data.step?.step_type ?? 'Ordinary'));
     const [inputText, setInputText] = useState<string>('');
 
     useEffect(() => {
         if (!stepNodeRef.current) return;
-        setData(prop.data.data);
-        setStatus(prop.data.status ?? 'NotReady');
+        setStep(prop.data.step!);
+        setStatus(ToStepNodeStatus(prop.data.status ?? 'NotReady'));
         setIsSelected(prop.selected ?? false);
-        setParameters(prop.data.data.parameters ?? []);
-        setOutput(prop.data.output ?? undefined);
-        setTargetHandleTopOffsets(prop.data.data.parameters?.reduce((acc, param) => {
+        setParameters(prop.data.step?.parameters ?? []);
+        setOutput(prop.data.result ?? undefined);
+        setTargetHandleTopOffsets(prop.data.step?.parameters?.reduce((acc, param) => {
             acc.set(param.variable_name!, 0);
             return acc;
         }, new Map<string, number>()) ?? new Map<string, number>());
@@ -143,28 +154,31 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }, [prop.data.variables]);
 
     useEffect(() => {
-        setOutput(prop.data.output ?? undefined);
-    }, [prop.data.output]);
+        setOutput(prop.data.result ?? undefined);
+    }, [prop.data.result]);
 
     useEffect(() => {
         setIsSelected(prop.selected ?? false);
     }, [prop.selected]);
 
     useEffect(() => {
-        setStatus(prop.data.status ?? 'NotReady');
+        setStatus(ToStepNodeStatus(prop.data.status ?? 'NotReady'));
     }, [prop.data.status]);
 
     useEffect(() => {
-        if (prop.data.data.step_type === 'StepWiseUITextInput') {
+        if (prop.data.step?.step_type === 'StepWiseUITextInput') {
             setStepType('StepWiseUITextInput');
         }
-    }, [prop.data.data.step_type]);
+        else {
+            setStepType('Ordinary');
+        }
+    }, [prop.data.step?.step_type]);
 
 
     useEffect(() => {
         updateNodeInternals(prop.id);
     }
-        , [data, sourceHandleTopOffset, targetHandleTopOffsets, status]);
+        , [step, sourceHandleTopOffset, targetHandleTopOffsets, status]);
 
     useEffect(() => {
         if (titleRef.current) {
@@ -202,7 +216,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     variant={"outline"}
                     size={"xxsIcon"}
                     className='m-0 p-0'
-                    onClick={() => prop.data.onRunClick(data)}
+                    onClick={() => prop.data.onRunClick(step)}
                 >
                     <Play />
                 </Button>
@@ -215,7 +229,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                 </Button>
             </div>
 
-            {data.name && (
+            {step.name && (
                 <div
                     className='flex flex-col'
                 >
@@ -227,21 +241,21 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     >
                         <StepNodeStatusIndicator status={status} />
                     </div>
-                    <h2 className="text-xs font-semibold text-nowrap pr-5">{data.name}</h2>
+                    <h2 className="text-xs font-semibold text-nowrap pr-5">{step.name}</h2>
                     <Handle
                         type="source"
                         position={Position.Right}
                         // id = name-variable
-                        id={`${data.name}`}
+                        id={`${step.name}`}
                         className="w-2 h-2 border-none bg-green-500"
                         style={{ top: sourceHandleTopOffset, right: 5 }}
                     />
                 </div>
-                {data.description && (
+                {step.description && (
                     
                     <h6
                         className="text-xs text-primary/50 pl-5"
-                    >{data.description}</h6>
+                    >{step.description}</h6>
                 )}
             </div>
             )}
@@ -276,7 +290,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                                         type="target"
                                         position={Position.Left}
                                         // id = name-dep
-                                        id={`${data.name}-${param.variable_name}`}
+                                        id={`${step.name}-${param.variable_name}`}
                                         className="w-2 h-2 border-none bg-blue-500"
                                         style={{ top: targetHandleTopOffsets.get(param.variable_name!), left: 10 }}
                                     />
@@ -344,9 +358,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                         onClick={() => {
                             if (output?.displayValue === inputText) return;
                             var variable = {
-                                name: data.name,
+                                name: step.name,
                                 type: 'String',
                                 displayValue: inputText,
+                                value: inputText,
+                                generation: prop.data.generation,
                             } as VariableDTO;
                             prop.data.onSubmitOutput(variable);
                         }}

@@ -205,6 +205,34 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/VariableDTO"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/VariableDTO"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/VariableDTO"
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -254,33 +282,41 @@
   "components": {
     "schemas": {
       "ExceptionDTO": {
+        "required": [
+          "message"
+        ],
         "type": "object",
         "properties": {
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
           "stackTrace": {
             "type": "string",
             "nullable": true
+          },
+          "message": {
+            "minLength": 1,
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ParameterDTO": {
+        "required": [
+          "name",
+          "parameter_type",
+          "variable_name"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "parameter_type": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           },
           "variable_name": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1,
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -292,10 +328,6 @@
         ],
         "type": "object",
         "properties": {
-          "name": {
-            "minLength": 1,
-            "type": "string"
-          },
           "description": {
             "type": "string",
             "nullable": true
@@ -317,11 +349,19 @@
           "step_type": {
             "minLength": 1,
             "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "StepRunDTO": {
+        "required": [
+          "generation",
+          "status"
+        ],
         "type": "object",
         "properties": {
           "step": {
@@ -334,37 +374,45 @@
             },
             "nullable": true
           },
-          "generation": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
           "result": {
             "$ref": "#/components/schemas/VariableDTO"
           },
           "exception": {
             "$ref": "#/components/schemas/ExceptionDTO"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "minLength": 1,
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "VariableDTO": {
+        "required": [
+          "generation",
+          "name",
+          "type"
+        ],
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "type": "string",
+          "value": {
             "nullable": true
           },
           "displayValue": {
             "type": "string",
             "nullable": true
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "minLength": 1,
+            "type": "string"
           },
           "generation": {
             "type": "integer",
@@ -374,22 +422,25 @@
         "additionalProperties": false
       },
       "WorkflowDTO": {
+        "required": [
+          "name",
+          "steps"
+        ],
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
           "description": {
             "type": "string",
             "nullable": true
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
           },
           "steps": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StepDTO"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false

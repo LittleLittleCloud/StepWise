@@ -1,0 +1,12 @@
+﻿Numeric Variables[0] = {
+  "value": {
+    "Item1": 1,
+    "Item2": 2,
+    "Item3": "hello",
+    "Item4": true
+  },
+  "displayValue": "(1, 2, hello, True)",
+  "name": "tuple",
+  "type": "ValueTuple\u00604",
+  "generation": 0
+}

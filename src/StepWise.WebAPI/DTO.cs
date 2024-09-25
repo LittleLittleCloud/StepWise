@@ -1,7 +1,6 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
 // DTO.cs
 
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,50 +9,82 @@ using StepWise.Core;
 namespace StepWise.WebAPI;
 
 public record VariableDTO(
-    [property:JsonPropertyName("name")]
-    string Name,
-    [property:JsonPropertyName("type")]
-    string Type,
+    [property:JsonPropertyName("value")]
+    JsonDocument? Value,
     [property:JsonPropertyName("displayValue")]
-    string? DisplayValue,
-    [property:JsonPropertyName("generation")]
-    int Generation)
+    string? DisplayValue)
 {
+    private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { IncludeFields = true };
+
+    [JsonPropertyName("name")]
+    [Required]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("type")]
+    [Required]
+    public required string VariableType { get; init; }
+
+    [JsonPropertyName("generation")]
+    [Required]
+    public required int Generation { get; init; }
+
     public static VariableDTO FromVariable(StepVariable variable)
     {
         var typeString = variable.Value?.GetType().Name ?? "null";
         var displayValue = variable.Value?.ToString();
-        return new VariableDTO(variable.Name, typeString, displayValue, variable.Generation);
+        var value = variable.Value switch
+        {
+            null => null,
+            _ => JsonDocument.Parse(JsonSerializer.Serialize(variable.Value, _jsonSerializerOptions))
+        };
+        return new VariableDTO(value, displayValue)
+        {
+            Name = variable.Name,
+            VariableType = typeString,
+            Generation = variable.Generation,
+        };
+    }
+
+    public static StepVariable FromVariableDTO(VariableDTO variableDTO, Type variableType)
+    {
+        var json = variableDTO.Value?.RootElement.GetRawText() ?? throw new ArgumentNullException(nameof(variableDTO.Value));
+        var value = JsonSerializer.Deserialize(json, variableType, _jsonSerializerOptions) ?? throw new ArgumentNullException(nameof(json));
+        return StepVariable.Create(variableDTO.Name, value, variableDTO.Generation);
     }
 }
 
-public record ParameterDTO(
-    [property: JsonPropertyName("name")]
-    string Name,
-    [property: JsonPropertyName("parameter_type")]
-    string ParameterType,
-    [property: JsonPropertyName("variable_name")]
-    string variableName)
+public record ParameterDTO
 {
     public static ParameterDTO FromParameter(Parameter parameter)
     {
-        return new ParameterDTO(parameter.ParameterName, parameter.Type.Name, parameter.VariableName);
+        return new ParameterDTO
+        {
+            Name = parameter.ParameterName,
+            ParameterType = parameter.Type.Name,
+            VariableName = parameter.VariableName,
+        };
     }
+
+    [JsonPropertyName("name")]
+    [Required]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("parameter_type")]
+    [Required]
+    public required string ParameterType { get; init; }
+
+    [JsonPropertyName("variable_name")]
+    [Required]
+    public required string VariableName { get; init; }
 }
 
 public record StepDTO(
-    [property:JsonPropertyName("name")]
-    [property: Required]
-    string Name,
     [property:JsonPropertyName("description")]
     string? Description,
     [property:JsonPropertyName("dependencies")]
     string[]? Dependencies,
     [property:JsonPropertyName("parameters")]
-    ParameterDTO[]? Parameters,
-    [property: JsonPropertyName("step_type")]
-    [property: Required]
-    string StepType)
+    ParameterDTO[]? Parameters)
 {
     public static StepDTO FromStep(Step step)
     {
@@ -61,20 +92,37 @@ public record StepDTO(
         var parameters = step.InputParameters.Select(p => ParameterDTO.FromParameter(p)).ToArray();
         var stepType = Enum.GetName(step.StepType)!;
 
-        return new StepDTO(step.Name, step.Description, dependencies, parameters, stepType);
+        return new StepDTO(step.Description, dependencies, parameters)
+        {
+            StepType = stepType,
+            Name = step.Name,
+        };
     }
+
+    [JsonPropertyName("step_type")]
+    [Required]
+    public required string StepType { get; init; }
+
+    [JsonPropertyName("name")]
+    [Required]
+    public required string Name { get; init; }
 }
 
 public record ExceptionDTO(
-    [property:JsonPropertyName("message")]
-    string Message,
     [property:JsonPropertyName("stackTrace")]
     string? StackTrace)
 {
     public static ExceptionDTO FromException(Exception exception)
     {
-        return new ExceptionDTO(exception.Message, exception.StackTrace);
+        return new ExceptionDTO(exception.StackTrace)
+        {
+            Message = exception.Message,
+        };
     }
+
+    [JsonPropertyName("message")]
+    [Required]
+    public required string Message { get; init; }
 }
 
 public record StepRunDTO(
@@ -82,10 +130,6 @@ public record StepRunDTO(
     StepDTO? Step,
     [property:JsonPropertyName("variables")]
     VariableDTO[] Variables,
-    [property:JsonPropertyName("generation")]
-    int Generation,
-    [property:JsonPropertyName("status")]
-    string Status,
     [property:JsonPropertyName("result")]
     VariableDTO? Result,
     [property:JsonPropertyName("exception")]
@@ -93,25 +137,46 @@ public record StepRunDTO(
 {
     public static StepRunDTO FromStepRun(StepRun stepRun)
     {
-        var variables = stepRun.Inputs.Values.Select(VariableDTO.FromVariable).ToArray();
+        var variables = stepRun.Inputs.Values.Select(v => VariableDTO.FromVariable(v)).ToArray();
         var result = stepRun.Variable is null ? null : VariableDTO.FromVariable(stepRun.Variable);
         var exception = stepRun.Exception is null ? null : ExceptionDTO.FromException(stepRun.Exception);
         var stepRunDTO = stepRun.Step is null ? null : StepDTO.FromStep(stepRun.Step);
-        return new StepRunDTO(stepRunDTO, variables, stepRun.Generation, Enum.GetName(stepRun.StepType)!, result, exception);
+        return new StepRunDTO(stepRunDTO, variables, result, exception)
+        {
+            Generation = stepRun.Generation,
+            Status = Enum.GetName(stepRun.StepType)!,
+        };
     }
+
+    [JsonPropertyName("generation")]
+    [Required]
+    public required int Generation { get; init; }
+
+    [JsonPropertyName("status")]
+    [Required]
+    public required string Status { get; init; }
+
 }
 
 public record WorkflowDTO(
-    [property:JsonPropertyName("name")]
-    string Name,
     [property:JsonPropertyName("description")]
-    string? Description,
-    [property:JsonPropertyName("steps")]
-    StepDTO[] Steps)
+    string? Description)
 {
     public static WorkflowDTO FromWorkflow(Workflow workflow)
     {
         var steps = workflow.Steps.Values.Select(StepDTO.FromStep).ToArray();
-        return new WorkflowDTO(workflow.Name, null, steps);
+        return new WorkflowDTO(Description: null)
+        {
+            Name = workflow.Name,
+            Steps = steps,
+        };
     }
+
+    [JsonPropertyName("name")]
+    [Required]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("steps")]
+    [Required]
+    public required StepDTO[] Steps { get; init; }
 }

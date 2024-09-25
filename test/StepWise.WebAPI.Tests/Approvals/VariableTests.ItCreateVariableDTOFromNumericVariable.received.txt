@@ -1,0 +1,35 @@
+﻿Numeric Variables[0] = {
+  "name": "int",
+  "type": "Int32",
+  "value": 1,
+  "displayValue": "1",
+  "generation": 0
+}
+Numeric Variables[1] = {
+  "name": "long",
+  "type": "Int64",
+  "value": 1,
+  "displayValue": "1",
+  "generation": 0
+}
+Numeric Variables[2] = {
+  "name": "float",
+  "type": "Single",
+  "value": 1,
+  "displayValue": "1",
+  "generation": 0
+}
+Numeric Variables[3] = {
+  "name": "double",
+  "type": "Double",
+  "value": 1,
+  "displayValue": "1",
+  "generation": 0
+}
+Numeric Variables[4] = {
+  "name": "decimal",
+  "type": "Decimal",
+  "value": 1.0,
+  "displayValue": "1.0",
+  "generation": 0
+}

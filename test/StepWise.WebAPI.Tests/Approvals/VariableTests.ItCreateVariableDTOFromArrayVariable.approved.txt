@@ -1,0 +1,32 @@
+﻿Numeric Variables[0] = {
+  "value": [
+    1,
+    2,
+    3
+  ],
+  "displayValue": "System.Int32[]",
+  "name": "int[]",
+  "type": "Int32[]",
+  "generation": 0
+}
+Numeric Variables[1] = {
+  "value": [
+    1,
+    2,
+    3
+  ],
+  "displayValue": "System.Int64[]",
+  "name": "long[]",
+  "type": "Int64[]",
+  "generation": 0
+}
+Numeric Variables[2] = {
+  "value": [
+    "Hello",
+    "World"
+  ],
+  "displayValue": "System.String[]",
+  "name": "string[]",
+  "type": "String[]",
+  "generation": 0
+}

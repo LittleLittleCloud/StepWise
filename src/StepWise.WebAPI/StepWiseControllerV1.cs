@@ -74,7 +74,8 @@ public class StepWiseClient
         string workflowName,
         string? stepName = null,
         int? maxSteps = null,
-        int maxParallel = 1)
+        int maxParallel = 1,
+        StepVariable[]? input = null)
     {
         if (!_workflows.TryGetValue(workflowName, out var workflow))
         {
@@ -82,6 +83,7 @@ public class StepWiseClient
         }
 
         var engine = new StepWiseEngine(workflow, logger: _logger);
+        input ??= Array.Empty<StepVariable>();
 
         var stopStragety = new StopStrategyPipeline();
 
@@ -102,7 +104,7 @@ public class StepWiseClient
         }
 
 
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, maxConcurrency: maxParallel, stopStrategy: stopStragety))
+        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, inputs: input, maxConcurrency: maxParallel, stopStrategy: stopStragety))
         {
             yield return stepRunAndResult;
             StepRunEvent?.Invoke(this, StepRunDTO.FromStepRun(stepRunAndResult));
@@ -195,13 +197,48 @@ internal class StepWiseControllerV1 : ControllerBase
         string workflow,
         string? step = null,
         int? maxSteps = null,
-        int maxParallel = 1)
+        int maxParallel = 1,
+        VariableDTO[]? variables = null)
     {
-        await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel))
+        variables = variables ?? [];
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            yield break;
+        }
+
+        var steps = workflowObject.Steps.Values;
+        var stepVariableTypeMap = steps.ToDictionary(s => s.Name, s =>
+        {
+            var returnType = s.OutputType;
+            // return type will always be Task<MyReturnType>
+            if (returnType.GetGenericTypeDefinition() == typeof(Task<>))
+            {
+                var actualReturnType = returnType.GenericTypeArguments[0]; // MyReturnType
+
+                return actualReturnType;
+            }
+
+            return returnType;
+        });
+
+        var inputs = new List<StepVariable>();
+
+        foreach (var variable in variables)
+        {
+            var stepVariable = VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name]);
+            inputs.Add(stepVariable);
+        }
+
+        await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel, [.. inputs]))
         {
             var dto = StepRunDTO.FromStepRun(stepRun);
 
             yield return dto;
+            if (HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                _logger?.LogInformation("Request aborted");
+                yield break;
+            }
         }
     }
 
