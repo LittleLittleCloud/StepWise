@@ -41,3 +41,19 @@ public class FromStepAttribute : Attribute
 
     public string Name { get; set; }
 }
+
+[AttributeUsage(AttributeTargets.Method)]
+public class StepWiseUITextInputAttribute : Attribute
+{
+    /// <summary>
+    /// This attribute is used to mark a method parameter as a text input in the UI.
+    /// </summary>
+    /// <param name="name">The name of the text input. If not provided, the name of the parameter will be used.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public StepWiseUITextInputAttribute([CallerMemberName] string? name = null)
+    {
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+    }
+
+    public string Name { get; set; }
+}

@@ -17,6 +17,17 @@ public class StepAndWorkflowTests
         return DateTime.Now;
     }
 
+    [StepWiseUITextInput]
+    public async Task<string?> GetCity(string prompt = "Please enter the city name")
+    {
+        return null;
+    }
+
+    public async Task<bool> IllegalTextInputStep(string prompt = "Please enter the city name")
+    {
+        return false;
+    }
+
     public DateTime GetDate()
     {
         return DateTime.Now;
@@ -41,9 +52,10 @@ public class StepAndWorkflowTests
     {
         var workflow = Workflow.CreateFromInstance(this);
 
-        workflow.Steps.Should().HaveCount(2);
+        workflow.Steps.Should().HaveCount(3);
         workflow.Steps.Should().ContainKey(nameof(GetCurrentDateAsync));
         workflow.Steps.Should().ContainKey(nameof(GetWeather));
+        workflow.Steps.Should().ContainKey(nameof(GetCity));
     }
 
     [Fact]
@@ -120,5 +132,23 @@ public class StepAndWorkflowTests
         // invoke
         var res = await step.ExecuteAsync();
         res.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task StepWiseTextInputStepMustReturnString()
+    {
+        var act = () => Step.CreateFromStepWiseUITextInput(IllegalTextInputStep);
+
+        act.Should().Throw<ArgumentException>().WithMessage("The return type of the StepWiseUITextInput method must be Task<string?>.");
+    }
+
+    [Fact]
+    public async Task ItCreateStepWiseTextInputStepFromGetCity()
+    {
+        var step = Step.CreateFromStepWiseUITextInput(GetCity);
+
+        step.Name.Should().Be(nameof(GetCity));
+        step.OutputType.Should().Be(typeof(Task<string?>));
+        step.StepType.Should().Be(StepType.StepWiseUITextInput);
     }
 }

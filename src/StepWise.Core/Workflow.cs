@@ -36,15 +36,20 @@ public class Workflow
 
         foreach (var method in type.GetMethods())
         {
-            var stepAttribute = method.GetCustomAttribute<StepAttribute>();
-            if (stepAttribute is null)
+            if (method.GetCustomAttribute<StepAttribute>() is StepAttribute stepAttribute)
             {
-                continue;
+                var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
+                var returnType = method.ReturnType;
+                var step = Step.CreateFromMethod(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), stepAttribute.Name);
+                steps.Add(step.Name, step);
             }
-            var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
-            var returnType = method.ReturnType;
-            var step = Step.CreateFromMethod(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance));
-            steps.Add(step.Name, step);
+            else if (method.GetCustomAttribute<StepWiseUITextInputAttribute>() is StepWiseUITextInputAttribute textInputAttribute)
+            {
+                var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
+                var returnType = method.ReturnType;
+                var step = Step.CreateFromStepWiseUITextInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name);
+                steps.Add(step.Name, step);
+            }
         }
 
         return new Workflow(name, steps);

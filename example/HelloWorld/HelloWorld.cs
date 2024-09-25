@@ -19,11 +19,18 @@ public class HelloWorld
         return $"{hello} World!";
     }
 
+    [StepWiseUITextInput]
+    public async Task<string?> GetName(string prompt = "Please enter your name")
+    {
+        return null;
+    }
+
     [Step]
     [DependOn(nameof(SayHelloWorldAsync))]
-    public async Task<string> GetNameAsync(
+    [DependOn(nameof(GetName))]
+    public async Task<string> SaySomething(
         [FromStep(nameof(SayHelloWorldAsync))] string helloWorld,
-        string name = "LittleLittleCloud")
+        [FromStep(nameof(GetName))] string name)
     {
         return $"{helloWorld}, {name}";
     }
