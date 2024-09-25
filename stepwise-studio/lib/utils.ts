@@ -55,3 +55,23 @@ export function getPosition(point: { x: number, y: number }) {
   if (point.x === 0) return 'left';
   return 'right';
 }
+
+export function getDisplayType(type: string)
+{
+  switch (type) {
+      case 'String':
+          return 'str';
+      case 'Int32':
+      case 'Float32':
+          return 'number';
+      case 'Boolean':
+          return 'bool';
+      default:
+          return 'object';
+  }
+};
+
+export function showAsMarkdown(type: 'str' | 'number' | 'bool' | 'object')
+{
+  return ['str', 'number'].indexOf(type) > -1;
+}

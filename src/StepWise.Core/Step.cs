@@ -255,7 +255,18 @@ public class StepRun
         int generation,
         IDictionary<string, StepVariable>? inputs = null)
     {
-        return new StepRun(step, generation, inputs?.ToDictionary(kv => kv.Key, kv => kv.Value) ?? new Dictionary<string, StepVariable>());
+        // create variable for inputs with default value
+        var clonedInputs = inputs?.ToDictionary(kv => kv.Key, kv => kv.Value) ?? new Dictionary<string, StepVariable>();
+        var parameters = step.InputParameters;
+        foreach (var param in parameters)
+        {
+            if (!clonedInputs.ContainsKey(param.VariableName) && param.HasDefaultValue && param.DefaultValue != null)
+            {
+                clonedInputs[param.VariableName] = StepVariable.Create(param.VariableName, param.DefaultValue);
+            }
+        }
+
+        return new StepRun(step, generation, clonedInputs);
     }
 
     public static StepRun CreateVariable(StepVariable variable)

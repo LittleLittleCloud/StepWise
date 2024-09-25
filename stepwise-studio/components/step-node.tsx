@@ -1,102 +1,21 @@
 import { ParameterDTO, StepDTO, VariableDTO } from '@/stepwise-client';
 import React, { use, useCallback, useEffect, useState } from 'react';
-import { Handle, Position, NodeProps, useUpdateNodeInternals } from 'reactflow';
+import { Handle, Position, NodeProps, useUpdateNodeInternals, NodeResizer } from 'reactflow';
 import { Button, buttonVariants } from './ui/button';
-import { cn } from '@/lib/utils';
-import { AlertCircle, AlertOctagon, CheckCircle, CheckCircle2, CircleUserRound, Clock, Loader2, Play, RotateCcw, SquareFunction, VariableIcon } from 'lucide-react';
+import { cn, getDisplayType, showAsMarkdown } from '@/lib/utils';
+import { AlertCircle, AlertOctagon, Badge, CheckCircle, CheckCircle2, CircleUserRound, Clock, Loader2, Play, RotateCcw, SquareFunction, VariableIcon } from 'lucide-react';
 import Divider from './divider';
 import { badgeVariants } from './ui/badge';
 import { Markdown } from './markdown';
-
-export type ParameterType = 'string' | 'number' | 'boolean' | 'object' | 'image' | 'file';
-
-export interface ParameterCardProps extends ParameterDTO {
-    variable?: VariableDTO;
-}
-
-export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
-    const [name, setName] = useState<string>(props.name ?? '');
-    const [variable, setVariable] = useState<VariableDTO | undefined>(props.variable ?? undefined);
-    const [parameterType, setParameterType] = useState<string>(props.parameter_type ?? '');
-    const [collapsed, setCollapsed] = useState<boolean>(true);
-
-    useEffect(() => {
-        setName(props.name ?? '');
-        setVariable(props.variable ?? undefined);
-        setParameterType(props.parameter_type ?? '');
-    }, []);
-
-    useEffect(() => {
-        setVariable(props.variable ?? undefined);
-    }, [props.variable]);
-
-    const getDisplayType = (type: string) => {
-        console.log(type);
-        switch (type) {
-            case 'String':
-                return 'str';
-            case 'Int32':
-            case 'Float32':
-                return 'number';
-            case 'Boolean':
-                return 'bool';
-            default:
-                return 'object';
-        }
-    };
-
-    const showAsMarkdown = (type: 'str' | 'number' | 'bool' | 'object') => {
-        return ['str', 'number'].indexOf(type) > -1;
-    }
-
-    return (
-        <div
-            className={cn("flex flex-col gap-1 items-center bg-accent rounded px-1 py-0.5 ",
-                "hover:bg-accent/80 hover:cursor-pointer")}
-            onClick={() => setCollapsed(!collapsed)}
-        >
-            <div
-                className='flex w-full gap-5 items-center justify-between'
-            >
-                <div
-                    className='flex gap-2 px-4 items-center'
-                >
-                    <div className="text-xs">{name}</div>
-                    <div
-                        className={cn(badgeVariants({
-                            variant: 'green',
-                            size: 'tiny',
-                        }),
-                            'text-xs px-1 border-none')}
-                    >{getDisplayType(parameterType)}</div>
-                </div>
-
-                {/* the brief display of variable if available */}
-                {collapsed && variable && showAsMarkdown(getDisplayType(parameterType)) && (
-
-                    <span
-                        className='text-xs truncate bg-background/50 rounded px-1 max-w-[10rem]'
-                    >{variable.displayValue}</span>
-                )}
-            </div>
-            {!collapsed && variable && showAsMarkdown(getDisplayType(parameterType)) && (
-                <div
-                    className='flex flex-col gap-1 w-full bg-background/50 rounded px-1 overflow-x-auto'
-                >
-                    <Markdown
-                        className='text-xs'
-                    >{variable.displayValue!}</Markdown>
-                </div>
-            )}
-        </div>
-    );
-}
+import { ParameterCard } from './parameter-card';
+import { VariableCard } from './variable-card';
 
 export type StepNodeStatus = 'Running' | 'Failed' | 'Queue' | 'Completed' | 'NotReady';
 
 export interface StepNodeProps {
     data: StepDTO;
     variables?: VariableDTO[];
+    output?: VariableDTO;
     status?: StepNodeStatus;
     onRunClick: (step: StepDTO) => void;
 }
@@ -177,9 +96,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     const [isSelected, setIsSelected] = useState<boolean>(prop.selected ?? false);
     const [parameters, setParameters] = useState<ParameterDTO[]>(prop.data.data.parameters ?? []);
     const [variables, setVariables] = useState<VariableDTO[]>([]);
-    const dividerRef = React.useRef<HTMLDivElement>(null);
     const parameterRefMap = React.useRef<Map<string, HTMLDivElement>>(new Map());
     const [targetHandleTopOffsets, setTargetHandleTopOffsets] = useState<Map<string, number>>(new Map());
+    const [output, setOutput] = useState<VariableDTO | undefined>(undefined);
 
     useEffect(() => {
         if (!stepNodeRef.current) return;
@@ -188,6 +107,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
         setStatus(prop.data.status ?? 'NotReady');
         setIsSelected(prop.selected ?? false);
         setParameters(prop.data.data.parameters ?? []);
+        setOutput(prop.data.output ?? undefined);
         setTargetHandleTopOffsets(prop.data.data.parameters?.reduce((acc, param) => {
             acc.set(param.variable_name!, 0);
             return acc;
@@ -195,7 +115,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
         // set resize observer
         const resizeObserver = new ResizeObserver((entries) => {
-            console.log(entries);
             resizeCallback();
         });
 
@@ -211,6 +130,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }, [prop.data.variables]);
 
     useEffect(() => {
+        setOutput(prop.data.output ?? undefined);
+    }, [prop.data.output]);
+
+    useEffect(() => {
         setIsSelected(prop.selected ?? false);
     }
         , [prop.selected]);
@@ -224,7 +147,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     useEffect(() => {
         updateNodeInternals(prop.id);
     }
-    , [data, sourceHandleTopOffset, targetHandleTopOffsets, status]);
+        , [data, sourceHandleTopOffset, targetHandleTopOffsets, status]);
 
     useEffect(() => {
         if (titleRef.current) {
@@ -239,18 +162,17 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
             newOffsetMap.set(Array.from(parameterRefMap.current.keys())[index], offset);
         });
 
-        console.log(newOffsetMap);
         setTargetHandleTopOffsets(newOffsetMap);
     }, [parameterRefMap]);
 
     useEffect(() => {
-        if(parameterRefMap.current && parameterRefMap.current.size > 0) {
+        if (parameterRefMap.current && parameterRefMap.current.size > 0) {
             resizeCallback();
         }
     }, [parameterRefMap.current]);
 
     return (
-        <div className={cn("border-2 rounded-md shadow-md p-1 bg-background/50 group min-w-32",
+        <div className={cn("border-2 max-w-96 rounded-md shadow-md p-1 bg-background/50 group min-w-32",
             isSelected ? "border-primary/40" : "border-transparent")}
             ref={stepNodeRef}
         >
@@ -297,7 +219,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                 </div>
             )}
 
-            
+
             {/* parameters */}
             {parameters && parameters.length > 0 && (
                 <div>
@@ -320,9 +242,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                                 <div
                                     key={index}
                                     ref={(el) => el && parameterRefMap.current.set(param.variable_name!, el)}
-                                    >
-                                <ParameterCard {...param} variable={variables.find(v => v.name === param.variable_name)} />
-                                <Handle
+                                >
+                                    <ParameterCard {...param} variable={variables.find(v => v.name === param.variable_name)} />
+                                    <Handle
                                         key={index}
                                         type="target"
                                         position={Position.Left}
@@ -337,8 +259,39 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     </div>
                 </div>
             )}
-        </div>
-    );
+
+            {/* output */}
+            {output && (
+                <div>
+                    <div
+                        className='flex gap-1 items-center'>
+                        <Button
+                            variant={"outline"}
+                            size={"xxsIcon"}
+                            className='w-4 h-4 m-0 p-0'
+                        >
+                            <VariableIcon size={12} />
+                        </Button>
+                        <h3 className="text-xs font-semibold">Output</h3>
+                        {output.type && 
+                        <div
+                            className={cn(badgeVariants({
+                                variant: 'green',
+                                size: 'tiny',
+                            }),
+                                'text-xs px-1 border-none')}
+                        >
+                            {getDisplayType(output.type)}
+                        </div>
+                        }
+                    </div>
+                        {output && <VariableCard variable={output} />}
+                    </div>
+                    )
+            }
+
+                </div>
+            );
 };
 
-export default StepNode;
+            export default StepNode;

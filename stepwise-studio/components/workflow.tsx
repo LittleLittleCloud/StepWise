@@ -1,4 +1,4 @@
-import { client, postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunDTO, WorkflowDTO } from '@/stepwise-client';
+import { client, postApiV1StepWiseControllerV1ExecuteStep, StepDTO, StepRunDTO, VariableDTO, WorkflowDTO } from '@/stepwise-client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
     Background,
@@ -56,6 +56,9 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
     useEffect(() => {
         setWorkflow(props.dto);
+        var updatedFlow = updateNodeAndEdgesFromWorkflow(props.dto!, nodes);
+        setNodes(updatedFlow.nodes);
+        setEdges(updatedFlow.edges);
         setCompletedRunSteps(props.dto?.stepRuns ?? []);
     }, [props.dto]);
 
@@ -75,41 +78,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         }
     }, [props.dto?.maxSteps]);
 
-    useEffect(() => {
-        // when stepRun changes, update the status of the step node
-        // using the last stepRun status
-        var updatedNodes = nodes.map(node => {
-            var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === node.id);
-            var lastStatus = latestCompletedRun?.status ?? 'NotReady';
-            console.log('node parameters: ', node.data.data.parameters);
-            console.log('latestCompletedRun: ', latestCompletedRun);
 
-            var variables = [];
-            var existingVariables = completedRunSteps.filter((run) => run.status === 'Variable')
-                .map((run) => run.result!);
-            for (const param of node.data.data.parameters ?? []) {
-                var variable = existingVariables.findLast((variable) => variable.name === param.variable_name);
-                if (variable) {
-                    variables.push(variable);
-                }
-            }
-
-            console.log('variables: ', variables);
-            return {
-                ...node,
-                data: {
-                    ...node.data,
-                    variables: variables,
-                    status: lastStatus,
-                },
-            } as Node<StepNodeProps>;
-        });
-        setNodes(updatedNodes);
-    }, [completedRunSteps]);
-
-    useEffect(() => {
-        if (!workflow) return;
-        var newNodes = workflow.steps?.map((step) => {
+    const updateNodeAndEdgesFromWorkflow = (
+        workflow: WorkflowData,
+        nodes: Node<StepNodeProps>[]
+    ) => {
+        if (!workflow) return { nodes, edges: [] };
+        var updatedNodes = workflow.steps?.map((step) => {
             var stepPosition = workflow.stepPositions[step.name!];
             var stepSize = workflow.stepSizes[step.name!];
             var existingNode = nodes.find(n => n.id === step.name);
@@ -124,7 +99,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                     ...existingNode?.data,
                     status: existingNode?.data.status ?? 'NotReady',
                     data: step,
-                    onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, step, maxParallelRun, maxStep),
+                    onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, completedRunSteps, step, maxParallelRun, maxStep),
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];
@@ -143,13 +118,63 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             }) ?? []);
         }, [] as Edge[]) ?? [];
 
-        setNodes(newNodes);
-        setEdges(edges);
+        return { nodes: updatedNodes, edges };
+    }
 
+    const updateNodeFromCompletedRunSteps = (nodes: Node<StepNodeProps>[], completedRunSteps: StepRunDTO[]) => {
+        var existingVariables = completedRunSteps.filter((run) => run.status === 'Variable')
+            .map((run) => run.result!);
+        var updatedNodes = nodes.map(node => {
+            var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === node.id);
+            var lastStatus = latestCompletedRun?.status ?? 'NotReady';
+
+            var output: VariableDTO | undefined = undefined;
+            if (lastStatus === 'Completed') {
+                output = completedRunSteps.findLast((run) => run.result?.name === node.id)?.result;
+            }
+
+            var variables = node.data.variables ?? [];
+            if (lastStatus === 'NotReady')
+            {
+                for (const parameter of node.data.data.parameters ?? []) {
+                    // check if there is a variable for this parameter
+                    var variable = variables.findLast((variable) => variable.name === parameter.variable_name);
+
+                    if (variable)
+                    {
+                        variables.push(variable);
+                    }
+                }
+            }
+
+            return {
+                ...node,
+                data: {
+                    ...node.data,
+                    status: lastStatus,
+                    output: output,
+                    variables: variables,
+                },
+            } as Node<StepNodeProps>;
+        });
+        return updatedNodes;
+    }
+
+    useEffect(() => {
+        if (!workflow) return;
+        var updatedFlow = updateNodeAndEdgesFromWorkflow(workflow, nodes);
+        setNodes(updatedFlow.nodes);
+        setEdges(updatedFlow.edges);
         props.onWorkflowChange?.(workflow);
     }, [workflow, fitView, maxParallelRun, maxStep]);
 
-    const onStepNodeRunClick = async (workflow: WorkflowDTO, step?: StepDTO, maxParallelRun?: number, maxSteps?: number) => {
+    const onStepNodeRunClick = async (
+        workflow: WorkflowDTO,
+        completedRunSteps: StepRunDTO[],
+        step?: StepDTO,
+        maxParallelRun?: number,
+        maxSteps?: number,
+    ) => {
         console.log("Run step: ", step);
         if (!workflow.name) return;
         try {
@@ -158,6 +183,51 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 var data = JSON.parse(event.data) as StepRunDTO;
                 console.log("Received step run data: ", data);
                 setCompletedRunSteps(prev => [...prev, data]);
+
+                // Update the node status
+                setNodes((prev) => {
+                    return prev.map((node) => {
+                        if (node.id === data.step?.name) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    variables: data.variables,
+                                    status: data.status,
+                                    output: data.result,
+                                },
+                            } as Node<StepNodeProps>;
+                        }
+                        else if (data.status === 'Variable' && data.result?.name === node.id) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    output: data.result,
+                                },
+                            } as Node<StepNodeProps>;
+                        }
+                        else if (data.status == 'Variable' &&
+                                node.data.data.parameters?.find((param) => param.variable_name === data.result?.name &&
+                                node.data.status === 'NotReady'))
+                            {
+                                var variables = node.data.variables ?? [];
+                                // update the variable
+                                variables.push(data.result!);
+                                // remove the duplicate
+
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    variables: variables,
+                                },
+                            } as Node<StepNodeProps>;
+                        }
+                        
+                        return node;
+                    });
+                });
             });
 
             es.onopen = (_) => {
@@ -167,7 +237,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             es.onerror = (event) => {
                 console.log("Error", event);
             }
-
+            setCompletedRunSteps(completedRunSteps);
             var res = await postApiV1StepWiseControllerV1ExecuteStep(
                 {
                     query: {
@@ -205,20 +275,22 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         setWorkflow(updatedWorkfow);
 
         setNodes((prev) => {
-            return prev.map(node => {
-                var status = node.data.status;
-                if (node.data.status === 'Running' || node.data.status === 'Queue') {
-                    status = 'NotReady';
+            console.log("Prev nodes: ", prev);
+            var updateNodes = updateNodeFromCompletedRunSteps(prev, updateStepRuns);
+            return updateNodes.map((node) => {
+                var lastStatus = updateStepRuns.findLast((run) => run.step?.name === node.id)?.status ?? 'NotReady';
+                console.log("Last status: ", lastStatus);
+                if (lastStatus === 'Running' || lastStatus === 'Queue') {
+                    lastStatus = 'NotReady';
                 }
-
                 return {
                     ...node,
                     data: {
                         ...node.data,
-                        status: status,
+                        status: lastStatus,
                     },
-                }
-            })
+                } as Node<StepNodeProps>;
+            });
         });
     }
 
@@ -227,7 +299,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         const allowedChanges = changes.filter(
             change => change.type === 'position' || change.type === 'select' || change.type === 'reset' || change.type === 'dimensions'
         );
-        console.log('Allowed changes:', allowedChanges);
         for (const change of allowedChanges) {
             if (change.type === 'position' && change.position) {
                 // update the position of the node in workflow
@@ -310,10 +381,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                                 maxSteps={maxStep}
                                 onMaxParallelChange={onMaxParallelChange}
                                 onMaxStepsChange={onMaxStepsChange}
-                                onResetStepRunResultClick={() => setCompletedRunSteps([])}
+                                onResetStepRunResultClick={() => 
+                                {
+                                    setCompletedRunSteps([]);
+                                    setNodes((prev) => updateNodeFromCompletedRunSteps(prev, []));
+                                }}
                                 onAutoLayoutClick={onLayout}
                                 onRunClick={() => {
-                                    onStepNodeRunClick(workflow!, undefined, maxParallelRun, maxStep);
+                                    setNodes((prev) => updateNodeFromCompletedRunSteps(prev, []));
+                                    onStepNodeRunClick(workflow!, [], undefined, maxParallelRun, maxStep);
                                 }}
                             />
                         </div>
