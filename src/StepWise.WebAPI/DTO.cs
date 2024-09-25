@@ -20,7 +20,7 @@ public record VariableDTO(
     public static VariableDTO FromVariable(StepVariable variable)
     {
         var typeString = variable.Value?.GetType().Name ?? "null";
-        var displayValue = JsonSerializer.Serialize(variable.Value, new JsonSerializerOptions { WriteIndented = true });
+        var displayValue = variable.Value?.ToString();
         return new VariableDTO(variable.Name, typeString, displayValue, variable.Generation);
     }
 }

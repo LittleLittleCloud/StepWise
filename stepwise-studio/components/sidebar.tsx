@@ -38,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     const iconSize = 14;
     const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowData | undefined>(undefined);
     const { theme, setTheme, systemTheme } = useTheme()
+    const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
         setUsername(props.user);
@@ -50,6 +51,21 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
             props.onWorkflowSelect(selectedWorkflow);
         }
     }, [selectedWorkflow]);
+
+    // useEffect only runs on the client, so now we can safely show the UI
+    useEffect(() => {
+        setMounted(true)
+        if (theme === null && systemTheme) {
+            setTheme(systemTheme)
+        }
+
+        console.log("ThemeSwitch mounted")
+        console.log("theme", theme)
+    }, [])
+
+    if (!mounted) {
+        return null
+    }
 
     return (
         <div className="flex flex-col h-screen p-4 shadow-xl bg-background">
@@ -133,3 +149,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
 };
 
 export default Sidebar;
+
+function setMounted(arg0: boolean) {
+    throw new Error('Function not implemented.');
+}
