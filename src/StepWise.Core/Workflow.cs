@@ -40,14 +40,14 @@ public class Workflow
             {
                 var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
                 var returnType = method.ReturnType;
-                var step = Step.CreateFromMethod(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), stepAttribute.Name);
+                var step = Step.CreateFromMethod(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), stepAttribute.Name, stepAttribute.Description);
                 steps.Add(step.Name, step);
             }
             else if (method.GetCustomAttribute<StepWiseUITextInputAttribute>() is StepWiseUITextInputAttribute textInputAttribute)
             {
                 var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
                 var returnType = method.ReturnType;
-                var step = Step.CreateFromStepWiseUITextInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name);
+                var step = Step.CreateFromStepWiseUITextInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name, textInputAttribute.Description);
                 steps.Add(step.Name, step);
             }
         }

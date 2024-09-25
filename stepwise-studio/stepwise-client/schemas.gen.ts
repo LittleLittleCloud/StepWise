@@ -35,11 +35,12 @@ export const ParameterDTOSchema = {
 } as const;
 
 export const StepDTOSchema = {
+    required: ['name', 'step_type'],
     type: 'object',
     properties: {
         name: {
-            type: 'string',
-            nullable: true
+            minLength: 1,
+            type: 'string'
         },
         description: {
             type: 'string',
@@ -58,6 +59,10 @@ export const StepDTOSchema = {
                 '$ref': '#/components/schemas/ParameterDTO'
             },
             nullable: true
+        },
+        step_type: {
+            minLength: 1,
+            type: 'string'
         }
     },
     additionalProperties: false

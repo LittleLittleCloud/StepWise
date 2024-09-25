@@ -12,10 +12,11 @@ export type ParameterDTO = {
 };
 
 export type StepDTO = {
-    name?: (string) | null;
+    name: string;
     description?: (string) | null;
     dependencies?: Array<(string)> | null;
     parameters?: Array<ParameterDTO> | null;
+    step_type: string;
 };
 
 export type StepRunDTO = {

@@ -2,8 +2,8 @@ import { ParameterDTO, StepDTO, VariableDTO } from '@/stepwise-client';
 import React, { use, useCallback, useEffect, useState } from 'react';
 import { Handle, Position, NodeProps, useUpdateNodeInternals, NodeResizer } from 'reactflow';
 import { Button, buttonVariants } from './ui/button';
-import { cn, getDisplayType, showAsMarkdown } from '@/lib/utils';
-import { AlertCircle, AlertOctagon, Badge, CheckCircle, CheckCircle2, CircleUserRound, Clock, Loader2, Play, RotateCcw, SquareFunction, VariableIcon } from 'lucide-react';
+import { cn, getDisplayType, showAsMarkdown, StepType } from '@/lib/utils';
+import { AlertCircle, AlertOctagon, Badge, CheckCircle, CheckCircle2, CircleUserRound, Clock, FormInputIcon, Loader2, Play, RotateCcw, SquareFunction, StickyNote, VariableIcon } from 'lucide-react';
 import Divider from './divider';
 import { badgeVariants } from './ui/badge';
 import { Markdown } from './markdown';
@@ -18,6 +18,7 @@ export interface StepNodeProps {
     output?: VariableDTO;
     status?: StepNodeStatus;
     onRunClick: (step: StepDTO) => void;
+    onSubmitOutput: (output: VariableDTO) => void;
 }
 
 const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status }) => {
@@ -86,6 +87,17 @@ const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status 
     );
 }
 
+const ConvertStringToStepType = (type: string): StepType => {
+    switch (type) {
+        case 'Ordinary':
+            return 'Ordinary';
+        case 'StepWiseUITextInput':
+            return 'StepWiseUITextInput';
+        default:
+            return 'Ordinary';
+    }
+}
+
 const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     const [data, setData] = useState<StepDTO>(prop.data.data);
     const stepNodeRef = React.useRef<HTMLDivElement>(null);
@@ -99,10 +111,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     const parameterRefMap = React.useRef<Map<string, HTMLDivElement>>(new Map());
     const [targetHandleTopOffsets, setTargetHandleTopOffsets] = useState<Map<string, number>>(new Map());
     const [output, setOutput] = useState<VariableDTO | undefined>(undefined);
+    const [stepType, setStepType] = useState<StepType>(ConvertStringToStepType(prop.data.data.step_type));
+    const [inputText, setInputText] = useState<string>('');
 
     useEffect(() => {
         if (!stepNodeRef.current) return;
-
         setData(prop.data.data);
         setStatus(prop.data.status ?? 'NotReady');
         setIsSelected(prop.selected ?? false);
@@ -135,13 +148,17 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
     useEffect(() => {
         setIsSelected(prop.selected ?? false);
-    }
-        , [prop.selected]);
+    }, [prop.selected]);
 
     useEffect(() => {
         setStatus(prop.data.status ?? 'NotReady');
-    }
-        , [prop.data.status]);
+    }, [prop.data.status]);
+
+    useEffect(() => {
+        if (prop.data.data.step_type === 'StepWiseUITextInput') {
+            setStepType('StepWiseUITextInput');
+        }
+    }, [prop.data.data.step_type]);
 
 
     useEffect(() => {
@@ -200,6 +217,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
             {data.name && (
                 <div
+                    className='flex flex-col'
+                >
+                <div
                     className='flex gap-1 items-center'
                 >
                     <div
@@ -217,6 +237,13 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                         style={{ top: sourceHandleTopOffset, right: 5 }}
                     />
                 </div>
+                {data.description && (
+                    
+                    <h6
+                        className="text-xs text-primary/50 pl-5"
+                    >{data.description}</h6>
+                )}
+            </div>
             )}
 
 
@@ -273,25 +300,65 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                             <VariableIcon size={12} />
                         </Button>
                         <h3 className="text-xs font-semibold">Output</h3>
-                        {output.type && 
-                        <div
-                            className={cn(badgeVariants({
-                                variant: 'green',
-                                size: 'tiny',
-                            }),
-                                'text-xs px-1 border-none')}
-                        >
-                            {getDisplayType(output.type)}
-                        </div>
+                        {output.type &&
+                            <div
+                                className={cn(badgeVariants({
+                                    variant: 'green',
+                                    size: 'tiny',
+                                }),
+                                    'text-xs px-1 border-none')}
+                            >
+                                {getDisplayType(output.type)}
+                            </div>
                         }
                     </div>
-                        {output && <VariableCard variable={output} />}
-                    </div>
-                    )
+                    {output && <VariableCard variable={output} />}
+                </div>
+            )
             }
 
+            {stepType === 'StepWiseUITextInput' && (
+                <div className="flex flex-col gap-2 pt-2">
+                    <div
+                        className='flex gap-1 items-center'>
+                        <Button
+                            variant={"outline"}
+                            size={"xxsIcon"}
+                            className='w-4 h-4 m-0 p-0'
+                        >
+                            <FormInputIcon size={12} />
+                        </Button>
+                        <h3 className="text-xs font-semibold">Input</h3>
+                    </div>
+                    <textarea
+                        onDrag={(e) => e.stopPropagation()}
+                        className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
+                        placeholder="Enter text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                    />
+                    <Button
+                        variant={"outline"}
+                        size={"tiny"}
+                        className="w-full hover:bg-accent/50"
+                        onClick={() => {
+                            if (output?.displayValue === inputText) return;
+                            var variable = {
+                                name: data.name,
+                                type: 'String',
+                                displayValue: inputText,
+                            } as VariableDTO;
+                            prop.data.onSubmitOutput(variable);
+                        }}
+                    >
+                        Submit
+                    </Button>
                 </div>
-            );
+            )
+            }
+
+        </div>
+    );
 };
 
-            export default StepNode;
+export default StepNode;

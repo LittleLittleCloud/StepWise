@@ -75,3 +75,5 @@ export function showAsMarkdown(type: 'str' | 'number' | 'bool' | 'object')
 {
   return ['str', 'number'].indexOf(type) > -1;
 }
+
+export type StepType = 'Ordinary' | 'StepWiseUITextInput';

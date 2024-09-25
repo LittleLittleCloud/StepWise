@@ -1,6 +1,8 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
 // DTO.cs
 
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StepWise.Core;
@@ -41,19 +43,25 @@ public record ParameterDTO(
 
 public record StepDTO(
     [property:JsonPropertyName("name")]
+    [property: Required]
     string Name,
     [property:JsonPropertyName("description")]
     string? Description,
     [property:JsonPropertyName("dependencies")]
     string[]? Dependencies,
     [property:JsonPropertyName("parameters")]
-    ParameterDTO[]? Parameters)
+    ParameterDTO[]? Parameters,
+    [property: JsonPropertyName("step_type")]
+    [property: Required]
+    string StepType)
 {
     public static StepDTO FromStep(Step step)
     {
         var dependencies = step.Dependencies.ToArray();
         var parameters = step.InputParameters.Select(p => ParameterDTO.FromParameter(p)).ToArray();
-        return new StepDTO(step.Name, step.Description, dependencies, parameters);
+        var stepType = Enum.GetName(step.StepType)!;
+
+        return new StepDTO(step.Name, step.Description, dependencies, parameters, stepType);
     }
 }
 

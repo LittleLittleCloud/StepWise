@@ -56,7 +56,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
     useEffect(() => {
         setWorkflow(props.dto);
-        var updatedFlow = updateNodeAndEdgesFromWorkflow(props.dto!, nodes);
+        var updatedFlow = updateNodeFromWorkflow(props.dto!, nodes);
         setNodes(updatedFlow.nodes);
         setEdges(updatedFlow.edges);
         setCompletedRunSteps(props.dto?.stepRuns ?? []);
@@ -79,7 +79,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     }, [props.dto?.maxSteps]);
 
 
-    const updateNodeAndEdgesFromWorkflow = (
+    const updateNodeFromWorkflow = (
         workflow: WorkflowData,
         nodes: Node<StepNodeProps>[]
     ) => {
@@ -100,6 +100,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                     status: existingNode?.data.status ?? 'NotReady',
                     data: step,
                     onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, completedRunSteps, step, maxParallelRun, maxStep),
+                    onSubmitOutput: (output: VariableDTO) => {
+                        var variable = {
+                            status: 'Variable',
+                            result: output,
+                        } as StepRunDTO;
+                        var completedRun = [...completedRunSteps, variable];
+                        setCompletedRunSteps((prev) => [...prev, variable]);
+                        setNodes((prev) => updateNodeFromCompletedRunSteps(prev, completedRun));
+                    },
                 } as StepNodeProps,
             };
         }) as Node<StepNodeProps>[];
@@ -122,26 +131,25 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     }
 
     const updateNodeFromCompletedRunSteps = (nodes: Node<StepNodeProps>[], completedRunSteps: StepRunDTO[]) => {
-        var existingVariables = completedRunSteps.filter((run) => run.status === 'Variable')
-            .map((run) => run.result!);
+        var existingVariables = completedRunSteps.filter((run) => run.status === 'Variable').map((run) => run.result!);
         var updatedNodes = nodes.map(node => {
             var latestCompletedRun = completedRunSteps.findLast((run) => run.step?.name === node.id);
             var lastStatus = latestCompletedRun?.status ?? 'NotReady';
 
             var output: VariableDTO | undefined = undefined;
+            var variables = node.data.variables ?? [];
             if (lastStatus === 'Completed') {
+                variables = latestCompletedRun?.variables ?? [];
                 output = completedRunSteps.findLast((run) => run.result?.name === node.id)?.result;
             }
 
-            var variables = node.data.variables ?? [];
-            if (lastStatus === 'NotReady')
-            {
+            if (lastStatus === 'NotReady') {
+                variables = [];
                 for (const parameter of node.data.data.parameters ?? []) {
                     // check if there is a variable for this parameter
-                    var variable = variables.findLast((variable) => variable.name === parameter.variable_name);
+                    var variable = existingVariables.findLast((variable) => variable.name === parameter.variable_name);
 
-                    if (variable)
-                    {
+                    if (variable) {
                         variables.push(variable);
                     }
                 }
@@ -162,7 +170,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
     useEffect(() => {
         if (!workflow) return;
-        var updatedFlow = updateNodeAndEdgesFromWorkflow(workflow, nodes);
+        var updatedFlow = updateNodeFromWorkflow(workflow, nodes);
         setNodes(updatedFlow.nodes);
         setEdges(updatedFlow.edges);
         props.onWorkflowChange?.(workflow);
@@ -208,13 +216,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                             } as Node<StepNodeProps>;
                         }
                         else if (data.status == 'Variable' &&
-                                node.data.data.parameters?.find((param) => param.variable_name === data.result?.name &&
-                                node.data.status === 'NotReady'))
-                            {
-                                var variables = node.data.variables ?? [];
-                                // update the variable
-                                variables.push(data.result!);
-                                // remove the duplicate
+                            node.data.data.parameters?.find((param) => param.variable_name === data.result?.name &&
+                                node.data.status === 'NotReady')) {
+                            var variables = node.data.variables ?? [];
+                            // update the variable
+                            variables.push(data.result!);
+                            // remove the duplicate
 
                             return {
                                 ...node,
@@ -224,7 +231,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                                 },
                             } as Node<StepNodeProps>;
                         }
-                        
+
                         return node;
                     });
                 });
@@ -381,10 +388,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                                 maxSteps={maxStep}
                                 onMaxParallelChange={onMaxParallelChange}
                                 onMaxStepsChange={onMaxStepsChange}
-                                onResetStepRunResultClick={() => 
-                                {
+                                onResetStepRunResultClick={() => {
                                     setCompletedRunSteps([]);
-                                    setNodes((prev) => updateNodeFromCompletedRunSteps(prev, []));
+                                    var updatedNodes = updateNodeFromCompletedRunSteps(nodes, []);
+                                    console.log("Updated nodes: ", updatedNodes);
+                                    setNodes(updatedNodes);
                                 }}
                                 onAutoLayoutClick={onLayout}
                                 onRunClick={() => {

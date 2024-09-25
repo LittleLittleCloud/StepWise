@@ -6,21 +6,21 @@ using StepWise.Core;
 
 public class HelloWorld
 {
-    [Step]
+    [Step(description: "Simply say hello")]
     public async Task<string> SayHelloAsync()
     {
         return $"Hello";
     }
 
-    [Step]
+    [Step(description: "Say hello world")]
     [DependOn(nameof(SayHelloAsync))]
     public async Task<string> SayHelloWorldAsync([FromStep(nameof(SayHelloAsync))] string hello)
     {
         return $"{hello} World!";
     }
 
-    [StepWiseUITextInput]
-    public async Task<string?> GetName(string prompt = "Please enter your name")
+    [StepWiseUITextInput(description: "Get User Name")]
+    public async Task<string?> GetName()
     {
         return null;
     }
