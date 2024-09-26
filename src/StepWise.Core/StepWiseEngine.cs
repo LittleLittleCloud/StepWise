@@ -29,45 +29,6 @@ public class StepWiseEngine : IStepWiseEngine
         return new StepWiseEngine(workflow, logger);
     }
 
-    // retrieve all the steps that need to be executed in order to reach the target step
-    private List<Step> ResolveDependencies(string targetStepName)
-    {
-        var executionPlan = new List<Step>();
-        var visited = new HashSet<string>();
-        var visiting = new HashSet<string>();
-
-        void DFS(Step step)
-        {
-            if (visited.Contains(step.Name))
-            {
-                return;
-            }
-
-            if (visiting.Contains(step.Name))
-            {
-                throw new Exception($"Circular dependency detected in step '{step.Name}'.");
-            }
-
-            visiting.Add(step.Name);
-
-            foreach (var dependency in step.Dependencies)
-            {
-                var dependencyStep = _workflow.Steps[dependency] ?? throw new Exception($"Dependency '{dependency}' not found in the workflow.");
-                DFS(dependencyStep);
-            }
-
-            visiting.Remove(step.Name);
-            visited.Add(step.Name);
-            executionPlan.Add(step);
-        }
-
-        var targetStep = _workflow.Steps[targetStepName] ?? throw new Exception($"Step '{targetStepName}' not found in the workflow.");
-
-        DFS(targetStep);
-
-        return executionPlan;
-    }
-
     private async IAsyncEnumerable<StepRun> ExecuteStepsAsync(
         IEnumerable<Step> steps,
         IEnumerable<StepVariable> inputs,
@@ -85,14 +46,22 @@ public class StepWiseEngine : IStepWiseEngine
         foreach (var input in inputs)
         {
             var stepRun = StepRun.CreateVariable(input);
-            _stepResultQueue.Add(stepRun);
+            //_stepResultQueue.Add(stepRun);
+            context[input.Name] = input;
         }
+
+        generation = context switch
+        {
+            { Count: > 0 } => context.Values.Max(x => x.Generation),
+            _ => generation
+        };
 
         foreach (var s in steps)
         {
             // continue if step's name already exists in the context
             if (context.ContainsKey(s.Name))
             {
+                _logger?.LogInformation($"Skipping adding initial step '{s.Name}' to the task queue because it already exists in the context.");
                 continue;
             }
 

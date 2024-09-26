@@ -111,4 +111,12 @@ public class SelfLoopWorkflowTest
         stepRun[5].Name.Should().Be(nameof(End));
         stepRun[5].Variable!.As<string>().Should().Be("Done!");
     }
+
+    [Fact]
+    public void TopologicalSortTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var steps = engine.Workflow.TopologicalSort().ToList();
+        steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(Start), nameof(AddNumberByOne), nameof(End)]);
+    }
 }

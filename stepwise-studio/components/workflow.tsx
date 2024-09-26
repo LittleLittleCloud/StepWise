@@ -173,14 +173,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         console.log("Run step: ", step);
         if (!workflow.name) return;
         try {
+            setCompletedRunSteps(completedRunSteps);
+            var clonedRunSteps = [...completedRunSteps];
             var es = new EventSource(`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse`);
-            var clonedSteps = [...completedRunSteps];
             es.addEventListener("StepRunDTO", async (event) => {
                 var data = JSON.parse(event.data) as StepRunDTO;
                 console.log("Received step run data: ", data);
-                clonedSteps.push(data);
-                workflow.stepRuns = clonedSteps;
-                setCompletedRunSteps(clonedSteps);
+                clonedRunSteps.push(data);
+                workflow.stepRuns = clonedRunSteps;
+                setCompletedRunSteps(clonedRunSteps);
                 setWorkflow(workflow);
                 var graph = createGraphFromWorkflow(workflow);
                 setNodes(graph.nodes);
@@ -193,7 +194,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             es.onerror = (event) => {
                 console.log("Error", event);
             }
-            setCompletedRunSteps(completedRunSteps);
+            
             var variables = completedRunSteps.filter((run) => run.status === 'Variable').map((run) => run.result!);
             var res = await postApiV1StepWiseControllerV1ExecuteStep(
                 {
@@ -342,12 +343,21 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                                 }}
                                 onAutoLayoutClick={onLayout}
                                 onRunClick={() => {
-                                    setCompletedRunSteps([]);
-                                    var updatedWorkflow = { ...workflow, stepRuns: [] } as WorkflowData;
-                                    setWorkflow(updatedWorkflow);
-                                    var updatedNodes = createGraphFromWorkflow(updatedWorkflow).nodes;
-                                    setNodes(updatedNodes);
-                                    onStepNodeRunClick(workflow!, [], undefined, maxParallelRun, maxStep);
+                                    var stepRunsToKeep : StepRunDTO[] = []
+                                    for (const stepRun of completedRunSteps.reverse())
+                                    {
+                                        if (stepRun.status === 'Variable' && stepRunsToKeep.findIndex(x => x.result?.name === stepRun.result?.name && x.status === 'Variable') === -1)
+                                        {
+                                            stepRunsToKeep.push(stepRun);
+                                        }
+                                        else if (stepRun.status === 'Completed' && stepRunsToKeep.findIndex(x => x.step?.name === stepRun.step?.name && x.status === 'Completed') === -1)
+                                        {
+                                            stepRunsToKeep.push(stepRun);
+                                        }
+                                    }
+
+                                    stepRunsToKeep.reverse();
+                                    onStepNodeRunClick(workflow!, stepRunsToKeep, undefined, maxParallelRun, maxStep);
                                 }}
                             />
                         </div>

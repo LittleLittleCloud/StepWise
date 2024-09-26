@@ -94,9 +94,11 @@ public class ReviewCodeWorkflowTest
 
         // phase 2
         // review code
+        _logger.LogInformation("Review code");
         variables.Add(StepVariable.Create(nameof(ReviewCode), "improve", 2));
+        variables.RemoveAll(variable => variable.Name == nameof(WriteCode));
 
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
+        await foreach (var stepRun in engine.ExecuteAsync(nameof(WriteCode), inputs: variables, stopStrategy: null))
         {
             if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
             {
@@ -104,8 +106,8 @@ public class ReviewCodeWorkflowTest
             }
         }
 
-        variables.Count().Should().Be(4);
-        variables.Where(var => var.Name == nameof(WriteCode)).Should().HaveCount(2);
+        variables.Count().Should().Be(3);
+        variables.Where(var => var.Name == nameof(WriteCode)).Should().HaveCount(1);
 
         // phase 3
         // approve code
@@ -129,5 +131,13 @@ public class ReviewCodeWorkflowTest
         variables[3].Value.As<string>().Should().Be("improved code"); // WriteCode
         variables[4].Value.As<string>().Should().Be("approve"); // ReviewCode
         variables[5].Value.As<string>().Should().Be("done"); // Done
+    }
+
+    [Fact]
+    public void TopologicalSortTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var steps = engine.Workflow.TopologicalSort().ToList();
+        steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(WriteCode), nameof(ReviewCode), nameof(Done)]);
     }
 }

@@ -26,7 +26,7 @@ public static class StepWiseEngineExtension
         inputs ??= [];
         stopStrategy ??= new NeverStopStopStrategy();
 
-        var steps = targetStep != null ? engine.Workflow.ResolveDependencies(targetStep) : engine.Workflow.Steps.Values.ToList();
+        var steps = engine.Workflow.TopologicalSort();
 
         var stepResults = new List<StepRun>();
         await foreach (var stepRun in engine.ExecuteStepsAsync(steps, inputs, maxConcurrency, stopStrategy: stopStrategy, ct: ct))
@@ -39,13 +39,6 @@ public static class StepWiseEngineExtension
             }
 
             yield return stepRun;
-
-            // check early stop
-            stepResults.Add(stepRun);
-            if (stopStrategy.ShouldStop(stepResults.ToArray()))
-            {
-                break;
-            }
         }
     }
 

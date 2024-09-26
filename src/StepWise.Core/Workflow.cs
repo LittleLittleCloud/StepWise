@@ -28,6 +28,31 @@ public class Workflow
 
     public string Name { get; }
 
+    /// <summary>
+    /// Sort the steps in topological order.
+    /// </summary>
+    public IEnumerable<Step> TopologicalSort()
+    {
+        var inStepCount = _adajcentMap.GroupBy(x => x.Item2).ToDictionary(x => x.Key, x => x.Count());
+
+        var queue = new Queue<Step>(_steps.Values.Where(s => !inStepCount.ContainsKey(s)));
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            yield return current;
+
+            foreach (var next in _adajcentMap.Where(x => x.Item1 == current).Select(x => x.Item2))
+            {
+                inStepCount[next]--;
+                if (inStepCount[next] == 0)
+                {
+                    queue.Enqueue(next);
+                }
+            }
+        }
+    }
+
     public static Workflow CreateFromInstance(object instance, string? name = null)
     {
         var type = instance.GetType();
