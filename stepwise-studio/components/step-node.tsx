@@ -387,6 +387,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                                 value: inputText,
                                 generation: prop.data.generation,
                             } as VariableDTO;
+                            prop.data.onClearClick(step);
                             prop.data.onSubmitOutput(variable);
                         }}
                     >

@@ -46,9 +46,9 @@ export interface WorkflowProps {
 
 export function createLatestStepRunSnapShotFromWorkflow(workflow: WorkflowDTO, completedStepRuns: StepRunDTO[]): StepRunDTO[] {
     var stepRuns = completedStepRuns ?? [];
-    var variables = stepRuns.filter((run) => run.status === 'Variable').map((run) => run.result!);
+    var variables = stepRuns.filter((run) => run.result).map((run) => run.result!);
     var stepRun = stepRuns.filter((run) => run.status !== 'Variable');
-
+    console.log("Variables: ", variables);
     // create latest variables, which only keeps the most recent version for variable in variables which have the same name
     var latestVariables = variables.reduce((acc, variable) => {
         acc[variable.name] = variable;
@@ -73,10 +73,55 @@ export function createLatestStepRunSnapShotFromWorkflow(workflow: WorkflowDTO, c
             }).filter((variable) => variable !== undefined) as VariableDTO[];
         }
 
+        if (stepRun.status === 'Completed') {
+            var result = latestVariables[step.name] ?? undefined;
+            stepRun.result = result;
+        }
+        else
+        {
+            stepRun.result = undefined;
+        }
+
         return stepRun;
     });
+    console.log("latest variables: ", latestVariables);
+    console.log("Latest snapshot runs: ", stepRuns);
 
     return stepRuns;
+}
+
+export function clearStepRunResult(workflow: WorkflowData, step: StepDTO, completedRunSteps: StepRunDTO[]): StepRunDTO[] {
+    var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(workflow, completedRunSteps);
+
+    // if in the latest snapshot, the step is not completed, then return the latest snapshot
+    if (!latestSnapshot.find((run) => run.step?.name === step.name && run.status === 'Completed')) {
+        return completedRunSteps;
+    }
+
+    // otherwise, mark the step and all its dependent steps as not ready
+    // dependent steps are the steps that directly takes the result of the step as input
+    var dependentSteps = workflow.steps?.filter((s) => s.parameters?.find((param) => param.variable_name === step.name) !== undefined);
+    var stepsToMarkAsNotReady = [step, ...dependentSteps ?? []];
+    completedRunSteps = completedRunSteps.filter((run) => run.result?.name !== step.name);
+    var updatedRunSteps = completedRunSteps.map((run) => {
+        if (stepsToMarkAsNotReady.find((step) => step.name === run.step?.name)) {
+            var param = run.step?.parameters?.find((param) => param.variable_name === step.name)!;
+            console.log("param: ", param);
+            return {
+                ...run,
+                status: 'NotReady',
+                result: undefined,
+                variables: {
+                    ...run.variables,
+                    [param?.name]: undefined
+                }
+            } as StepRunDTO;
+        }
+        return run;
+    });
+
+    console.log("Updated run steps: ", updatedRunSteps);
+    return updatedRunSteps;
 }
 
 
@@ -91,10 +136,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const [completedRunSteps, setCompletedRunSteps] = useState<StepRunDTO[]>(() => props.dto?.stepRuns ?? []);
     const [isRunning, setIsRunning] = useState<boolean>(false);
 
+
     useEffect(() => {
         if (!props.dto) return;
-        setWorkflow(props.dto);
-        setCompletedRunSteps(props.dto?.stepRuns ?? []);
+        var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(props.dto, props.dto.stepRuns ?? []);
+        setWorkflow({ ...props.dto, stepRuns: latestSnapshot });
         setIsRunning(false);
     }, [props.dto]);
 
@@ -116,35 +162,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
     const createGraphFromWorkflow = (workflow: WorkflowData, isWorkflowRunning: boolean) => {
         var completedRunSteps = workflow.stepRuns ?? [];
-        var variables = completedRunSteps.filter((run) => run.status === 'Variable').map((run) => run.result!);
-        var stepRun = completedRunSteps.filter((run) => run.status !== 'Variable');
-
-        // create latest variables, which only keeps the most recent version for variable in variables which have the same name
-        var latestVariables = variables.reduce((acc, variable) => {
-            acc[variable.name] = variable;
-            return acc;
-        }, {} as { [key: string]: VariableDTO });
-
-        var latestRunSteps = stepRun.reduce((acc, run) => {
-            acc[run.step?.name ?? ''] = run;
-            return acc;
-        }, {} as { [key: string]: StepRunDTO });
-
-        var steps = workflow.steps;
-
-        var nodes = steps?.map((step) => {
-            var position = workflow.stepPositions[step.name];
-            var size = workflow.stepSizes[step.name];
-            var stepRun: StepRunDTO = latestRunSteps[step.name] ?? { status: "NotReady", step: step, generation: 0 } as StepRunDTO;
-
-            // if status is not ready, update variables with the latest variables
-            if (stepRun.status === 'NotReady') {
-                stepRun.variables = step.parameters?.map((param) => {
-                    var variable = latestVariables[param.variable_name];
-                    return variable;
-                }).filter((variable) => variable !== undefined) as VariableDTO[];
+        completedRunSteps = createLatestStepRunSnapShotFromWorkflow(workflow, completedRunSteps);
+        var nodes = completedRunSteps?.map((stepRun) => {
+            if (!stepRun.step) {
+                throw new Error("Step run does not have step information");
             }
 
+            var step = stepRun.step;
+            var position = workflow.stepPositions[step.name];
+            var size = workflow.stepSizes[step.name];
             return {
                 id: step.name,
                 type: 'stepNode',
@@ -153,14 +179,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 data: {
                     ...stepRun,
                     isWorkflowRunning: isWorkflowRunning,
-                    result: stepRun.status === 'Completed' ? latestVariables[step.name] : undefined,
                     onClearClick: (step: StepDTO) => {
-                        workflow.stepRuns = workflow.stepRuns?.filter((run) => run.step?.name !== step.name && run.result?.name !== step.name);
-                        var updatedWorkflow = { ...workflow, stepRuns: workflow.stepRuns } as WorkflowData;
+                        var updatedRunSteps = clearStepRunResult(workflow, step, completedRunSteps);
+                        var updatedWorkflow = { ...workflow, stepRuns: updatedRunSteps } as WorkflowData;
                         setWorkflow(updatedWorkflow);
                     },
                     onRerunClick: (step: StepDTO) => {
-                        workflow.stepRuns = workflow.stepRuns?.filter((run) => run.step?.name !== step.name && run.result?.name !== step.name);
+                        workflow.stepRuns = completedRunSteps.filter((run) => run.step?.name !== step.name && run.result?.name !== step.name);
                         onStepNodeRunClick(workflow, step, workflow.maxParallelRun, workflow.maxSteps);
                     },
                     onSubmitOutput: (output: VariableDTO) => {
@@ -174,10 +199,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                             generation: output.generation,
                         } as StepRunDTO;
                         var completedRun = [...completedRunSteps, completedStepRun, variable];
-                        setCompletedRunSteps((prev) => [...prev, completedStepRun, variable]);
-
                         var updatedWorkflow = { ...workflow, stepRuns: completedRun } as WorkflowData;
-                        setWorkflow(updatedWorkflow);
+                        setWorkflow((prev) => updatedWorkflow);
                     },
                 },
             } as Node<StepNodeProps>;
@@ -225,10 +248,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 var data = JSON.parse(event.data) as StepRunDTO;
                 console.log("Received step run data: ", data);
                 existingRunSteps.push(data);
-                setCompletedRunSteps(existingRunSteps);
-                var updatedWorkflow = { ...workflow, stepRuns: existingRunSteps } as WorkflowData;
-                var graph = createGraphFromWorkflow(updatedWorkflow, true);
-                setNodes(graph.nodes);
+                var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(workflow, existingRunSteps);
+                setWorkflow((prev) => {
+                    if (!prev) return prev;
+                    return { ...prev, stepRuns: latestSnapshot };
+                });
             });
 
             es.onopen = (_) => {
@@ -270,11 +294,14 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             console.error("No data returned from executing step");
             return;
         }
-        var updateStepRuns = [...workflow.stepRuns, ...res.data];
 
-        setCompletedRunSteps(updateStepRuns);
-        var updatedWorkfow = { ...workflow, stepRuns: updateStepRuns };
-        setWorkflow(updatedWorkfow);
+        console.log("Step run data: ", res.data);
+        var updateStepRuns = [...workflow.stepRuns, ...res.data];
+        var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(workflow, updateStepRuns);
+        setWorkflow((prev) => {
+            if (!prev) return prev;
+            return { ...prev, stepRuns: latestSnapshot };
+        });
         setIsRunning(false);
     }
 
@@ -299,7 +326,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         }
 
         onNodesChange(allowedChanges);
-    }, [onNodesChange, nodes, isRunning]);
+    }, [onNodesChange, nodes, isRunning, workflow]);
 
     const onLayout = useCallback(() => {
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
