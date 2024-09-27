@@ -1,5 +1,5 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
-// PlusOneWorkflowTest.cs
+// CircleLoopWorkflowTest.cs
 
 using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
@@ -10,30 +10,37 @@ using Xunit.Abstractions;
 
 namespace StepWise.Core.Tests;
 
-public class PlusOneWorkflowTest
+public class CircleLoopWorkflowTest
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly ILogger _logger;
 
-    public PlusOneWorkflowTest(ITestOutputHelper testOutputHelper)
+    public CircleLoopWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(PlusOneWorkflowTest));
+        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(CircleLoopWorkflowTest));
     }
 
     [Step]
-    public async Task<int> PlusOne(int a = 0)
+    public async Task<int> PlusOne([FromStep(nameof(MinusOne))] int a = 0)
     {
         return a + 1;
     }
 
+    [Step]
+    public async Task<int> MinusOne([FromStep(nameof(PlusOne))] int a)
+    {
+        return a - 1;
+    }
+
     [Fact]
-    public async Task PlusOneTest()
+    public async Task CirculeLoopWorkflowTestAsync()
     {
         var engine = StepWiseEngine.CreateFromInstance(this, _logger);
         var variables = new List<StepVariable>();
 
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(PlusOne), maxConcurrency: 1, maxSteps: 10))
+        var stopStrategy = new MaxStepsStopStrategy(1);
+        await foreach (var stepRun in engine.ExecuteAsync(maxConcurrency: 1, stopStrategy: stopStrategy))
         {
             if (stepRun.StepType == StepRunType.Variable)
             {
@@ -45,8 +52,8 @@ public class PlusOneWorkflowTest
         variables[0].Value.Should().Be(1);
 
         // continue the workflow with existing variable
-
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(PlusOne), variables, maxConcurrency: 1, maxSteps: 10))
+        stopStrategy = new MaxStepsStopStrategy(2);
+        await foreach (var stepRun in engine.ExecuteAsync(inputs: variables, maxConcurrency: 1, stopStrategy: stopStrategy))
         {
             if (stepRun.StepType == StepRunType.Variable)
             {
@@ -54,6 +61,8 @@ public class PlusOneWorkflowTest
             }
         }
 
-        variables.Count().Should().Be(1);
+        variables.Count().Should().Be(3);
+        variables[1].Value.Should().Be(0);
+        variables[2].Value.Should().Be(1);
     }
 }

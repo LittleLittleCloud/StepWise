@@ -31,7 +31,7 @@ stepWiseClient.AddWorkflow(cumulativeWorkflow);
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new CountingDown()));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new CodeInterpreter()));
-
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new CircularLoop()));
 // Wait for the host to shutdown
 await host.WaitForShutdownAsync();
 

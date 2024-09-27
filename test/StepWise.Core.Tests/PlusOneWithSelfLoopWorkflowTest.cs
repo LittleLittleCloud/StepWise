@@ -1,5 +1,5 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
-// PlusOneWorkflowTest.cs
+// PlusOneWithSelfLoopWorkflowTest.cs
 
 using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
@@ -10,19 +10,19 @@ using Xunit.Abstractions;
 
 namespace StepWise.Core.Tests;
 
-public class PlusOneWorkflowTest
+public class PlusOneWithSelfLoopWorkflowTest
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly ILogger _logger;
 
-    public PlusOneWorkflowTest(ITestOutputHelper testOutputHelper)
+    public PlusOneWithSelfLoopWorkflowTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(PlusOneWorkflowTest));
+        _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(PlusOneWithSelfLoopWorkflowTest));
     }
 
     [Step]
-    public async Task<int> PlusOne(int a = 0)
+    public async Task<int> PlusOne([FromStep(nameof(PlusOne))] int a = 0)
     {
         return a + 1;
     }
@@ -54,6 +54,7 @@ public class PlusOneWorkflowTest
             }
         }
 
-        variables.Count().Should().Be(1);
+        variables.Count().Should().Be(2);
+        variables[1].Value.Should().Be(1);
     }
 }

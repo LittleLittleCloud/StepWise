@@ -116,7 +116,6 @@ public class StepWiseEngine : IStepWiseEngine
             if (_stepResultQueue.TryTake(out var stepRun, 1000, ct))
             {
                 _logger?.LogInformation($"[StepRun Queue]: Receive {stepRun} from the result queue.");
-                yield return stepRun;
                 if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is StepVariable res)
                 {
                     // skip if there is a newer version of the result in the context
@@ -174,7 +173,7 @@ public class StepWiseEngine : IStepWiseEngine
                             _logger?.LogInformation($"[StepRun Queue]: Skipping adding {nextStepRun} because of missing prerequisites.");
 
                             var missingDependencyRun = nextStepRun.ToMissingInput();
-                            _stepResultQueue.Add(missingDependencyRun);
+                            yield return missingDependencyRun;
                             continue;
                         }
 
@@ -195,7 +194,7 @@ public class StepWiseEngine : IStepWiseEngine
                         {
                             _logger?.LogInformation($"[StepRun Queue]: Adding {s} to the task queue.");
                             _stepsTaskQueue.Add(s);
-                            _stepResultQueue.Add(s);
+                            yield return s;
                         }
                     }
                     else
@@ -203,6 +202,7 @@ public class StepWiseEngine : IStepWiseEngine
                         _logger?.LogInformation($"[StepRun Queue]: No steps to add to the task queue.");
                     }
                 }
+                yield return stepRun;
             }
             else if (_stepsTaskQueue.Count == 0 && _stepResultQueue.Count == 0 && _busyTaskRunners == 0)
             {
@@ -290,12 +290,14 @@ public class StepWiseEngine : IStepWiseEngine
         CancellationToken ct = default)
     {
         inputs ??= [];
+        var stepRuns = new List<StepRun>();
         stopStrategy ??= new NeverStopStopStrategy();
         await foreach (var stepRun in ExecuteStepsAsync(steps, inputs, maxConcurrency, ct))
         {
             yield return stepRun;
 
-            if (stopStrategy.ShouldStop([stepRun]))
+            stepRuns.Add(stepRun);
+            if (stopStrategy.ShouldStop(stepRuns))
             {
                 _logger?.LogInformation($"Stop strategy '{stopStrategy.Name}' has been triggered when reaching step '{stepRun}'.");
                 break;
