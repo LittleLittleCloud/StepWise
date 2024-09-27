@@ -45,7 +45,7 @@ public class PlusOneWithSelfLoopWorkflowTest
         variables[0].Value.Should().Be(1);
 
         // continue the workflow with existing variable
-
+        // because the result is already exist, the workflow should not continue
         await foreach (var stepRun in engine.ExecuteAsync(nameof(PlusOne), variables, maxConcurrency: 1, maxSteps: 10))
         {
             if (stepRun.StepRunType == StepRunType.Variable)
@@ -54,7 +54,6 @@ public class PlusOneWithSelfLoopWorkflowTest
             }
         }
 
-        variables.Count().Should().Be(2);
-        variables[1].Value.Should().Be(1);
+        variables.Count().Should().Be(1);
     }
 }

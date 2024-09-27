@@ -44,6 +44,40 @@ export interface WorkflowProps {
     setMaxStep?: (maxStep: number) => void;
 }
 
+export function createLatestStepRunSnapShotFromWorkflow(workflow: WorkflowDTO, completedStepRuns: StepRunDTO[]): StepRunDTO[] {
+    var stepRuns = completedStepRuns ?? [];
+    var variables = stepRuns.filter((run) => run.status === 'Variable').map((run) => run.result!);
+    var stepRun = stepRuns.filter((run) => run.status !== 'Variable');
+
+    // create latest variables, which only keeps the most recent version for variable in variables which have the same name
+    var latestVariables = variables.reduce((acc, variable) => {
+        acc[variable.name] = variable;
+        return acc;
+    }, {} as { [key: string]: VariableDTO });
+
+    var latestRunSteps = stepRun.reduce((acc, run) => {
+        acc[run.step?.name ?? ''] = run;
+        return acc;
+    }, {} as { [key: string]: StepRunDTO });
+
+    var steps = workflow.steps;
+
+    var stepRuns = steps?.map((step) => {
+        var stepRun: StepRunDTO = latestRunSteps[step.name] ?? { status: "NotReady", step: step, generation: 0 } as StepRunDTO;
+
+        // if status is not ready, update variables with the latest variables
+        if (stepRun.status === 'NotReady') {
+            stepRun.variables = step.parameters?.map((param) => {
+                var variable = latestVariables[param.variable_name];
+                return variable;
+            }).filter((variable) => variable !== undefined) as VariableDTO[];
+        }
+
+        return stepRun;
+    });
+
+    return stepRuns;
+}
 
 
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
@@ -120,7 +154,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                     ...stepRun,
                     isWorkflowRunning: isWorkflowRunning,
                     result: stepRun.status === 'Completed' ? latestVariables[step.name] : undefined,
-                    onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, step, workflow.maxParallelRun, workflow.maxSteps),
+                    onClearClick: (step: StepDTO) => {
+                        workflow.stepRuns = workflow.stepRuns?.filter((run) => run.step?.name !== step.name && run.result?.name !== step.name);
+                        var updatedWorkflow = { ...workflow, stepRuns: workflow.stepRuns } as WorkflowData;
+                        setWorkflow(updatedWorkflow);
+                    },
+                    onRerunClick: (step: StepDTO) => {
+                        workflow.stepRuns = workflow.stepRuns?.filter((run) => run.step?.name !== step.name && run.result?.name !== step.name);
+                        onStepNodeRunClick(workflow, step, workflow.maxParallelRun, workflow.maxSteps);
+                    },
                     onSubmitOutput: (output: VariableDTO) => {
                         var completedStepRun = {
                             ...stepRun,

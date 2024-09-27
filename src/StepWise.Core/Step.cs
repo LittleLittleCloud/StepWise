@@ -209,6 +209,8 @@ public class StepVariable
         return new StepVariable(name, generation, value);
     }
 
+    public static StepVariable Null = StepVariable.Create(string.Empty, "empty");
+
     public int Generation { get; set; }
 
     public object Value { get; set; }

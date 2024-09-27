@@ -96,8 +96,6 @@ public class ReviewCodeWorkflowTest
         // review code
         _logger.LogInformation("Review code");
         variables.Add(StepVariable.Create(nameof(ReviewCode), "improve", 2));
-        variables.RemoveAll(variable => variable.Name == nameof(WriteCode));
-
         await foreach (var stepRun in engine.ExecuteAsync(nameof(WriteCode), inputs: variables, stopStrategy: null))
         {
             if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)

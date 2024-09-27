@@ -3,7 +3,7 @@ import React, { use, useCallback, useEffect, useState } from 'react';
 import { Handle, Position, NodeProps, useUpdateNodeInternals, NodeResizer } from 'reactflow';
 import { Button, buttonVariants } from './ui/button';
 import { cn, getDisplayType, showAsMarkdown, StepType } from '@/lib/utils';
-import { AlertCircle, AlertOctagon, Badge, CheckCircle, CheckCircle2, CircleUserRound, Clock, FormInputIcon, Loader2, Play, RotateCcw, SquareFunction, StickyNote, VariableIcon } from 'lucide-react';
+import { AlertCircle, AlertOctagon, Badge, CheckCircle, CheckCircle2, CircleUserRound, Clock, FormInputIcon, Loader2, LoaderCircle, Play, RotateCcw, SquareFunction, StickyNote, VariableIcon } from 'lucide-react';
 import Divider from './divider';
 import { badgeVariants } from './ui/badge';
 import { Markdown } from './markdown';
@@ -28,19 +28,19 @@ const ToStepNodeStatus = (status: string): StepNodeStatus => {
 }
 
 export interface StepNodeProps extends StepRunDTO {
-    onRunClick: (step: StepDTO) => void;
+    onRerunClick: (step: StepDTO) => void;
+    onClearClick: (step: StepDTO) => void;
     onSubmitOutput: (output: VariableDTO) => void;
     isWorkflowRunning: boolean;
 }
 
-const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus, isWorkflowRunning: boolean }> = ({ status, isWorkflowRunning }) => {
+const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus, isWorkflowRunning: boolean, stepType: StepType }> = ({ status, isWorkflowRunning, stepType }) => {
     const [stepNodeStatus, setStatus] = useState<StepNodeStatus>(status ?? 'NotReady');
     const [isRunning, setIsRunning] = useState<boolean>(isWorkflowRunning);
     useEffect(() => {
         setStatus(status);
         setIsRunning(isWorkflowRunning);
-    }
-        , [status, isWorkflowRunning]);
+    }, [status, isWorkflowRunning, stepType]);
 
     const size = 12;
 
@@ -52,6 +52,14 @@ const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus, isWorkflowRunn
                     label: status,
                 };
             case 'Queue':
+                if (stepType !== 'Ordinary')
+                {
+                    return {
+                        icon: LoaderCircle,
+                        label: status,
+                        animation: 'animate-[spin_3s_linear_infinite]'
+                    }
+                }
                 return isRunning ? {
                     icon: Clock,
                     label: status,
@@ -229,14 +237,16 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     variant={"outline"}
                     size={"xxsIcon"}
                     className='m-0 p-0'
-                    onClick={() => prop.data.onRunClick(step)}
+                    onClick={() => prop.data.onRerunClick(step)}
                 >
                     <Play />
                 </Button>
+
                 <Button
                     variant={"outline"}
                     size={"xxsIcon"}
                     className='m-0 p-0'
+                    onClick={() => prop.data.onClearClick(step)}
                 >
                     <RotateCcw />
                 </Button>
@@ -252,7 +262,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     <div
                         ref={titleRef}
                     >
-                        <StepNodeStatusIndicator status={status} isWorkflowRunning={isWorkflowRunning} />
+                        <StepNodeStatusIndicator status={status} isWorkflowRunning={isWorkflowRunning} stepType={stepType ?? 'Ordinary'} />
                     </div>
                     <h2 className="text-xs font-semibold text-nowrap pr-5">{step.name}</h2>
                     <Handle
