@@ -83,7 +83,7 @@ public class ReviewCodeWorkflowTest
         // write code
         await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
         {
-            if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
+            if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)
             {
                 variables.Add(stepRun.Variable);
             }
@@ -94,18 +94,18 @@ public class ReviewCodeWorkflowTest
 
         // phase 2
         // review code
+        _logger.LogInformation("Review code");
         variables.Add(StepVariable.Create(nameof(ReviewCode), "improve", 2));
-
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
+        await foreach (var stepRun in engine.ExecuteAsync(nameof(WriteCode), inputs: variables, stopStrategy: null))
         {
-            if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
+            if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)
             {
                 variables.Add(stepRun.Variable);
             }
         }
 
-        variables.Count().Should().Be(4);
-        variables.Where(var => var.Name == nameof(WriteCode)).Should().HaveCount(2);
+        variables.Count().Should().Be(3);
+        variables.Where(var => var.Name == nameof(WriteCode)).Should().HaveCount(1);
 
         // phase 3
         // approve code
@@ -113,21 +113,28 @@ public class ReviewCodeWorkflowTest
 
         await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
         {
-            if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is not null)
+            if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)
             {
                 variables.Add(stepRun.Variable);
             }
         }
 
-        variables.Count().Should().Be(6);
+        variables.Count().Should().Be(5);
         variables.Where(var => var.Name == nameof(Done)).Should().HaveCount(1);
 
         // check each variables
         variables[0].Value.As<string>().Should().Be(task); // task
         variables[1].Value.As<string>().Should().Be("dummy code"); // WriteCode
         variables[2].Value.As<string>().Should().Be("improve"); // ReviewCode
-        variables[3].Value.As<string>().Should().Be("improved code"); // WriteCode
-        variables[4].Value.As<string>().Should().Be("approve"); // ReviewCode
-        variables[5].Value.As<string>().Should().Be("done"); // Done
+        variables[3].Value.As<string>().Should().Be("approve"); // ReviewCode
+        variables[4].Value.As<string>().Should().Be("done"); // Done
+    }
+
+    [Fact]
+    public void TopologicalSortTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var steps = engine.Workflow.TopologicalSort().ToList();
+        steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(WriteCode), nameof(ReviewCode), nameof(Done)]);
     }
 }

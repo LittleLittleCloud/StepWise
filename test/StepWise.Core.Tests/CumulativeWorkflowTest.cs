@@ -111,7 +111,7 @@ public class CumulativeWorkflowTest
         {
             var stepName = stepResult.Name;
             var value = stepResult.Variable;
-            if (stepResult.StepType == StepRunType.Completed)
+            if (stepResult.StepRunType == StepRunType.Completed)
             {
                 completedSteps.Add(stepName!);
             }
@@ -135,34 +135,7 @@ public class CumulativeWorkflowTest
 
         // the first steprun would be E()  missing input
         completedSteps[0].Name.Should().Be(nameof(E));
-        completedSteps[0].StepType.Should().Be(StepRunType.NotReady);
-    }
-
-    [Fact]
-    public async Task ItShouldReturnMissingInputWhenRunStepCAsync()
-    {
-        // when preparing input parameter for C, the generation of b must be newer than a
-        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
-        var inputs = new[]
-        {
-            StepVariable.Create(nameof(B), "b", generation: 1),
-            StepVariable.Create(nameof(A), "a", generation: 2),
-        };
-
-        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(C), inputs).ToBlockingEnumerable().ToList();
-
-        completedSteps.Count().Should().Be(5);
-        completedSteps[0].Name.Should().Be(nameof(B));
-        completedSteps[0].StepType.Should().Be(StepRunType.Variable);
-        completedSteps[1].Name.Should().Be(nameof(A));
-        completedSteps[1].StepType.Should().Be(StepRunType.Variable);
-        completedSteps[2].Name.Should().Be(nameof(C)); // C[0]
-        completedSteps[2].StepType.Should().Be(StepRunType.NotReady);
-        completedSteps[3].Name.Should().Be(nameof(C)); // C[2]
-        completedSteps[3].StepType.Should().Be(StepRunType.NotReady);
-        completedSteps[3].Generation.Should().Be(2);
-        completedSteps[4].Name.Should().Be(nameof(C)); // C[3]
-        completedSteps[4].StepType.Should().Be(StepRunType.NotReady);
+        completedSteps[0].StepRunType.Should().Be(StepRunType.NotReady);
     }
 
     [Fact]
@@ -172,30 +145,21 @@ public class CumulativeWorkflowTest
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
         var inputs = new[]
         {
-            StepVariable.Create(nameof(A), "a", generation: 0),
-            StepVariable.Create(nameof(B), "b", generation: 1),
+            StepVariable.Create(nameof(A), "a"),
+            StepVariable.Create(nameof(B), "b"),
         };
 
         var completedSteps = workflowEngine.ExecuteStepAsync(nameof(C), inputs).ToBlockingEnumerable().ToList();
 
-        completedSteps.Count().Should().Be(8);
-        completedSteps[0].Name.Should().Be(nameof(A)); // A[0]
-        completedSteps[0].StepType.Should().Be(StepRunType.Variable);
-        completedSteps[1].Name.Should().Be(nameof(B)); // B[1]
-        completedSteps[1].StepType.Should().Be(StepRunType.Variable);
-        completedSteps[2].Name.Should().Be(nameof(C)); // C[0]
-        completedSteps[2].StepType.Should().Be(StepRunType.NotReady);
-        completedSteps[3].Name.Should().Be(nameof(C)); // C[1](A[0])
-        completedSteps[3].StepType.Should().Be(StepRunType.NotReady);
-        completedSteps[3].Generation.Should().Be(1);
-        completedSteps[4].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[4].StepType.Should().Be(StepRunType.Queue);
-        completedSteps[5].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[5].StepType.Should().Be(StepRunType.Running);
-        completedSteps[6].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[6].StepType.Should().Be(StepRunType.Completed);
-        completedSteps[7].Name.Should().Be(nameof(C)); // C[2](A[0], B[1])
-        completedSteps[7].StepType.Should().Be(StepRunType.Variable);
+        completedSteps.Count().Should().Be(4);
+        completedSteps[0].Name.Should().Be(nameof(C));
+        completedSteps[0].StepRunType.Should().Be(StepRunType.Queue);
+        completedSteps[1].Name.Should().Be(nameof(C));
+        completedSteps[1].StepRunType.Should().Be(StepRunType.Running);
+        completedSteps[2].Name.Should().Be(nameof(C));
+        completedSteps[2].StepRunType.Should().Be(StepRunType.Completed);
+        completedSteps[3].Name.Should().Be(nameof(C));
+        completedSteps[3].StepRunType.Should().Be(StepRunType.Variable);
     }
 
     [Fact]
@@ -208,10 +172,10 @@ public class CumulativeWorkflowTest
 
         // the first steprun would be E()  missing input
         completedSteps[0].Name.Should().Be(nameof(A));
-        completedSteps[0].StepType.Should().Be(StepRunType.Queue);
-        completedSteps[1].StepType.Should().Be(StepRunType.Running);
-        completedSteps[2].StepType.Should().Be(StepRunType.Completed);
-        completedSteps[3].StepType.Should().Be(StepRunType.Variable);
+        completedSteps[0].StepRunType.Should().Be(StepRunType.Queue);
+        completedSteps[1].StepRunType.Should().Be(StepRunType.Running);
+        completedSteps[2].StepRunType.Should().Be(StepRunType.Completed);
+        completedSteps[3].StepRunType.Should().Be(StepRunType.Variable);
         completedSteps[3].Variable!.As<string>().Should().Be("a");
     }
 
@@ -227,7 +191,15 @@ public class CumulativeWorkflowTest
         };
 
         var completedSteps = workflowEngine.ExecuteStepAsync(nameof(B), inputs).ToBlockingEnumerable().ToList();
-        var bResult = completedSteps.First(stepRun => stepRun.StepType == StepRunType.Variable && stepRun.Name == nameof(B));
+        var bResult = completedSteps.First(stepRun => stepRun.StepRunType == StepRunType.Variable && stepRun.Name == nameof(B));
         bResult.Variable!.As<string>().Should().Be("bSettingForB");
+    }
+
+    [Fact]
+    public void TopologicalSortTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var steps = engine.Workflow.TopologicalSort().ToList();
+        steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(A), nameof(B), nameof(C), nameof(D), nameof(E)]);
     }
 }

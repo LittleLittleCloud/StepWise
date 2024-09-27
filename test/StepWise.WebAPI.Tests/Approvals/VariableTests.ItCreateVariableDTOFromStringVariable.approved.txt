@@ -1,0 +1,7 @@
+﻿{
+  "value": "Hello World",
+  "displayValue": "Hello World",
+  "name": "string",
+  "type": "String",
+  "generation": 0
+}

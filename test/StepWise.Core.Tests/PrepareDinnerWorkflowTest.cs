@@ -92,4 +92,13 @@ public class PrepareDinnerWorkflowTest
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(15000);
         result.Should().Be("Dinner ready!");
     }
+
+
+    [Fact]
+    public void TopologicalSortTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this);
+        var steps = engine.Workflow.TopologicalSort().ToList();
+        steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(BoilWater), nameof(ChopVegetables), nameof(CookPasta), nameof(CookSauce), nameof(ServeDinner)]);
+    }
 }

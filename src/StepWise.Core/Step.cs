@@ -5,9 +5,22 @@ using System.Reflection;
 
 namespace StepWise.Core;
 
+public enum StepType
+{
+    Ordinary,
+    StepWiseUITextInput,
+}
+
 public class Step
 {
-    internal Step(string name, string description, List<Parameter> inputParameters, Type outputType, List<string> dependencies, Delegate stepMethod)
+    internal Step(
+        string name,
+        string description,
+        List<Parameter> inputParameters,
+        Type outputType,
+        List<string> dependencies,
+        Delegate stepMethod,
+        StepType stepType = StepType.Ordinary)
     {
         Name = name;
         InputParameters = inputParameters;
@@ -15,11 +28,13 @@ public class Step
         Dependencies = dependencies;
         StepMethod = stepMethod;
         Description = description;
+        StepType = stepType;
     }
 
-    public static Step CreateFromMethod(Delegate stepMethod)
+    public static Step CreateFromMethod(Delegate stepMethod, string? name = null, string? description = null, StepType stepType = StepType.Ordinary)
     {
-        var name = stepMethod.Method.Name;
+        name ??= stepMethod.Method.Name;
+        description ??= string.Empty;
         var inputParameters = new List<Parameter>();
         var dependencies = new List<string>();
         var outputType = stepMethod.Method.ReturnType;
@@ -52,7 +67,19 @@ public class Step
             inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep, hasDefaultValue, param.DefaultValue));
         }
 
-        return new Step(name, string.Empty, inputParameters, outputType, dependencies, stepMethod);
+        return new Step(name, description, inputParameters, outputType, dependencies, stepMethod, stepType);
+    }
+
+    public static Step CreateFromStepWiseUITextInput(Delegate stepMethod, string? name = null, string? description = null)
+    {
+        // step 1: Check if the return type is Task<string?>
+        var outputType = stepMethod.Method.ReturnType;
+        if (outputType != typeof(Task<string?>))
+        {
+            throw new ArgumentException("The return type of the StepWiseUITextInput method must be Task<string?>.");
+        }
+
+        return CreateFromMethod(stepMethod, name, description, stepType: StepType.StepWiseUITextInput);
     }
 
     public string Name { get; set; }
@@ -66,6 +93,11 @@ public class Step
     public Delegate StepMethod { get; set; }
 
     public string Description { get; set; }
+
+    /// <summary>
+    /// This property is used by the UI to determine the type of the step.
+    /// </summary>
+    public StepType StepType { get; }
 
     public bool IsExecuctionConditionSatisfied(IDictionary<string, StepVariable> inputs)
     {
@@ -177,6 +209,8 @@ public class StepVariable
         return new StepVariable(name, generation, value);
     }
 
+    public static StepVariable Null = StepVariable.Create(string.Empty, "empty");
+
     public int Generation { get; set; }
 
     public object Value { get; set; }
@@ -248,7 +282,7 @@ public class StepRun
 
     public Exception? Exception => _exception;
 
-    public StepRunType StepType => _stepType;
+    public StepRunType StepRunType => _stepType;
 
     public static StepRun Create(
         Step step,
@@ -331,7 +365,7 @@ public class StepRun
 
     public override string ToString()
     {
-        if (this.Step is null && this.StepType == StepRunType.Variable)
+        if (this.Step is null && this.StepRunType == StepRunType.Variable)
         {
             return $"{_result!.Name}[{_result!.Generation}]";
         }

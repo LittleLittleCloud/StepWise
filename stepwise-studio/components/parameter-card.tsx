@@ -13,7 +13,7 @@ export interface ParameterCardProps extends ParameterDTO {
 export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
     const [name, setName] = useState<string>(props.name ?? '');
     const [variable, setVariable] = useState<VariableDTO | undefined>(props.variable ?? undefined);
-    const [parameterType, setParameterType] = useState<string>(props.parameter_type ?? '');
+    const [parameterType, setParameterType] = useState<string>(props.variable?.type ?? '');
     const [collapsed, setCollapsed] = useState<boolean>(true);
 
     useEffect(() => {
@@ -49,7 +49,7 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
                 </div>
 
                 {/* the brief display of variable if available */}
-                {collapsed && variable && showAsMarkdown(getDisplayType(parameterType)) && (
+                {collapsed && variable && showAsMarkdown(getDisplayType(parameterType)) && variable.displayValue && (
 
                     <span
                         className='text-xs truncate bg-background/50 rounded px-1 max-w-[10rem]'

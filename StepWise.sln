@@ -31,11 +31,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebAPI.Tests", "te
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "stepwise-studio", "stepwise-studio", "{DC2EB9EC-E500-4BC0-A36C-F3FD0245CF3F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "example\HelloWorld\HelloWorld.csproj", "{8BD13BAB-263D-403F-93CC-FB628FA2E0C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gallery", "example\HelloWorld\Gallery.csproj", "{8BD13BAB-263D-403F-93CC-FB628FA2E0C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.WebUI", "src\StepWise.WebUI\StepWise.WebUI.csproj", "{7DD9A65A-C68D-464A-AFDB-21E9A3C6AA0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebUI", "src\StepWise.WebUI\StepWise.WebUI.csproj", "{7DD9A65A-C68D-464A-AFDB-21E9A3C6AA0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise", "src\StepWise\StepWise.csproj", "{3D5EDF70-D0B3-4552-8185-BE5EB11C7ADA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise", "src\StepWise\StepWise.csproj", "{3D5EDF70-D0B3-4552-8185-BE5EB11C7ADA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

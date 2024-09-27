@@ -22,7 +22,7 @@ public interface IStepWiseEngineStopStrategy
 {
     string Name { get; }
 
-    bool ShouldStop(StepRun[] stepResult);
+    bool ShouldStop(IEnumerable<StepRun> stepResult);
 }
 
 /// <summary>
@@ -39,7 +39,7 @@ public class StopStrategyPipeline : IStepWiseEngineStopStrategy
 
     public string Name => this.ToString();
 
-    public bool ShouldStop(StepRun[] stepResult)
+    public bool ShouldStop(IEnumerable<StepRun> stepResult)
     {
         return _strategies.Any(x => x.ShouldStop(stepResult));
     }
@@ -70,9 +70,9 @@ public class MaxStepsStopStrategy : IStepWiseEngineStopStrategy
 
     public string Name => nameof(MaxStepsStopStrategy);
 
-    public bool ShouldStop(StepRun[] stepResult)
+    public bool ShouldStop(IEnumerable<StepRun> stepResult)
     {
-        return stepResult.Where(x => x.StepType == StepRunType.Variable || x.StepType == StepRunType.Failed).Count() >= _maxSteps;
+        return stepResult.Where(x => x.StepRunType == StepRunType.Variable || x.StepRunType == StepRunType.Failed).Count() >= _maxSteps;
     }
 }
 
@@ -90,7 +90,7 @@ public class EarlyStopStrategy : IStepWiseEngineStopStrategy
 
     public string Name => nameof(EarlyStopStrategy);
 
-    public bool ShouldStop(StepRun[] stepResult)
+    public bool ShouldStop(IEnumerable<StepRun> stepResult)
     {
         return stepResult.Any(x => x.Name == _targetStep && x.Variable != null);
     }
@@ -98,21 +98,21 @@ public class EarlyStopStrategy : IStepWiseEngineStopStrategy
 
 public class DelegateStopStrategy : IStepWiseEngineStopStrategy
 {
-    private readonly Func<StepRun[], bool> _shouldStop;
+    private readonly Func<IEnumerable<StepRun>, bool> _shouldStop;
 
-    private DelegateStopStrategy(Func<StepRun[], bool> shouldStop)
+    private DelegateStopStrategy(Func<IEnumerable<StepRun>, bool> shouldStop)
     {
         _shouldStop = shouldStop;
     }
 
     public string Name => nameof(DelegateStopStrategy);
 
-    public static DelegateStopStrategy Create(Func<StepRun[], bool> shouldStop)
+    public static DelegateStopStrategy Create(Func<IEnumerable<StepRun>, bool> shouldStop)
     {
         return new DelegateStopStrategy(shouldStop);
     }
 
-    public bool ShouldStop(StepRun[] stepResult)
+    public bool ShouldStop(IEnumerable<StepRun> stepResult)
     {
         return _shouldStop(stepResult);
     }
@@ -125,7 +125,7 @@ public class NeverStopStopStrategy : IStepWiseEngineStopStrategy
 {
     public string Name => nameof(NeverStopStopStrategy);
 
-    public bool ShouldStop(StepRun[] stepResult)
+    public bool ShouldStop(IEnumerable<StepRun> stepResult)
     {
         return false;
     }
