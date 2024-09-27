@@ -23,7 +23,7 @@
     <PackageVersion Include="Microsoft.Orleans.Streaming" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Orleans.Server" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="8.0.0" />
-    <PackageVersion Include="AutoGen" Version="$(AutoGenVersion)" />
+    <PackageVersion Include="AutoGen" Version="0.2.1" />
     <PackageVersion Include="AutoGen.SemanticKernel" Version="$(AutoGenVersion)" />
     <PackageVersion Include="AutoGen.OpenAI" Version="$(AutoGenVersion)" />
     <PackageVersion Include="AutoGen.Core" Version="$(AutoGenVersion)" />
@@ -44,7 +44,7 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="5.0.0" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="8.0.0" />
-    <PackageVersion Include="Octokit" Version="11.0.1" />
+    <PackageVersion Include="Octokit" Version="13.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.App" Version="8.0.4" />
   </ItemGroup>
 </Project>

@@ -26,8 +26,10 @@ var helloWorldWorkflow = Workflow.CreateFromInstance(new HelloWorld());
 var loopWorkflow = Workflow.CreateFromInstance(new Loop());
 var cumulativeWorkflow = Workflow.CreateFromInstance(new Cumulative());
 var basicSteps = new BasicSteps();
+var releaseMaster = new ReleaseMaster();
 
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(basicSteps));
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(helloWorldWorkflow);
 stepWiseClient.AddWorkflow(loopWorkflow);
 stepWiseClient.AddWorkflow(cumulativeWorkflow);
