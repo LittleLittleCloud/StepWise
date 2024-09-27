@@ -237,7 +237,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     variant={"outline"}
                     size={"xxsIcon"}
                     className='m-0 p-0'
-                    onClick={() => prop.data.onRerunClick(step)}
+                    onClick={() => {
+                        prop.data.onRerunClick(step);
+                    }}
                 >
                     <Play />
                 </Button>

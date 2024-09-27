@@ -180,27 +180,36 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                     ...stepRun,
                     isWorkflowRunning: isWorkflowRunning,
                     onClearClick: (step: StepDTO) => {
-                        var updatedRunSteps = clearStepRunResult(workflow, step, completedRunSteps);
-                        var updatedWorkflow = { ...workflow, stepRuns: updatedRunSteps } as WorkflowData;
-                        setWorkflow(updatedWorkflow);
+                        setWorkflow((prev) => {
+                            if (!prev) return prev;
+                            var updatedRunSteps = clearStepRunResult(prev, step, completedRunSteps);
+
+                            return { ...prev, stepRuns: updatedRunSteps };
+                        });
                     },
                     onRerunClick: (step: StepDTO) => {
-                        workflow.stepRuns = completedRunSteps.filter((run) => run.step?.name !== step.name && run.result?.name !== step.name);
-                        onStepNodeRunClick(workflow, step, workflow.maxParallelRun, workflow.maxSteps);
+                        var stepRuns = clearStepRunResult(workflow, step, completedRunSteps);
+                        var updatedWorkflow = { ...workflow, stepRuns: stepRuns } as WorkflowData;
+                        onStepNodeRunClick(updatedWorkflow, step, workflow.maxParallelRun, workflow.maxSteps);
                     },
                     onSubmitOutput: (output: VariableDTO) => {
-                        var completedStepRun = {
-                            ...stepRun,
-                            status: 'Completed',
-                        } as StepRunDTO;
-                        var variable = {
-                            status: 'Variable',
-                            result: output,
-                            generation: output.generation,
-                        } as StepRunDTO;
-                        var completedRun = [...completedRunSteps, completedStepRun, variable];
-                        var updatedWorkflow = { ...workflow, stepRuns: completedRun } as WorkflowData;
-                        setWorkflow((prev) => updatedWorkflow);
+                        
+                        setWorkflow((prev) => {
+                            if (!prev) return prev;
+
+                            var completedStepRun = {
+                                ...stepRun,
+                                status: 'Completed',
+                            } as StepRunDTO;
+                            var variable = {
+                                status: 'Variable',
+                                result: output,
+                                generation: output.generation,
+                            } as StepRunDTO;
+                            var completedRun = [...completedRunSteps, completedStepRun, variable];
+
+                            return { ...prev, stepRuns: completedRun };
+                        });
                     },
                 },
             } as Node<StepNodeProps>;
