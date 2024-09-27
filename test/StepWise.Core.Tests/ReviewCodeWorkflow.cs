@@ -119,16 +119,15 @@ public class ReviewCodeWorkflowTest
             }
         }
 
-        variables.Count().Should().Be(6);
+        variables.Count().Should().Be(5);
         variables.Where(var => var.Name == nameof(Done)).Should().HaveCount(1);
 
         // check each variables
         variables[0].Value.As<string>().Should().Be(task); // task
         variables[1].Value.As<string>().Should().Be("dummy code"); // WriteCode
         variables[2].Value.As<string>().Should().Be("improve"); // ReviewCode
-        variables[3].Value.As<string>().Should().Be("improved code"); // WriteCode
-        variables[4].Value.As<string>().Should().Be("approve"); // ReviewCode
-        variables[5].Value.As<string>().Should().Be("done"); // Done
+        variables[3].Value.As<string>().Should().Be("approve"); // ReviewCode
+        variables[4].Value.As<string>().Should().Be("done"); // Done
     }
 
     [Fact]
