@@ -55,15 +55,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     const { theme } = useTheme();
     const [workflow, setWorkflow] = useState<WorkflowData | undefined>(undefined);
     const [completedRunSteps, setCompletedRunSteps] = useState<StepRunDTO[]>(() => props.dto?.stepRuns ?? []);
+    const [isRunning, setIsRunning] = useState<boolean>(false);
 
     useEffect(() => {
         if (!props.dto) return;
         setWorkflow(props.dto);
-        var graph = createGraphFromWorkflow(props.dto!);
-        console.log("Graph: ", graph);
-        setNodes(graph.nodes);
-        setEdges(graph.edges);
         setCompletedRunSteps(props.dto?.stepRuns ?? []);
+        setIsRunning(false);
     }, [props.dto]);
 
     const nodeTypes = useMemo(() => ({
@@ -82,7 +80,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         }
     }, [props.dto?.maxSteps]);
 
-    const createGraphFromWorkflow = (workflow: WorkflowData) => {
+    const createGraphFromWorkflow = (workflow: WorkflowData, isWorkflowRunning: boolean) => {
         var completedRunSteps = workflow.stepRuns ?? [];
         var variables = completedRunSteps.filter((run) => run.status === 'Variable').map((run) => run.result!);
         var stepRun = completedRunSteps.filter((run) => run.status !== 'Variable');
@@ -120,22 +118,24 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                 ...size,
                 data: {
                     ...stepRun,
+                    isWorkflowRunning: isWorkflowRunning,
                     result: stepRun.status === 'Completed' ? latestVariables[step.name] : undefined,
-                    onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, completedRunSteps, step, workflow.maxParallelRun, workflow.maxSteps),
+                    onRunClick: (step: StepDTO) => onStepNodeRunClick(workflow, step, workflow.maxParallelRun, workflow.maxSteps),
                     onSubmitOutput: (output: VariableDTO) => {
+                        var completedStepRun = {
+                            ...stepRun,
+                            status: 'Completed',
+                        } as StepRunDTO;
                         var variable = {
                             status: 'Variable',
                             result: output,
-                            generation: stepRun.generation + 1,
+                            generation: output.generation,
                         } as StepRunDTO;
-                        var completedRun = [...completedRunSteps, variable];
-                        setCompletedRunSteps((prev) => [...prev, variable]);
+                        var completedRun = [...completedRunSteps, completedStepRun, variable];
+                        setCompletedRunSteps((prev) => [...prev, completedStepRun, variable]);
 
                         var updatedWorkflow = { ...workflow, stepRuns: completedRun } as WorkflowData;
                         setWorkflow(updatedWorkflow);
-
-                        var updatedNodes = createGraphFromWorkflow(updatedWorkflow).nodes;
-                        setNodes(updatedNodes);
                     },
                 },
             } as Node<StepNodeProps>;
@@ -161,11 +161,14 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
     useEffect(() => {
         if (!workflow) return;
         props.onWorkflowChange?.(workflow);
-    }, [workflow, fitView, maxParallelRun, maxStep]);
+        setCompletedRunSteps(workflow.stepRuns ?? []);
+        var graph = createGraphFromWorkflow(workflow, isRunning);
+        setNodes(graph.nodes);
+        setEdges(graph.edges);
+    }, [workflow, fitView, maxParallelRun, maxStep, isRunning]);
 
     const onStepNodeRunClick = async (
         workflow: WorkflowData,
-        completedRunSteps: StepRunDTO[],
         step?: StepDTO,
         maxParallelRun?: number,
         maxSteps?: number,
@@ -173,17 +176,16 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
         console.log("Run step: ", step);
         if (!workflow.name) return;
         try {
-            setCompletedRunSteps(completedRunSteps);
-            var clonedRunSteps = [...completedRunSteps];
+            setIsRunning(true);
+            var existingRunSteps = [...workflow.stepRuns];
             var es = new EventSource(`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse`);
             es.addEventListener("StepRunDTO", async (event) => {
                 var data = JSON.parse(event.data) as StepRunDTO;
                 console.log("Received step run data: ", data);
-                clonedRunSteps.push(data);
-                workflow.stepRuns = clonedRunSteps;
-                setCompletedRunSteps(clonedRunSteps);
-                setWorkflow(workflow);
-                var graph = createGraphFromWorkflow(workflow);
+                existingRunSteps.push(data);
+                setCompletedRunSteps(existingRunSteps);
+                var updatedWorkflow = { ...workflow, stepRuns: existingRunSteps } as WorkflowData;
+                var graph = createGraphFromWorkflow(updatedWorkflow, true);
                 setNodes(graph.nodes);
             });
 
@@ -194,8 +196,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             es.onerror = (event) => {
                 console.log("Error", event);
             }
-            
-            var variables = completedRunSteps.filter((run) => run.status === 'Variable').map((run) => run.result!);
+
+            var graph = createGraphFromWorkflow(workflow, false);
+            var variables = graph.nodes.filter((node) => node.data.result !== undefined).map((node) => node.data.result!);
+            console.log("Variables: ", variables);
             var res = await postApiV1StepWiseControllerV1ExecuteStep(
                 {
                     query: {
@@ -224,32 +228,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
             console.error("No data returned from executing step");
             return;
         }
-        var updateStepRuns = [...completedRunSteps, ...res.data];
-
-        // for every step in the workflow
-        // if the last status is running or queue, set it to not ready
-        for (const step of workflow.steps ?? []) {
-            var lastStep = updateStepRuns.findLast((run) => run.step?.name === step.name);
-            if (!lastStep) {
-                continue;
-            }
-
-            var lastStatus = lastStep.status;
-            if (lastStatus === 'Running' || lastStatus === 'Queue') {
-                updateStepRuns.push({
-                    status: 'NotReady',
-                    step: step,
-                    generation: lastStep.generation + 1,
-                } as StepRunDTO);
-            }
-        }
+        var updateStepRuns = [...workflow.stepRuns, ...res.data];
 
         setCompletedRunSteps(updateStepRuns);
         var updatedWorkfow = { ...workflow, stepRuns: updateStepRuns };
         setWorkflow(updatedWorkfow);
-
-        var graph = createGraphFromWorkflow(updatedWorkfow);
-        setNodes(graph.nodes);
+        setIsRunning(false);
     }
 
     const onNodesChangeRestricted = useCallback((changes: NodeChange[]) => {
@@ -267,16 +251,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                     if (stepName && workflow) {
                         var updatedWorkflow = { ...workflow, stepPositions: { ...workflow.stepPositions, [stepName]: newPosition } } as WorkflowData;
                         setWorkflow(updatedWorkflow);
-
-                        var updatedNodes = createGraphFromWorkflow(updatedWorkflow).nodes;
-                        setNodes(updatedNodes);
                     }
                 }
             }
         }
 
         onNodesChange(allowedChanges);
-    }, [onNodesChange, nodes]);
+    }, [onNodesChange, nodes, isRunning]);
 
     const onLayout = useCallback(() => {
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
@@ -338,26 +319,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
                                     setCompletedRunSteps([]);
                                     var updatedWorkflow = { ...workflow, stepRuns: [] } as WorkflowData;
                                     setWorkflow(updatedWorkflow);
-                                    var updatedNodes = createGraphFromWorkflow(updatedWorkflow).nodes;
-                                    setNodes(updatedNodes);
                                 }}
                                 onAutoLayoutClick={onLayout}
                                 onRunClick={() => {
-                                    var stepRunsToKeep : StepRunDTO[] = []
-                                    for (const stepRun of completedRunSteps.reverse())
-                                    {
-                                        if (stepRun.status === 'Variable' && stepRunsToKeep.findIndex(x => x.result?.name === stepRun.result?.name && x.status === 'Variable') === -1)
-                                        {
-                                            stepRunsToKeep.push(stepRun);
-                                        }
-                                        else if (stepRun.status === 'Completed' && stepRunsToKeep.findIndex(x => x.step?.name === stepRun.step?.name && x.status === 'Completed') === -1)
-                                        {
-                                            stepRunsToKeep.push(stepRun);
-                                        }
-                                    }
-
-                                    stepRunsToKeep.reverse();
-                                    onStepNodeRunClick(workflow!, stepRunsToKeep, undefined, maxParallelRun, maxStep);
+                                    onStepNodeRunClick(workflow!, undefined, maxParallelRun, maxStep);
                                 }}
                             />
                         </div>

@@ -32,7 +32,7 @@ public static class StepWiseEngineExtension
         await foreach (var stepRun in engine.ExecuteStepsAsync(steps, inputs, maxConcurrency, stopStrategy: stopStrategy, ct: ct))
         {
             if (!echo
-                && stepRun.StepType == StepRunType.Variable
+                && stepRun.StepRunType == StepRunType.Variable
                 && inputs.Any(i => i.Name == stepRun.Name && i.Generation == stepRun.Generation))
             {
                 continue;

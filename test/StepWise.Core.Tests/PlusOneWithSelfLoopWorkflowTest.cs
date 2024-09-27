@@ -35,7 +35,7 @@ public class PlusOneWithSelfLoopWorkflowTest
 
         await foreach (var stepRun in engine.ExecuteAsync(nameof(PlusOne), maxConcurrency: 1, maxSteps: 10))
         {
-            if (stepRun.StepType == StepRunType.Variable)
+            if (stepRun.StepRunType == StepRunType.Variable)
             {
                 variables.Add(stepRun.Variable!);
             }
@@ -48,7 +48,7 @@ public class PlusOneWithSelfLoopWorkflowTest
 
         await foreach (var stepRun in engine.ExecuteAsync(nameof(PlusOne), variables, maxConcurrency: 1, maxSteps: 10))
         {
-            if (stepRun.StepType == StepRunType.Variable)
+            if (stepRun.StepRunType == StepRunType.Variable)
             {
                 variables.Add(stepRun.Variable!);
             }

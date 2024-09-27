@@ -280,7 +280,7 @@ public class StepRun
 
     public Exception? Exception => _exception;
 
-    public StepRunType StepType => _stepType;
+    public StepRunType StepRunType => _stepType;
 
     public static StepRun Create(
         Step step,
@@ -363,7 +363,7 @@ public class StepRun
 
     public override string ToString()
     {
-        if (this.Step is null && this.StepType == StepRunType.Variable)
+        if (this.Step is null && this.StepRunType == StepRunType.Variable)
         {
             return $"{_result!.Name}[{_result!.Generation}]";
         }

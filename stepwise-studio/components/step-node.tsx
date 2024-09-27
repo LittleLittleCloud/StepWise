@@ -30,14 +30,17 @@ const ToStepNodeStatus = (status: string): StepNodeStatus => {
 export interface StepNodeProps extends StepRunDTO {
     onRunClick: (step: StepDTO) => void;
     onSubmitOutput: (output: VariableDTO) => void;
+    isWorkflowRunning: boolean;
 }
 
-const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status }) => {
+const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus, isWorkflowRunning: boolean }> = ({ status, isWorkflowRunning }) => {
     const [stepNodeStatus, setStatus] = useState<StepNodeStatus>(status ?? 'NotReady');
+    const [isRunning, setIsRunning] = useState<boolean>(isWorkflowRunning);
     useEffect(() => {
         setStatus(status);
+        setIsRunning(isWorkflowRunning);
     }
-        , [status]);
+        , [status, isWorkflowRunning]);
 
     const size = 12;
 
@@ -49,17 +52,23 @@ const StepNodeStatusIndicator: React.FC<{ status: StepNodeStatus }> = ({ status 
                     label: status,
                 };
             case 'Queue':
-                return {
+                return isRunning ? {
                     icon: Clock,
                     label: status,
                     animation: 'animate-[spin_3s_linear_infinite]'
+                } : {
+                    icon: SquareFunction,
+                    label: status,
                 };
             case 'Running':
-                return {
+                return isRunning ? {
                     icon: Loader2,
                     color: 'text-yellow-500',
                     label: status,
                     animation: 'animate-spin'
+                } : {
+                    icon: SquareFunction,
+                    label: status,
                 };
             case 'Completed':
                 return {
@@ -124,6 +133,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     const [output, setOutput] = useState<VariableDTO | undefined>(undefined);
     const [stepType, setStepType] = useState<StepType | undefined>(ConvertStringToStepType(prop.data.step?.step_type ?? 'Ordinary'));
     const [inputText, setInputText] = useState<string>('');
+    const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(prop.data.isWorkflowRunning);
 
     useEffect(() => {
         if (!stepNodeRef.current) return;
@@ -151,7 +161,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
     useEffect(() => {
         setVariables(prop.data.variables ?? []);
-    }, [prop.data.variables]);
+    },[prop.data.variables]);
 
     useEffect(() => {
         setOutput(prop.data.result ?? undefined);
@@ -166,6 +176,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
     }, [prop.data.status]);
 
     useEffect(() => {
+        setIsWorkflowRunning(prop.data.isWorkflowRunning);
+    }, [prop.data.isWorkflowRunning]);
+
+    useEffect(() => {
         if (prop.data.step?.step_type === 'StepWiseUITextInput') {
             setStepType('StepWiseUITextInput');
         }
@@ -177,8 +191,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
     useEffect(() => {
         updateNodeInternals(prop.id);
-    }
-        , [step, sourceHandleTopOffset, targetHandleTopOffsets, status]);
+    }, [step, sourceHandleTopOffset, targetHandleTopOffsets, status]);
 
     useEffect(() => {
         if (titleRef.current) {
@@ -239,7 +252,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
                     <div
                         ref={titleRef}
                     >
-                        <StepNodeStatusIndicator status={status} />
+                        <StepNodeStatusIndicator status={status} isWorkflowRunning={isWorkflowRunning} />
                     </div>
                     <h2 className="text-xs font-semibold text-nowrap pr-5">{step.name}</h2>
                     <Handle
@@ -331,7 +344,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
             )
             }
 
-            {stepType === 'StepWiseUITextInput' && (
+            {stepType === 'StepWiseUITextInput' && status === 'Queue' && (
                 <div className="flex flex-col gap-2 pt-2">
                     <div
                         className='flex gap-1 items-center'>

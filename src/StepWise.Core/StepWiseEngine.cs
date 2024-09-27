@@ -116,7 +116,7 @@ public class StepWiseEngine : IStepWiseEngine
             if (_stepResultQueue.TryTake(out var stepRun, 1000, ct))
             {
                 _logger?.LogInformation($"[StepRun Queue]: Receive {stepRun} from the result queue.");
-                if (stepRun.StepType == StepRunType.Variable && stepRun.Variable is StepVariable res)
+                if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is StepVariable res)
                 {
                     // skip if there is a newer version of the result in the context
                     if (context.TryGetValue(res.Name, out var value) && value.Generation >= res.Generation)
@@ -231,7 +231,13 @@ public class StepWiseEngine : IStepWiseEngine
         CancellationToken ct = default)
     {
         await Task.Yield();
-        // scenario 1
+        // if the step is StepWiseTextInput, return quickly
+        if (stepRun.Step?.StepType == StepType.StepWiseUITextInput)
+        {
+            _logger?.LogInformation($"[Runner {runnerId}]: Skipping {stepRun} because it is a text input.");
+            return;
+        }
+
         // if the step has already been executed, or there is a newer version of the step in the task queue
         // this could happen when restoring the workflow engine from a previous state
         // in this case, we can early stop the execution
@@ -241,7 +247,6 @@ public class StepWiseEngine : IStepWiseEngine
         }
         else
         {
-            // scenario 2
             // run the step by calling the step.ExecuteAsync method
             // the step.ExecuteAsync will short-circuit if the dependencies are not met
             var runningStep = stepRun.ToRunningStatus();

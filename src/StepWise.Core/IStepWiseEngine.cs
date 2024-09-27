@@ -72,7 +72,7 @@ public class MaxStepsStopStrategy : IStepWiseEngineStopStrategy
 
     public bool ShouldStop(IEnumerable<StepRun> stepResult)
     {
-        return stepResult.Where(x => x.StepType == StepRunType.Variable || x.StepType == StepRunType.Failed).Count() >= _maxSteps;
+        return stepResult.Where(x => x.StepRunType == StepRunType.Variable || x.StepRunType == StepRunType.Failed).Count() >= _maxSteps;
     }
 }
 

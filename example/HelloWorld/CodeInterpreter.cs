@@ -13,23 +13,23 @@ public class CodeInterpreter
     [StepWiseUITextInput(description: "Please create a task")]
     public async Task<string?> CreateTask()
     {
-        return "shut down my PC";
+        return null;
     }
 
     [Step]
     [DependOn(nameof(CreateTask))]
     public async Task<string?> WriteCode(
         [FromStep(nameof(CreateTask))] string task,
-        [FromStep(nameof(ReviseCodePrompt))] string? reviseCodePrompt = null)
+        [FromStep(nameof(CodeReview))] CodeComment? codeReview = null)
     {
-        if (reviseCodePrompt == "Approve")
+        if (codeReview?.comment == "Approve")
         {
             return null;
         }
 
-        if (reviseCodePrompt != null)
+        if (codeReview != null)
         {
-            return "revised code";
+            return $"revised code based on feedback: {codeReview.comment}";
         }
 
         return "This is the code to run";
@@ -37,37 +37,30 @@ public class CodeInterpreter
 
     [StepWiseUITextInput(description: "Please review the code, approve the code by saying 'Approve', otherwise, provide feedback")]
     [DependOn(nameof(WriteCode))]
-    public async Task<string?> ReviewCode(
+    public async Task<string?> CommentOrApprove(
         [FromStep(nameof(WriteCode))] string code)
     {
         return null;
     }
 
-    [DependOn(nameof(ReviewCode))]
+    [DependOn(nameof(CommentOrApprove))]
     [DependOn(nameof(WriteCode))]
     [Step]
-    public async Task<string?> ReviseCodePrompt(
+    public async Task<CodeComment> CodeReview(
         [FromStep(nameof(WriteCode))] string code,
-        [FromStep(nameof(ReviewCode))] string? review)
+        [FromStep(nameof(CommentOrApprove))] string review)
     {
-        if (review == "Approve")
-        {
-            return review;
-        }
-        else
-        {
-            return $"Code not approved, please revise the code";
-        }
+        return new CodeComment(code, review);
     }
 
     [Step]
-    [DependOn(nameof(ReviseCodePrompt))]
+    [DependOn(nameof(CodeReview))]
     [DependOn(nameof(WriteCode))]
     public async Task<string> RunCode(
-        [FromStep(nameof(ReviseCodePrompt))] string reviseCodePrompt,
+        [FromStep(nameof(CodeReview))] CodeComment reviseCodePrompt,
         [FromStep(nameof(WriteCode))] string code)
     {
-        if (reviseCodePrompt == "Approve")
+        if (reviseCodePrompt.comment == "Approve")
         {
             return "Code ran successfully, running code: " + code;
         }
@@ -76,4 +69,6 @@ public class CodeInterpreter
             return "Code not approved, please revise the code";
         }
     }
+
+    public record CodeComment(string code, string comment);
 }

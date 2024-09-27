@@ -42,7 +42,7 @@ public class CircleLoopWorkflowTest
         var stopStrategy = new MaxStepsStopStrategy(1);
         await foreach (var stepRun in engine.ExecuteAsync(maxConcurrency: 1, stopStrategy: stopStrategy))
         {
-            if (stepRun.StepType == StepRunType.Variable)
+            if (stepRun.StepRunType == StepRunType.Variable)
             {
                 variables.Add(stepRun.Variable!);
             }
@@ -55,7 +55,7 @@ public class CircleLoopWorkflowTest
         stopStrategy = new MaxStepsStopStrategy(2);
         await foreach (var stepRun in engine.ExecuteAsync(inputs: variables, maxConcurrency: 1, stopStrategy: stopStrategy))
         {
-            if (stepRun.StepType == StepRunType.Variable)
+            if (stepRun.StepRunType == StepRunType.Variable)
             {
                 variables.Add(stepRun.Variable!);
             }

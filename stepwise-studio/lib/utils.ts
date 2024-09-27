@@ -30,8 +30,8 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'L
       node.targetPosition = Position.Left;
       node.sourcePosition = Position.Right;
       node.position = {
-          x: nodeWithPosition.x - maxNodeWidth / 2,
-          y: nodeWithPosition.y - maxNodeHeight / 2,
+          x: nodeWithPosition.x - node.width! / 2,
+          y: nodeWithPosition.y - node.height! / 2,
       };
   });
 
@@ -67,13 +67,13 @@ export function getDisplayType(type: string)
       case 'Boolean':
           return 'bool';
       default:
-          return 'object';
+          return type;
   }
 };
 
-export function showAsMarkdown(type: 'str' | 'number' | 'bool' | 'object')
+export function showAsMarkdown(type: 'str' | 'number' | 'bool' | 'object' | string)
 {
-  return ['str', 'number'].indexOf(type) > -1;
+  return ['object'].indexOf(type) < 0;
 }
 
 export type StepType = 'Ordinary' | 'StepWiseUITextInput';

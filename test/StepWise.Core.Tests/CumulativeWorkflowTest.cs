@@ -111,7 +111,7 @@ public class CumulativeWorkflowTest
         {
             var stepName = stepResult.Name;
             var value = stepResult.Variable;
-            if (stepResult.StepType == StepRunType.Completed)
+            if (stepResult.StepRunType == StepRunType.Completed)
             {
                 completedSteps.Add(stepName!);
             }
@@ -135,7 +135,7 @@ public class CumulativeWorkflowTest
 
         // the first steprun would be E()  missing input
         completedSteps[0].Name.Should().Be(nameof(E));
-        completedSteps[0].StepType.Should().Be(StepRunType.NotReady);
+        completedSteps[0].StepRunType.Should().Be(StepRunType.NotReady);
     }
 
     [Fact]
@@ -153,13 +153,13 @@ public class CumulativeWorkflowTest
 
         completedSteps.Count().Should().Be(4);
         completedSteps[0].Name.Should().Be(nameof(C));
-        completedSteps[0].StepType.Should().Be(StepRunType.Queue);
+        completedSteps[0].StepRunType.Should().Be(StepRunType.Queue);
         completedSteps[1].Name.Should().Be(nameof(C));
-        completedSteps[1].StepType.Should().Be(StepRunType.Running);
+        completedSteps[1].StepRunType.Should().Be(StepRunType.Running);
         completedSteps[2].Name.Should().Be(nameof(C));
-        completedSteps[2].StepType.Should().Be(StepRunType.Completed);
+        completedSteps[2].StepRunType.Should().Be(StepRunType.Completed);
         completedSteps[3].Name.Should().Be(nameof(C));
-        completedSteps[3].StepType.Should().Be(StepRunType.Variable);
+        completedSteps[3].StepRunType.Should().Be(StepRunType.Variable);
     }
 
     [Fact]
@@ -172,10 +172,10 @@ public class CumulativeWorkflowTest
 
         // the first steprun would be E()  missing input
         completedSteps[0].Name.Should().Be(nameof(A));
-        completedSteps[0].StepType.Should().Be(StepRunType.Queue);
-        completedSteps[1].StepType.Should().Be(StepRunType.Running);
-        completedSteps[2].StepType.Should().Be(StepRunType.Completed);
-        completedSteps[3].StepType.Should().Be(StepRunType.Variable);
+        completedSteps[0].StepRunType.Should().Be(StepRunType.Queue);
+        completedSteps[1].StepRunType.Should().Be(StepRunType.Running);
+        completedSteps[2].StepRunType.Should().Be(StepRunType.Completed);
+        completedSteps[3].StepRunType.Should().Be(StepRunType.Variable);
         completedSteps[3].Variable!.As<string>().Should().Be("a");
     }
 
@@ -191,7 +191,7 @@ public class CumulativeWorkflowTest
         };
 
         var completedSteps = workflowEngine.ExecuteStepAsync(nameof(B), inputs).ToBlockingEnumerable().ToList();
-        var bResult = completedSteps.First(stepRun => stepRun.StepType == StepRunType.Variable && stepRun.Name == nameof(B));
+        var bResult = completedSteps.First(stepRun => stepRun.StepRunType == StepRunType.Variable && stepRun.Name == nameof(B));
         bResult.Variable!.As<string>().Should().Be("bSettingForB");
     }
 

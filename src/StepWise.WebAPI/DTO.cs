@@ -144,7 +144,7 @@ public record StepRunDTO(
         return new StepRunDTO(stepRunDTO, variables, result, exception)
         {
             Generation = stepRun.Generation,
-            Status = Enum.GetName(stepRun.StepType)!,
+            Status = Enum.GetName(stepRun.StepRunType)!,
         };
     }
 
