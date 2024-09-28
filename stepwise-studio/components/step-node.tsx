@@ -377,7 +377,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			{/* settings bar */}
 			{/* appear when hover */}
 			<div className="invisible flex group-hover:visible absolute -top-5 right-0 bg-background/50 rounded gap-1 m-0 p-1">
-				<Button
+				{/* <Button
 					variant={"outline"}
 					size={"xxsIcon"}
 					className="m-0 p-0"
@@ -386,8 +386,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					}}
 				>
 					<Play />
-				</Button>
-
+				</Button> */}
 				<Button
 					variant={"outline"}
 					size={"xxsIcon"}

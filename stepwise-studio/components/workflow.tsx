@@ -332,18 +332,32 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 		var edges =
 			workflow.steps?.reduce((edges, step) => {
+				// var dependencyEdges = step.dependencies?.map((dep) => {
+				// 	return {
+				// 		id: `${step.name}-${dep}`, // target-source
+				// 		source: dep,
+				// 		target: step.name,
+				// 		sourceHandle: dep,
+				// 		targetHandle: step.name + "-" + dep,
+				// 		style: { stroke: "#555" },
+				// 		animated: false,
+				// 	} as Edge;
+				// }) ?? [];
+
+				var variableEdges = step.parameters?.map((param) => {
+					return {
+						id: `${step.name}-${param.variable_name}`,
+						source: param.variable_name,
+						target: step.name,
+						sourceHandle: param.variable_name,
+						targetHandle: step.name + "-" + param.variable_name,
+						style: { stroke: "#555" },
+						animated: true,
+					} as Edge;
+				}) ?? [];
+
 				return edges.concat(
-					step.dependencies?.map((dep) => {
-						return {
-							id: `${step.name}-${dep}`,
-							source: dep,
-							target: step.name,
-							sourceHandle: dep,
-							targetHandle: step.name + "-" + dep,
-							style: { stroke: "#555" },
-							animated: true,
-						} as Edge;
-					}) ?? [],
+					[...variableEdges],
 				);
 			}, [] as Edge[]) ?? [];
 

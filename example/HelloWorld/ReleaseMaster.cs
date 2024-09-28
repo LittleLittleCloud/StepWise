@@ -51,7 +51,7 @@ public class ReleaseMaster
         [FromStep(nameof(GithubToken))] string? token = null)
     {
         var ghClient = new GitHubClient(new ProductHeaderValue("StepWise"));
-        if (token is not null)
+        if (!string.IsNullOrEmpty(token))
         {
             ghClient.Credentials = new Credentials(token);
         }
@@ -83,10 +83,15 @@ public class ReleaseMaster
     }
 
     [Step]
-    public async Task<FeedBack> Feedback(
+    public async Task<FeedBack?> Feedback(
         [FromStep(nameof(ReviewReleaseNote))] string review,
         [FromStep(nameof(WriteReleaseNote))] string releaseNote)
     {
+        if (review == "approve")
+        {
+            return null;
+        }
+
         return new FeedBack(releaseNote, review);
     }
 
@@ -149,6 +154,21 @@ public class ReleaseMaster
             var releaseNote = await agent.SendAsync(prompt);
 
             return releaseNote.GetContent();
+        }
+    }
+
+    [Step]
+    public async Task<string> ReleaseNote(
+        [FromStep(nameof(WriteReleaseNote))] string releaseNote,
+        [FromStep(nameof(ReviewReleaseNote))] string review)
+    {
+        if (review == "approve")
+        {
+            return releaseNote;
+        }
+        else
+        {
+            return "Not Ready";
         }
     }
 
