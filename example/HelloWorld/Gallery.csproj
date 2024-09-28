@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoGen" />
+    <PackageReference Include="Octokit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\StepWise\StepWise.csproj" />
   </ItemGroup>
 
