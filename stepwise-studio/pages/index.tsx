@@ -61,8 +61,6 @@ export default function Home() {
 	useEffect(() => {
 		getApiV1StepWiseControllerV1ListWorkflow()
 			.then((res) => {
-				console.log("Got workflows: ", res.data);
-
 				var workflows: WorkflowData[] = [];
 
 				for (const workflow of res.data ?? []) {
@@ -95,14 +93,14 @@ export default function Home() {
 						...workflow,
 						stepSizes: layout.nodes.reduce(
 							(acc, node) => {
-								acc[node.id] = { width: 200, height: 200 };
+								acc[node.id] = undefined;
 								return acc;
 							},
 							{} as {
 								[key: string]: {
 									width: number;
 									height: number;
-								};
+								} | undefined;
 							},
 						),
 						stepPositions: layout.nodes.reduce(

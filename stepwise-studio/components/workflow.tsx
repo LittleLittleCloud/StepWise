@@ -25,7 +25,7 @@ import ReactFlow, {
 	NodeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import StepNode, { StepNodeProps } from "./step-node";
+import { StepNode, StepNodeProps } from "./step-node";
 import dagre from "dagre";
 import { Button } from "./ui/button";
 import { LayoutGrid } from "lucide-react";
@@ -41,7 +41,7 @@ import {
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
-	stepSizes: { [key: string]: { width: number; height: number } };
+	stepSizes: { [key: string]: { width: number; height: number } | undefined };
 };
 export type WorkflowData = WorkflowDTO &
 	WorkflowLayout &
@@ -66,7 +66,6 @@ export function createLatestStepRunSnapShotFromWorkflow(
 		.filter((run) => run.result)
 		.map((run) => run.result!);
 	var stepRun = stepRuns.filter((run) => run.status !== "Variable");
-	console.log("Variables: ", variables);
 	// create latest variables, which only keeps the most recent version for variable in variables which have the same name
 	var latestVariables = variables.reduce(
 		(acc, variable) => {
@@ -110,8 +109,6 @@ export function createLatestStepRunSnapShotFromWorkflow(
 
 		return stepRun;
 	});
-	console.log("latest variables: ", latestVariables);
-	console.log("Latest snapshot runs: ", stepRuns);
 
 	return stepRuns;
 }
@@ -238,8 +235,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				id: step.name,
 				type: "stepNode",
 				position: position,
-				...size,
+				...size ?? {width: 200, height: 100}, // if size is not defined, use default size
+				style: {
+					width: size?.width ?? 'auto',
+					height: size?.height ?? 'auto',
+				},
 				data: {
+					...size,
 					...stepRun,
 					isWorkflowRunning: isWorkflowRunning,
 					onClearClick: (step: StepDTO) => {
@@ -293,6 +295,37 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							return { ...prev, stepRuns: completedRun };
 						});
 					},
+					onCancelInput: () => {
+						var stepRuns = workflow.stepRuns.map((run) => {
+							if (run.step?.name === step.name) {
+								return {
+									...run,
+									status: "NotReady",
+									result: undefined,
+								} as StepRunDTO;
+							}
+							return run;
+						});
+						var updatedWorkflow = {
+							...workflow,
+							stepRuns: stepRuns,
+						} as WorkflowData;
+						console.log("Updated workflow: ", updatedWorkflow);
+						setWorkflow(updatedWorkflow);
+					},
+					onResize: (height, width) => {
+						console.log("Resize: ", height, width);
+						setWorkflow((prev) => {
+							if (!prev) return prev;
+							return {
+								...prev,
+								stepSizes: {
+									...prev.stepSizes,
+									[step.name]: { height, width },
+								},
+							};
+						});
+					},
 				},
 			} as Node<StepNodeProps>;
 		});
@@ -319,11 +352,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 	useEffect(() => {
 		if (!workflow) return;
-		props.onWorkflowChange?.(workflow);
 		setCompletedRunSteps(workflow.stepRuns ?? []);
 		var graph = createGraphFromWorkflow(workflow, isRunning);
+		console.log("Graph: ", graph);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
+		props.onWorkflowChange?.(workflow);
 	}, [workflow, fitView, maxParallelRun, maxStep, isRunning]);
 
 	const onStepNodeRunClick = async (
@@ -366,7 +400,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			var variables = graph.nodes
 				.filter((node) => node.data.result !== undefined)
 				.map((node) => node.data.result!);
-			console.log("Variables: ", variables);
 			var res = await postApiV1StepWiseControllerV1ExecuteStep({
 				query: {
 					step: step?.name ?? undefined,

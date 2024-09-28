@@ -11,6 +11,7 @@ import {
 	NodeProps,
 	useUpdateNodeInternals,
 	NodeResizer,
+	NodeResizeControl,
 } from "reactflow";
 import { Button, buttonVariants } from "./ui/button";
 import { cn, getDisplayType, showAsMarkdown, StepType } from "@/lib/utils";
@@ -25,8 +26,10 @@ import {
 	FormInputIcon,
 	Loader2,
 	LoaderCircle,
+	MoveDiagonal2,
 	Play,
 	RotateCcw,
+	Slash,
 	SquareFunction,
 	StickyNote,
 	VariableIcon,
@@ -36,6 +39,9 @@ import { badgeVariants } from "./ui/badge";
 import { Markdown } from "./markdown";
 import { ParameterCard } from "./parameter-card";
 import { VariableCard } from "./variable-card";
+import "react-resizable/css/styles.css";
+import { ResizableDiv } from "./ui/resizableDiv";
+import { on } from "events";
 
 export type StepNodeStatus =
 	| "Running"
@@ -63,7 +69,11 @@ export interface StepNodeProps extends StepRunDTO {
 	onRerunClick: (step: StepDTO) => void;
 	onClearClick: (step: StepDTO) => void;
 	onSubmitOutput: (output: VariableDTO) => void;
+	onCancelInput: () => void;
+	onResize: (height: number, width: number) => void;
 	isWorkflowRunning: boolean;
+	width?: number;
+	height?: number;
 }
 
 const StepNodeStatusIndicator: React.FC<{
@@ -207,6 +217,15 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
 		prop.data.isWorkflowRunning,
 	);
+	const [width, setWidth] = useState<number | undefined>(prop.data.width);
+	const [height, setHeight] = useState<number | undefined>(prop.data.height);
+
+	const shouldWaitForInput = (
+		status: StepNodeStatus,
+		stepType?: StepType,
+	) => {
+		return status === "Queue" && stepType === "StepWiseUITextInput";
+	};
 
 	useEffect(() => {
 		if (!stepNodeRef.current) return;
@@ -221,6 +240,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				return acc;
 			}, new Map<string, number>()) ?? new Map<string, number>(),
 		);
+		setWidth(prop.data.width);
+		setHeight(prop.data.height);
 
 		// set resize observer
 		const resizeObserver = new ResizeObserver((entries) => {
@@ -263,6 +284,13 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	}, [prop.data.step?.step_type]);
 
 	useEffect(() => {
+		if (prop.data.width && prop.data.height) {
+			setWidth(prop.data.width);
+			setHeight(prop.data.height);
+		}
+	}, [prop.data.width, prop.data.height]);
+
+	useEffect(() => {
 		updateNodeInternals(prop.id);
 	}, [step, sourceHandleTopOffset, targetHandleTopOffsets, status]);
 
@@ -295,14 +323,57 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		}
 	}, [parameterRefMap.current]);
 
+	useEffect(() => {
+		if (stepNodeRef.current) {
+			setWidth(stepNodeRef.current.offsetWidth);
+			setHeight(stepNodeRef.current.offsetHeight);
+			console.log("Setting width and height: ", width, height);
+			// prop.data.onResize(stepNodeRef.current.offsetHeight, stepNodeRef.current.offsetWidth);
+		}
+	}, [stepNodeRef.current, stepNodeRef.current?.offsetWidth, stepNodeRef.current?.offsetHeight]);
+
 	return (
 		<div
 			className={cn(
 				"border-2 max-w-96 rounded-md shadow-md p-1 bg-background/50 group min-w-32",
+				// set weight and height
 				isSelected ? "border-primary/40" : "border-transparent",
+				shouldWaitForInput(status, stepType)
+					? "border-primary p-2"
+					: "",
 			)}
 			ref={stepNodeRef}
 		>
+			{/* resize control */}
+			{height && width && stepNodeRef.current && (
+				<NodeResizeControl
+					style={{
+						background: "transparent",
+						border: 'none',
+					}}
+					onResize={(event, param) => {
+						console.log("Resizing: ", param);
+						setWidth(param.width);
+						setHeight(param.height);
+					}}
+					onResizeEnd={(event, param) => {
+						prop.data.onResize(stepNodeRef.current!.offsetHeight, stepNodeRef.current!.offsetWidth);
+					}}
+					maxWidth={384}
+					minWidth={128}
+					minHeight={height}
+					maxHeight={height}
+				>
+					<Slash
+						style={{
+							position: "absolute",
+							bottom: 3,
+							right: 3,
+						}}
+						size={6}
+						/>
+				</NodeResizeControl>
+			)}
 			{/* settings bar */}
 			{/* appear when hover */}
 			<div className="invisible flex group-hover:visible absolute -top-5 right-0 bg-background/50 rounded gap-1 m-0 p-1">
@@ -337,7 +408,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 								stepType={stepType ?? "Ordinary"}
 							/>
 						</div>
-						<h2 className="text-xs font-semibold text-nowrap pr-5">
+						<h2 className="text-xs font-semibold text-nowrap pr-5 truncate">
 							{step.name}
 						</h2>
 						<Handle
@@ -350,7 +421,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						/>
 					</div>
 					{step.description && (
-						<h6 className="text-xs text-primary/50 pl-5">
+						<h6 className="text-xs text-primary/80">
 							{step.description}
 						</h6>
 					)}
@@ -359,7 +430,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 			{/* parameters */}
 			{parameters && parameters.length > 0 && (
-				<div>
+				<div
+					className="w-full"
+					>
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
@@ -457,29 +530,74 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						value={inputText}
 						onChange={(e) => setInputText(e.target.value)}
 					/>
-					<Button
-						variant={"outline"}
-						size={"tiny"}
-						className="w-full hover:bg-accent/50"
-						onClick={() => {
-							if (output?.displayValue === inputText) return;
-							var variable = {
-								name: step.name,
-								type: "String",
-								displayValue: inputText,
-								value: inputText,
-								generation: prop.data.generation,
-							} as VariableDTO;
-							prop.data.onClearClick(step);
-							prop.data.onSubmitOutput(variable);
-						}}
-					>
-						Submit
-					</Button>
+					<div className="flex gap-2 justify-end">
+						<Button
+							variant={"outline"}
+							size={"tiny"}
+							className="bg-accent hover:bg-accent/50"
+							onClick={() => {
+								if (output?.displayValue === inputText) return;
+								var variable = {
+									name: step.name,
+									type: "String",
+									displayValue: inputText,
+									value: inputText,
+									generation: prop.data.generation,
+								} as VariableDTO;
+								prop.data.onClearClick(step);
+								prop.data.onSubmitOutput(variable);
+							}}
+						>
+							Submit
+						</Button>
+						<Button
+							variant={"destructive"}
+							size={"tiny"}
+							onClick={() => {
+								prop.data.onCancelInput();
+							}}
+						>
+							Cancel
+						</Button>
+					</div>
 				</div>
 			)}
 		</div>
 	);
 };
 
-export default StepNode;
+const ResizableStepNode = React.forwardRef<
+	HTMLDivElement,
+	NodeProps<StepNodeProps>
+>((props, ref) => {
+	const [width, setWidth] = useState<number | undefined>(props.data.width);
+	const [height, setHeight] = useState<number | undefined>(props.data.height);
+
+	useEffect(() => {
+		if (props.data.width && props.data.height) {
+			console.log(
+				"Setting width and height: ",
+				props.data.width,
+				props.data.height,
+			);
+			setWidth(props.data.width);
+			setHeight(props.data.height);
+		}
+	}, [props.data.width, props.data.height]);
+
+	return height && width ? (
+		<div
+			ref={ref}
+			style={{
+				width: `${width}px`,
+				height: `${height}px`,
+			}}
+		>
+			<StepNode {...props} />
+		</div>
+	) : (
+		<StepNode {...props} />
+	);
+});
+
+export { StepNode };

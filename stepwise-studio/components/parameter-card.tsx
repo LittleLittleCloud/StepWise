@@ -44,7 +44,7 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 			)}
 			onClick={() => setCollapsed(!collapsed)}
 		>
-			<div className="flex w-full gap-5 justify-between">
+			<div className="flex gap-5 justify-between">
 				<div className="flex gap-2 px-4 items-center">
 					<div className="text-xs">{name}</div>
 					<div
@@ -53,7 +53,7 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 								variant: "green",
 								size: "tiny",
 							}),
-							"text-xs px-1 border-none",
+							"text-xs px-1 border-none truncate",
 						)}
 					>
 						{getDisplayType(parameterType)}
