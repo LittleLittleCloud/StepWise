@@ -8,7 +8,7 @@ import {
 
 describe("createLatestStepRunSnapShotFromWorkflow", () => {
   it("should create the latest step run snapshot from workflow", () => {
-    const workflow: WorkflowDTO = {
+    const workflow = {
       name: "Test Workflow",
       steps: [
         { name: "Step1", parameters: [{ variable_name: "var1" }] } as StepDTO,
@@ -16,7 +16,7 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
       ],
     };
 
-    const completedStepRuns: StepRunDTO[] = [
+    const completedStepRuns = [
       {
         step: { name: "Step1" } as StepDTO,
         status: "Completed",
@@ -31,7 +31,7 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
       },
     ];
 
-    const expectedSnapshot: StepRunDTO[] = [
+    const expectedSnapshot = [
       {
         step: { name: "Step1" } as StepDTO,
         status: "Completed",
@@ -55,7 +55,7 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
   });
 
   it("should handle steps with NotReady status and update variables", () => {
-    const workflow: WorkflowDTO = {
+    const workflow = {
       name: "Test Workflow",
       steps: [
         { name: "Step1", parameters: [{ variable_name: "var1" }] } as StepDTO,
@@ -63,7 +63,7 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
       ],
     };
 
-    const completedStepRuns: StepRunDTO[] = [
+    const completedStepRuns = [
       {
         step: { name: "Step1" } as StepDTO,
         status: "NotReady",
@@ -76,7 +76,7 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
       },
     ];
 
-    const expectedSnapshot: StepRunDTO[] = [
+    const expectedSnapshot = [
       {
         step: { name: "Step1" } as StepDTO,
         status: "NotReady",
