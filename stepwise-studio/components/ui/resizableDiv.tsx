@@ -19,10 +19,13 @@ const ResizableDiv = React.forwardRef<HTMLDivElement, ResizableProps>(
 		});
 		const [isResizing, setIsResizing] = React.useState(false);
 
-		const startResize = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-			e.preventDefault();
-			setIsResizing(true);
-		}, []);
+		const startResize = React.useCallback(
+			(e: React.MouseEvent<HTMLDivElement>) => {
+				e.preventDefault();
+				setIsResizing(true);
+			},
+			[],
+		);
 
 		const stopResize = React.useCallback(() => {
 			setIsResizing(false);
@@ -32,13 +35,22 @@ const ResizableDiv = React.forwardRef<HTMLDivElement, ResizableProps>(
 			(e: MouseEvent) => {
 				if (isResizing) {
 					const newWidth =
-						e.clientX - (e.target as HTMLDivElement).getBoundingClientRect().left;
+						e.clientX -
+						(e.target as HTMLDivElement).getBoundingClientRect()
+							.left;
 					const newHeight =
-						e.clientY - (e.target as HTMLElement).getBoundingClientRect().top;
-                    console.log(newWidth, newHeight);
+						e.clientY -
+						(e.target as HTMLElement).getBoundingClientRect().top;
+					console.log(newWidth, newHeight);
 					setDimensions({
-						width: Math.max(props.minWidth, Math.min(props.maxWidth, newWidth)),
-						height: Math.max(props.minHeight, Math.min(props.maxHeight, newHeight)),
+						width: Math.max(
+							props.minWidth,
+							Math.min(props.maxWidth, newWidth),
+						),
+						height: Math.max(
+							props.minHeight,
+							Math.min(props.maxHeight, newHeight),
+						),
 					});
 				}
 			},
@@ -72,8 +84,8 @@ const ResizableDiv = React.forwardRef<HTMLDivElement, ResizableProps>(
 					className="absolute bottom-0 right-0 w-2 h-2 bg-transparent cursor-se-resize nodrag"
 					onMouseDown={startResize}
 				>
-                    <Slash size={6} />
-                </div>
+					<Slash size={6} />
+				</div>
 			</div>
 		);
 	},

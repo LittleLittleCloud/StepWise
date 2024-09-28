@@ -97,10 +97,12 @@ export default function Home() {
 								return acc;
 							},
 							{} as {
-								[key: string]: {
-									width: number;
-									height: number;
-								} | undefined;
+								[key: string]:
+									| {
+											width: number;
+											height: number;
+									  }
+									| undefined;
 							},
 						),
 						stepPositions: layout.nodes.reduce(

@@ -235,10 +235,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				id: step.name,
 				type: "stepNode",
 				position: position,
-				...size ?? {width: 200, height: 100}, // if size is not defined, use default size
+				...(size ?? { width: 200, height: 100 }), // if size is not defined, use default size
 				style: {
-					width: size?.width ?? 'auto',
-					height: size?.height ?? 'auto',
+					width: size?.width ?? "auto",
+					height: size?.height ?? "auto",
 				},
 				data: {
 					...size,
@@ -344,21 +344,20 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				// 	} as Edge;
 				// }) ?? [];
 
-				var variableEdges = step.parameters?.map((param) => {
-					return {
-						id: `${step.name}-${param.variable_name}`,
-						source: param.variable_name,
-						target: step.name,
-						sourceHandle: param.variable_name,
-						targetHandle: step.name + "-" + param.variable_name,
-						style: { stroke: "#555" },
-						animated: true,
-					} as Edge;
-				}) ?? [];
+				var variableEdges =
+					step.parameters?.map((param) => {
+						return {
+							id: `${step.name}-${param.variable_name}`,
+							source: param.variable_name,
+							target: step.name,
+							sourceHandle: param.variable_name,
+							targetHandle: step.name + "-" + param.variable_name,
+							style: { stroke: "#555" },
+							animated: true,
+						} as Edge;
+					}) ?? [];
 
-				return edges.concat(
-					[...variableEdges],
-				);
+				return edges.concat([...variableEdges]);
 			}, [] as Edge[]) ?? [];
 
 		return { nodes, edges };

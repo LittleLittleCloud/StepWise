@@ -330,7 +330,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			console.log("Setting width and height: ", width, height);
 			// prop.data.onResize(stepNodeRef.current.offsetHeight, stepNodeRef.current.offsetWidth);
 		}
-	}, [stepNodeRef.current, stepNodeRef.current?.offsetWidth, stepNodeRef.current?.offsetHeight]);
+	}, [
+		stepNodeRef.current,
+		stepNodeRef.current?.offsetWidth,
+		stepNodeRef.current?.offsetHeight,
+	]);
 
 	return (
 		<div
@@ -349,7 +353,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				<NodeResizeControl
 					style={{
 						background: "transparent",
-						border: 'none',
+						border: "none",
 					}}
 					onResize={(event, param) => {
 						console.log("Resizing: ", param);
@@ -357,7 +361,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						setHeight(param.height);
 					}}
 					onResizeEnd={(event, param) => {
-						prop.data.onResize(stepNodeRef.current!.offsetHeight, stepNodeRef.current!.offsetWidth);
+						prop.data.onResize(
+							stepNodeRef.current!.offsetHeight,
+							stepNodeRef.current!.offsetWidth,
+						);
 					}}
 					maxWidth={384}
 					minWidth={128}
@@ -371,7 +378,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							right: 3,
 						}}
 						size={6}
-						/>
+					/>
 				</NodeResizeControl>
 			)}
 			{/* settings bar */}
@@ -429,9 +436,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 			{/* parameters */}
 			{parameters && parameters.length > 0 && (
-				<div
-					className="w-full"
-					>
+				<div className="w-full">
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
