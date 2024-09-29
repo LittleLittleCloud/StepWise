@@ -339,7 +339,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			) {
 				prop.data.onResize(
 					stepNodeRef.current.offsetHeight ?? height,
-					stepNodeRef.current.offsetWidth ?? width,
+					width ?? stepNodeRef.current.offsetWidth,
 				);
 			}
 		}
@@ -361,7 +361,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					? "border-primary p-2"
 					: "",
 			)}
-			style={{ userSelect: "text" }}
 			ref={stepNodeRef}
 		>
 			{/* resize control */}
