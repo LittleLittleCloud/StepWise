@@ -31,7 +31,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebAPI.Tests", "te
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "stepwise-studio", "stepwise-studio", "{DC2EB9EC-E500-4BC0-A36C-F3FD0245CF3F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gallery", "example\HelloWorld\Gallery.csproj", "{8BD13BAB-263D-403F-93CC-FB628FA2E0C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.Gallery", "example\HelloWorld\StepWise.Gallery.csproj", "{8BD13BAB-263D-403F-93CC-FB628FA2E0C2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebUI", "src\StepWise.WebUI\StepWise.WebUI.csproj", "{7DD9A65A-C68D-464A-AFDB-21E9A3C6AA0E}"
 EndProject

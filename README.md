@@ -6,6 +6,9 @@
 <img src="./asset/stepwise-logo.svg" alt="StepWise Logo" width="100">
 
 # StepWise
+
+[![NuGet version](https://badge.fury.io/nu/LittleLittleCloud.StepWise.svg)](https://badge.fury.io/nu/LittleLittleCloud.StepWise)
+[![Website](https://img.shields.io/badge/Website-StepWise-blue)](https://littlelittlecloud.github.io/StepWise/)
 </div>
 
 StepWise is a workflow engine build with C# and typescript. In StepWise, you define a workflow in C#, then visualize and execute it in StepWise UI.

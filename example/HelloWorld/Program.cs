@@ -28,15 +28,10 @@ var cumulativeWorkflow = Workflow.CreateFromInstance(new Cumulative());
 var basicSteps = new BasicSteps();
 var releaseMaster = new ReleaseMaster();
 
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(basicSteps));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(helloWorldWorkflow);
-stepWiseClient.AddWorkflow(loopWorkflow);
 stepWiseClient.AddWorkflow(cumulativeWorkflow);
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new CountingDown()));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new CodeInterpreter()));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new CircularLoop()));
 // Wait for the host to shutdown
 await host.WaitForShutdownAsync();
 

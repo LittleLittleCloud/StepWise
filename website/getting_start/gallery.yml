@@ -28,3 +28,11 @@ items:
     repository:
       type: git
       url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/PrepareDinner.cs"
+  - name: Release Note Master
+    description: A stepwise workflow that generates release notes.
+    type: Internal
+    thumbnail: ../image/gallery-release-note-master.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ReleaseMaster.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ReleaseMaster.cs"
