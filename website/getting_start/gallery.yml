@@ -36,3 +36,11 @@ items:
     repository:
       type: git
       url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ReleaseMaster.cs"
+  - name: Code Interpreter
+    description: A stepwise workflow for resolving task by having agent writing, reviewing and executing code.
+    type: Internal
+    thumbnail: ../image/gallery-code-interpreter.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/CodeInterpreter.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/CodeInterpreter.cs"
