@@ -37,15 +37,12 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 	}, [props.variable]);
 
 	return (
-		<div
-			className={cn(
-				"w-full flex flex-col gap-1 bg-accent rounded px-1 py-0.5 ",
-				"hover:bg-accent/80 hover:cursor-pointer",
-			)}
-			onClick={() => setCollapsed(!collapsed)}
-		>
-			<div className="flex gap-5 justify-between">
-				<div className="flex gap-2 px-4 items-center">
+		<div className={cn("w-full flex flex-col gap-1 rounded cursor-default px-1 py-0.5 nodrag ")}>
+			<div
+				className="flex gap-5 justify-between hover:cursor-pointer"
+				onClick={() => setCollapsed(!collapsed)}
+			>
+				<div className="flex gap-2 items-center">
 					<div className="text-xs">{name}</div>
 					<div
 						className={cn(

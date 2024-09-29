@@ -75,6 +75,7 @@ public class ReleaseMaster
         return issueDTOs.ToArray();
     }
 
+    [DependOn(nameof(WriteReleaseNote))]
     [StepWiseUITextInput(description: "Please review the release note and provide feedback, if you are happy with the release note, please type 'approve' to terminate the workflow")]
     public async Task<string?> ReviewReleaseNote(
         [FromStep(nameof(WriteReleaseNote))] string releaseNote)
@@ -83,6 +84,7 @@ public class ReleaseMaster
     }
 
     [Step]
+    [DependOn(nameof(ReviewReleaseNote))]
     public async Task<FeedBack?> Feedback(
         [FromStep(nameof(ReviewReleaseNote))] string review,
         [FromStep(nameof(WriteReleaseNote))] string releaseNote)

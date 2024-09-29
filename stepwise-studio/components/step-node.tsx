@@ -19,6 +19,7 @@ import {
 	AlertCircle,
 	AlertOctagon,
 	Badge,
+	Brackets,
 	CheckCircle,
 	CheckCircle2,
 	CircleUserRound,
@@ -292,7 +293,14 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	useEffect(() => {
 		updateNodeInternals(prop.id);
-	}, [step, sourceHandleTopOffset, targetHandleTopOffsets, status]);
+	}, [
+		step,
+		sourceHandleTopOffset,
+		targetHandleTopOffsets,
+		status,
+		height,
+		width,
+	]);
 
 	useEffect(() => {
 		if (titleRef.current) {
@@ -325,27 +333,35 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	useEffect(() => {
 		if (stepNodeRef.current) {
-			setWidth(stepNodeRef.current.offsetWidth);
-			setHeight(stepNodeRef.current.offsetHeight);
-			console.log("Setting width and height: ", width, height);
-			// prop.data.onResize(stepNodeRef.current.offsetHeight, stepNodeRef.current.offsetWidth);
+			if (
+				height !== stepNodeRef.current.offsetHeight ||
+				width !== stepNodeRef.current.offsetWidth
+			) {
+				prop.data.onResize(
+					stepNodeRef.current.offsetHeight ?? height,
+					stepNodeRef.current.offsetWidth ?? width,
+				);
+			}
 		}
 	}, [
 		stepNodeRef.current,
-		stepNodeRef.current?.offsetWidth,
 		stepNodeRef.current?.offsetHeight,
+		stepNodeRef.current?.offsetWidth,
+		width,
+		height,
 	]);
 
 	return (
 		<div
 			className={cn(
-				"border-2 max-w-96 rounded-md shadow-md p-1 bg-background/50 group min-w-32",
+				"border-2 rounded-md shadow-md p-1 bg-background/50 group",
 				// set weight and height
 				isSelected ? "border-primary/40" : "border-transparent",
 				shouldWaitForInput(status, stepType)
 					? "border-primary p-2"
 					: "",
 			)}
+			style={{ userSelect: "text" }}
 			ref={stepNodeRef}
 		>
 			{/* resize control */}
@@ -356,17 +372,13 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						border: "none",
 					}}
 					onResize={(event, param) => {
-						console.log("Resizing: ", param);
 						setWidth(param.width);
 						setHeight(param.height);
 					}}
 					onResizeEnd={(event, param) => {
-						prop.data.onResize(
-							stepNodeRef.current!.offsetHeight,
-							stepNodeRef.current!.offsetWidth,
-						);
+						setHeight(stepNodeRef.current!.offsetHeight);
+						setWidth(stepNodeRef.current!.offsetWidth);
 					}}
-					maxWidth={384}
 					minWidth={128}
 					minHeight={height}
 					maxHeight={height}
@@ -443,13 +455,14 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							size={"xxsIcon"}
 							className="w-4 h-4 m-0 p-0"
 						>
-							<VariableIcon size={12} />
+							<Brackets size={12} />
 						</Button>
 						<h3 className="text-xs font-semibold">Parameter</h3>
 					</div>
 					<div className="flex flex-col gap-1">
 						{parameters.map((param, index) => (
 							<div
+								className="pl-4 bg-accent rounded-md hover:bg-accent/50"
 								key={index}
 								ref={(el) =>
 									el &&
@@ -484,34 +497,15 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					</div>
 				</div>
 			)}
-
-			{/* output */}
+			{output && <div className="border border-md m-1" />}
 			{output && (
-				<div>
-					<div className="flex gap-1 items-center">
-						<Button
-							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
-						>
-							<VariableIcon size={12} />
-						</Button>
-						<h3 className="text-xs font-semibold">Output</h3>
-						{output.type && (
-							<div
-								className={cn(
-									badgeVariants({
-										variant: "green",
-										size: "tiny",
-									}),
-									"text-xs px-1 border-none",
-								)}
-							>
-								{getDisplayType(output.type)}
-							</div>
-						)}
-					</div>
-					{output && <VariableCard variable={output} />}
+				<div className="flex flex-col items-center mt-1 bg-accent rounded-md hover:bg-accent/50">
+					<ParameterCard
+						name="Result"
+						parameter_type={getDisplayType(output.type)}
+						variable_name={output.name}
+						variable={output}
+					/>
 				</div>
 			)}
 
