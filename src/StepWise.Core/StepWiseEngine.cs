@@ -256,9 +256,9 @@ public class StepWiseEngine : IStepWiseEngine
             {
                 _stepRunQueue.Add(runningStep);
                 var res = await runningStep.ExecuteAsync(ct);
+                _logger?.LogInformation($"[Runner {runnerId}]: {runningStep}");
                 var completedStep = runningStep.ToCompletedStatus();
                 _stepRunQueue.Add(completedStep);
-                _logger?.LogInformation($"[Runner {runnerId}]: {runningStep}");
                 if (res != null)
                 {
                     var stepVariable = StepVariable.Create(stepRun.Name!, res, stepRun.Generation);
