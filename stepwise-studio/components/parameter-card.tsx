@@ -38,26 +38,30 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 
 	return (
 		<div
+			style={{ userSelect: "text" }}
 			className={cn(
-				"w-full flex flex-col gap-1 bg-accent rounded px-1 py-0.5 ",
-				"hover:bg-accent/80 hover:cursor-pointer",
+				"w-full flex flex-col gap-1 rounded cursor-default px-1 py-0.5 nodrag nopan ",
 			)}
-			onClick={() => setCollapsed(!collapsed)}
 		>
-			<div className="flex gap-5 justify-between">
-				<div className="flex gap-2 px-4 items-center">
+			<div
+				className="flex flex-wrap gap-x-5 justify-between hover:cursor-pointer"
+				onClick={() => setCollapsed(!collapsed)}
+			>
+				<div className="flex gap-2 items-center">
 					<div className="text-xs">{name}</div>
-					<div
-						className={cn(
-							badgeVariants({
-								variant: "green",
-								size: "tiny",
-							}),
-							"text-xs px-1 border-none truncate",
-						)}
-					>
-						{getDisplayType(parameterType)}
-					</div>
+					{parameterType != "" && (
+						<div
+							className={cn(
+								badgeVariants({
+									variant: "green",
+									size: "tiny",
+								}),
+								"text-xs px-1 border-none truncate",
+							)}
+						>
+							{getDisplayType(parameterType)}
+						</div>
+					)}
 				</div>
 
 				{/* the brief display of variable if available */}

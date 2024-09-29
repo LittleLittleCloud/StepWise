@@ -113,6 +113,10 @@ export function createLatestStepRunSnapShotFromWorkflow(
 	return stepRuns;
 }
 
+export function isStepRunCompleted(stepRun: StepRunDTO): boolean {
+	return stepRun.status === "Completed" || stepRun.status === "Failed";
+}
+
 export function clearStepRunResult(
 	workflow: WorkflowData,
 	step: StepDTO,
@@ -126,7 +130,7 @@ export function clearStepRunResult(
 	// if in the latest snapshot, the step is not completed, then return the latest snapshot
 	if (
 		!latestSnapshot.find(
-			(run) => run.step?.name === step.name && run.status === "Completed",
+			(run) => run.step?.name === step.name && isStepRunCompleted(run),
 		)
 	) {
 		return completedRunSteps;
@@ -155,6 +159,7 @@ export function clearStepRunResult(
 				...run,
 				status: "NotReady",
 				result: undefined,
+				exception: undefined,
 				variables: {
 					...run.variables,
 					[param?.name]: undefined,
@@ -314,7 +319,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						setWorkflow(updatedWorkflow);
 					},
 					onResize: (height, width) => {
-						console.log("Resize: ", height, width);
 						setWorkflow((prev) => {
 							if (!prev) return prev;
 							return {
@@ -332,20 +336,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 		var edges =
 			workflow.steps?.reduce((edges, step) => {
-				// var dependencyEdges = step.dependencies?.map((dep) => {
-				// 	return {
-				// 		id: `${step.name}-${dep}`, // target-source
-				// 		source: dep,
-				// 		target: step.name,
-				// 		sourceHandle: dep,
-				// 		targetHandle: step.name + "-" + dep,
-				// 		style: { stroke: "#555" },
-				// 		animated: false,
-				// 	} as Edge;
-				// }) ?? [];
-
 				var variableEdges =
 					step.parameters?.map((param) => {
+						var dependencies = step.dependencies ?? [];
+						var isStepDependency =
+							dependencies.findIndex(
+								(d) => d === param.variable_name,
+							) !== -1;
 						return {
 							id: `${step.name}-${param.variable_name}`,
 							source: param.variable_name,
@@ -353,7 +350,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							sourceHandle: param.variable_name,
 							targetHandle: step.name + "-" + param.variable_name,
 							style: { stroke: "#555" },
-							animated: true,
+							type: "smoothstep",
+							animated: !isStepDependency,
 						} as Edge;
 					}) ?? [];
 
@@ -541,6 +539,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					<div className="flex flex-col items-center gap-8 h-screen">
 						<div className="z-10 absolute top-0">
 							<ControlBar
+								isRunning={isRunning}
 								maxParallel={maxParallelRun}
 								maxSteps={maxStep}
 								onMaxParallelChange={onMaxParallelChange}
