@@ -1,4 +1,5 @@
 import {
+	ExceptionDTO,
 	ParameterDTO,
 	StepDTO,
 	StepRunDTO,
@@ -221,6 +222,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const [width, setWidth] = useState<number | undefined>(prop.data.width);
 	const [height, setHeight] = useState<number | undefined>(prop.data.height);
 
+	const [exceptionDTO, setExceptionDTO] = useState<ExceptionDTO | undefined>(
+		prop.data.exception,
+	);
 	const shouldWaitForInput = (
 		status: StepNodeStatus,
 		stepType?: StepType,
@@ -243,7 +247,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		);
 		setWidth(prop.data.width);
 		setHeight(prop.data.height);
-
+		setExceptionDTO(prop.data.exception);
 		// set resize observer
 		const resizeObserver = new ResizeObserver((entries) => {
 			resizeCallback();
@@ -259,6 +263,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	useEffect(() => {
 		setVariables(prop.data.variables ?? []);
 	}, [prop.data.variables]);
+
+	useEffect(() => {
+		setExceptionDTO(prop.data.exception);
+	}, [prop.data.exception]);
 
 	useEffect(() => {
 		setOutput(prop.data.result ?? undefined);
@@ -505,6 +513,25 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						parameter_type={getDisplayType(output.type)}
 						variable_name={output.name}
 						variable={output}
+					/>
+				</div>
+			)}
+
+			{/* error */}
+			{exceptionDTO && <div className="border border-destructive m-1" />}
+			{exceptionDTO && (
+				<div className="flex flex-col items-center mt-1 bg-destructive/60 rounded-md hover:bg-destructive/40">
+					<ParameterCard
+						name="Error"
+						parameter_type=""
+						variable_name="error"
+						variable={{
+							name: "error",
+							type: "",
+							displayValue: exceptionDTO.message + "\n" + exceptionDTO.stackTrace,
+							value: exceptionDTO,
+							generation: 0,
+						}}
 					/>
 				</div>
 			)}

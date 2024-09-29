@@ -1,6 +1,6 @@
 // | <autolayout> | <run> | <clean> | <max_parallel>: <input> | <max_steps>: <input> |
 
-import { ChangeEvent, FC, useState } from "react";
+import { ChangeEvent, FC, useEffect, useState } from "react";
 import { buttonVariants } from "./ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -8,6 +8,7 @@ import {
 	icons,
 	Layout,
 	LayoutGrid,
+	Loader2,
 	Play,
 	RotateCcw,
 } from "lucide-react";
@@ -21,10 +22,16 @@ interface ControlBarProps {
 	maxSteps: number;
 	onAutoLayoutClick: () => void;
 	onMaxStepsChange: (value: number) => void;
+	isRunning: boolean;
 }
 
 export const ControlBar: FC<ControlBarProps> = (props) => {
 	const [maxSteps, setMaxSteps] = useState<number>(props.maxSteps);
+	const [isRunning, setIsRunning] = useState<boolean>(props.isRunning);
+
+	useEffect(() => {
+		setIsRunning(props.isRunning);
+	}, [props.isRunning]);
 
 	const iconSize = 14;
 
@@ -40,13 +47,21 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 					<button
 						className={cn(
 							buttonVariants({
-								variant: "ghost",
+								variant: isRunning ? "disabled" : "ghost",
 								size: "tinyIcon",
 							}),
 						)}
-						onClick={props.onRunClick}
+						onClick={() => {
+							if (!isRunning) {
+								props.onRunClick();
+							}
+						}}
 					>
-						<Play size={iconSize} />
+						{isRunning ? (
+							<Loader2 size={iconSize} className="animate-spin" />
+						) : (
+							<Play size={iconSize} />
+						)}
 					</button>
 					<button
 						className={cn(

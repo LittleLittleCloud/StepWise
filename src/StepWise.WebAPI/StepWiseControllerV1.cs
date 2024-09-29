@@ -211,7 +211,7 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             var returnType = s.OutputType;
             // return type will always be Task<MyReturnType>
-            if (returnType.GetGenericTypeDefinition() == typeof(Task<>))
+            if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
             {
                 var actualReturnType = returnType.GenericTypeArguments[0]; // MyReturnType
 

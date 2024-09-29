@@ -44,22 +44,24 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 			)}
 		>
 			<div
-				className="flex gap-5 justify-between hover:cursor-pointer"
+				className="flex flex-wrap gap-x-5 justify-between hover:cursor-pointer"
 				onClick={() => setCollapsed(!collapsed)}
 			>
 				<div className="flex gap-2 items-center">
 					<div className="text-xs">{name}</div>
-					<div
-						className={cn(
-							badgeVariants({
-								variant: "green",
-								size: "tiny",
-							}),
-							"text-xs px-1 border-none truncate",
-						)}
-					>
-						{getDisplayType(parameterType)}
-					</div>
+					{parameterType != "" && (
+						<div
+							className={cn(
+								badgeVariants({
+									variant: "green",
+									size: "tiny",
+								}),
+								"text-xs px-1 border-none truncate",
+							)}
+						>
+							{getDisplayType(parameterType)}
+						</div>
+					)}
 				</div>
 
 				{/* the brief display of variable if available */}

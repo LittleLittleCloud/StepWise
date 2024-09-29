@@ -8,7 +8,8 @@ namespace Gallery;
 public class BasicSteps
 {
     [Step]
-    public async Task<string> DisplayA([FromStep(nameof(SetA))] string a)
+    [DependOn(nameof(ConvertAToInteger))]
+    public async Task<string> Display([FromStep(nameof(ConvertAToInteger))] int a)
     {
         await Task.Delay(1000);
         var currentDate = DateTime.Now;
@@ -19,5 +20,13 @@ public class BasicSteps
     public async Task<string?> SetA()
     {
         return null;
+    }
+
+    [Step(description: "a step that converts a string to an integer")]
+    [DependOn(nameof(SetA))]
+    public async Task<int> ConvertAToInteger(
+        [FromStep(nameof(SetA))] string a)
+    {
+        return int.Parse(a);
     }
 }
