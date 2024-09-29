@@ -528,7 +528,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						variable={{
 							name: "error",
 							type: "",
-							displayValue: exceptionDTO.message + "\n" + exceptionDTO.stackTrace,
+							displayValue:
+								exceptionDTO.message +
+								"\n" +
+								exceptionDTO.stackTrace,
 							value: exceptionDTO,
 							generation: 0,
 						}}

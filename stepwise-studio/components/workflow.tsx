@@ -130,7 +130,7 @@ export function clearStepRunResult(
 	// if in the latest snapshot, the step is not completed, then return the latest snapshot
 	if (
 		!latestSnapshot.find(
-			(run) => run.step?.name === step.name && isStepRunCompleted(run)
+			(run) => run.step?.name === step.name && isStepRunCompleted(run),
 		)
 	) {
 		return completedRunSteps;
