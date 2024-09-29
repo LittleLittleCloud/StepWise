@@ -56,5 +56,13 @@ To use StepWise, you can install the LittleLittleCloud.StepWise package from NuG
 dotnet add package LittleLittleCloud.StepWise
 ```
 
-### Example
-You can find more examples in the [example](https://github.com/LittleLittleCloud/StepWise/tree/main/example) folder.
+### Example and Gallery
+You can find more examples in the [example](https://github.com/LittleLittleCloud/StepWise/tree/main/example) folder. We also publish these examples as a .NET tool package to NuGet. You can install the package and run the example directly from the command line.
+
+```bash
+dotnet tool install -g LittleLittleCloud.StepWise.Gallery
+
+# Run the gallery example
+stepwise-gallery
+```
+
