@@ -14,6 +14,8 @@
   <ItemGroup>
     <PackageReference Include="AutoGen" />
     <PackageReference Include="Octokit" />
+    <PackageReference Include="AutoGen.DotnetInteractive" />
+    <PackageReference Include="AutoGen.SourceGenerator" />
   </ItemGroup>
 
   <ItemGroup>
