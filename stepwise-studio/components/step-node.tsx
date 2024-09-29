@@ -357,6 +357,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				"border-2 rounded-md shadow-md p-1 bg-background/50 group",
 				// set weight and height
 				isSelected ? "border-primary/40" : "border-transparent",
+				width ?? "max-w-48",
 				shouldWaitForInput(status, stepType)
 					? "border-primary p-2"
 					: "",
