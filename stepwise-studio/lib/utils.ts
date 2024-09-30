@@ -88,4 +88,19 @@ export function showAsMarkdown(
 	return ["object"].indexOf(type) < 0;
 }
 
-export type StepType = "Ordinary" | "StepWiseUITextInput";
+export type StepType =
+	| "Ordinary"
+	| "StepWiseUITextInput"
+	| "StepWiseUINumberInput"
+	| "StepWiseUISwitchInput";
+
+const stepTypeMap: Record<string, StepType> = {
+	Ordinary: "Ordinary",
+	StepWiseUITextInput: "StepWiseUITextInput",
+	StepWiseUINumberInput: "StepWiseUINumberInput",
+	StepWiseUISwitchInput: "StepWiseUISwitchInput",
+};
+
+export const ConvertStringToStepType = (type: string): StepType => {
+	return stepTypeMap[type] || "Ordinary";
+};

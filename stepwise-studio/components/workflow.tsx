@@ -426,6 +426,9 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			console.error("Error executing step: ", err);
 			return;
 		}
+		finally {
+			setIsRunning(false);
+		}
 
 		if (res.error) {
 			console.error("Error executing step: ", res.error);
@@ -447,7 +450,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			if (!prev) return prev;
 			return { ...prev, stepRuns: latestSnapshot };
 		});
-		setIsRunning(false);
 	};
 
 	const onNodesChangeRestricted = useCallback(

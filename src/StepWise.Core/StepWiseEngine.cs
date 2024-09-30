@@ -232,9 +232,9 @@ public class StepWiseEngine : IStepWiseEngine
     {
         await Task.Yield();
         // if the step is StepWiseTextInput, return quickly
-        if (stepRun.Step?.StepType == StepType.StepWiseUITextInput)
+        if (stepRun.Step?.StepType != StepType.Ordinary)
         {
-            _logger?.LogInformation($"[Runner {runnerId}]: Skipping {stepRun} because it is a text input.");
+            _logger?.LogInformation($"[Runner {runnerId}]: Skipping {stepRun} because it is a user input.");
             return;
         }
 

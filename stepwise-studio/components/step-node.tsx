@@ -15,7 +15,13 @@ import {
 	NodeResizeControl,
 } from "reactflow";
 import { Button, buttonVariants } from "./ui/button";
-import { cn, getDisplayType, showAsMarkdown, StepType } from "@/lib/utils";
+import {
+	cn,
+	ConvertStringToStepType,
+	getDisplayType,
+	showAsMarkdown,
+	StepType,
+} from "@/lib/utils";
 import {
 	AlertCircle,
 	AlertOctagon,
@@ -44,6 +50,7 @@ import { VariableCard } from "./variable-card";
 import "react-resizable/css/styles.css";
 import { ResizableDiv } from "./ui/resizableDiv";
 import { on } from "events";
+import { Switch } from "./ui/switch";
 
 export type StepNodeStatus =
 	| "Running"
@@ -177,17 +184,6 @@ const StepNodeStatusIndicator: React.FC<{
 	);
 };
 
-const ConvertStringToStepType = (type: string): StepType => {
-	switch (type) {
-		case "Ordinary":
-			return "Ordinary";
-		case "StepWiseUITextInput":
-			return "StepWiseUITextInput";
-		default:
-			return "Ordinary";
-	}
-};
-
 const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const [step, setStep] = useState<StepDTO>(prop.data.step!);
 	const stepNodeRef = React.useRef<HTMLDivElement>(null);
@@ -216,6 +212,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		ConvertStringToStepType(prop.data.step?.step_type ?? "Ordinary"),
 	);
 	const [inputText, setInputText] = useState<string>("");
+	const [inputNumber, setInputNumber] = useState<number | undefined>(undefined);
+	const [inputSwitch, setInputSwitch] = useState<boolean>(false);
+
 	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
 		prop.data.isWorkflowRunning,
 	);
@@ -229,7 +228,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		status: StepNodeStatus,
 		stepType?: StepType,
 	) => {
-		return status === "Queue" && stepType === "StepWiseUITextInput";
+		return status === "Queue" && stepType !== "Ordinary";
 	};
 
 	useEffect(() => {
@@ -285,11 +284,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	}, [prop.data.isWorkflowRunning]);
 
 	useEffect(() => {
-		if (prop.data.step?.step_type === "StepWiseUITextInput") {
-			setStepType("StepWiseUITextInput");
-		} else {
-			setStepType("Ordinary");
-		}
+		setStepType(ConvertStringToStepType(prop.data.step?.step_type ?? "Ordinary"));
 	}, [prop.data.step?.step_type]);
 
 	useEffect(() => {
@@ -539,6 +534,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				</div>
 			)}
 
+			{/* Process Text Input */}
 			{stepType === "StepWiseUITextInput" && status === "Queue" && (
 				<div className="flex flex-col gap-2 pt-2">
 					<div className="flex gap-1 items-center">
@@ -572,6 +568,115 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 									value: inputText,
 									generation: prop.data.generation,
 								} as VariableDTO;
+								prop.data.onClearClick(step);
+								prop.data.onSubmitOutput(variable);
+							}}
+						>
+							Submit
+						</Button>
+						<Button
+							variant={"destructive"}
+							size={"tiny"}
+							onClick={() => {
+								prop.data.onCancelInput();
+							}}
+						>
+							Cancel
+						</Button>
+					</div>
+				</div>
+			)}
+
+			{/* Process Number Input */}
+			{stepType === "StepWiseUINumberInput" && status === "Queue" && (
+				<div className="flex flex-col gap-2 pt-2">
+					<div className="flex gap-1 items-center">
+						<Button
+							variant={"outline"}
+							size={"xxsIcon"}
+							className="w-4 h-4 m-0 p-0"
+						>
+							<FormInputIcon size={12} />
+						</Button>
+						<h3 className="text-xs font-semibold">Input</h3>
+					</div>
+
+					<input
+						type="number"
+						className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
+						placeholder="Enter number"
+
+						value={inputNumber ?? ""}
+						onChange={(e) => setInputNumber(Number(e.target.value))}
+					/>
+
+					<div className="flex gap-2 justify-end">
+						<Button
+							variant={"outline"}
+							size={"tiny"}
+							className="bg-accent hover:bg-accent/50"
+							onClick={() => {
+								if (output?.displayValue === inputNumber?.toString()) return;
+								var variable = {
+									name: step.name,
+									type: "Double",
+									displayValue: inputNumber?.toString(),
+									value: inputNumber,
+									generation: prop.data.generation,
+								} as VariableDTO;
+								prop.data.onClearClick(step);
+								prop.data.onSubmitOutput(variable);
+							}}
+						>
+							Submit
+						</Button>
+						<Button
+							variant={"destructive"}
+							size={"tiny"}
+							onClick={() => {
+								prop.data.onCancelInput();
+							}}
+						>
+							Cancel
+						</Button>
+					</div>
+				</div>
+			)}
+
+			{/* Process Switch Input */}
+			{stepType === "StepWiseUISwitchInput" && status === "Queue" && (
+				<div className="flex flex-col gap-2 pt-2">
+					<div className="flex gap-1 items-center">
+						<Button
+							variant={"outline"}
+							size={"xxsIcon"}
+							className="w-4 h-4 m-0 p-0"
+						>
+							<FormInputIcon size={12} />
+						</Button>
+						<h3 className="text-xs font-semibold grow">Input</h3>
+
+						<Switch
+							checked={inputSwitch}
+							onCheckedChange={(e) => setInputSwitch(!inputSwitch)}
+						/>
+					</div>
+					<div className="flex gap-2 justify-end">
+						<Button
+							variant={"outline"}
+							size={"tiny"}
+							className="bg-accent hover:bg-accent/50"
+							onClick={() => {
+								if (output?.displayValue === inputSwitch.toString()) return;
+
+								var variable = {
+									name: step.name,
+									type: "Boolean",
+									displayValue: inputSwitch.toString(),
+									value: inputSwitch,
+									generation: prop.data.generation,
+								} as VariableDTO;
+
 								prop.data.onClearClick(step);
 								prop.data.onSubmitOutput(variable);
 							}}

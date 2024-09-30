@@ -22,6 +22,7 @@ await host.StartAsync();
 
 var stepWiseClient = host.Services.GetRequiredService<StepWiseClient>();
 
+var userInputWorkflow = Workflow.CreateFromInstance(new UserInput());
 var helloWorldWorkflow = Workflow.CreateFromInstance(new HelloWorld());
 var loopWorkflow = Workflow.CreateFromInstance(new Loop());
 var cumulativeWorkflow = Workflow.CreateFromInstance(new Cumulative());
@@ -29,6 +30,7 @@ var basicSteps = new BasicSteps();
 var releaseMaster = new ReleaseMaster();
 var codeInterpreter = CodeInterpreter.Create();
 
+stepWiseClient.AddWorkflow(userInputWorkflow);
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(codeInterpreter));
 stepWiseClient.AddWorkflow(helloWorldWorkflow);
