@@ -425,8 +425,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		} catch (err) {
 			console.error("Error executing step: ", err);
 			return;
-		}
-		finally {
+		} finally {
 			setIsRunning(false);
 		}
 

@@ -212,7 +212,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		ConvertStringToStepType(prop.data.step?.step_type ?? "Ordinary"),
 	);
 	const [inputText, setInputText] = useState<string>("");
-	const [inputNumber, setInputNumber] = useState<number | undefined>(undefined);
+	const [inputNumber, setInputNumber] = useState<number | undefined>(
+		undefined,
+	);
 	const [inputSwitch, setInputSwitch] = useState<boolean>(false);
 
 	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
@@ -284,7 +286,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	}, [prop.data.isWorkflowRunning]);
 
 	useEffect(() => {
-		setStepType(ConvertStringToStepType(prop.data.step?.step_type ?? "Ordinary"));
+		setStepType(
+			ConvertStringToStepType(prop.data.step?.step_type ?? "Ordinary"),
+		);
 	}, [prop.data.step?.step_type]);
 
 	useEffect(() => {
@@ -605,7 +609,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						type="number"
 						className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
 						placeholder="Enter number"
-
 						value={inputNumber ?? ""}
 						onChange={(e) => setInputNumber(Number(e.target.value))}
 					/>
@@ -616,7 +619,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							size={"tiny"}
 							className="bg-accent hover:bg-accent/50"
 							onClick={() => {
-								if (output?.displayValue === inputNumber?.toString()) return;
+								if (
+									output?.displayValue ===
+									inputNumber?.toString()
+								)
+									return;
 								var variable = {
 									name: step.name,
 									type: "Double",
@@ -658,7 +665,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 						<Switch
 							checked={inputSwitch}
-							onCheckedChange={(e) => setInputSwitch(!inputSwitch)}
+							onCheckedChange={(e) =>
+								setInputSwitch(!inputSwitch)
+							}
 						/>
 					</div>
 					<div className="flex gap-2 justify-end">
@@ -667,7 +676,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							size={"tiny"}
 							className="bg-accent hover:bg-accent/50"
 							onClick={() => {
-								if (output?.displayValue === inputSwitch.toString()) return;
+								if (
+									output?.displayValue ===
+									inputSwitch.toString()
+								)
+									return;
 
 								var variable = {
 									name: step.name,
