@@ -17,7 +17,7 @@ namespace StepWise.WebAPI;
 public class StepWiseClient
 {
     private readonly ILogger<StepWiseClient>? _logger;
-    private readonly ConcurrentDictionary<string, Workflow> _workflows = new();
+    private readonly List<Workflow> _workflows = new();
     public StepWiseClient(ILogger<StepWiseClient>? logger = null)
     {
         _logger = logger;
@@ -28,45 +28,44 @@ public class StepWiseClient
     // get workflow
     public Workflow? GetWorkflow(string workflowName)
     {
-        if (!_workflows.TryGetValue(workflowName, out var workflow))
-        {
-            return null;
-        }
-
-        return workflow;
+        return _workflows.Find(w => w.Name == workflowName);
     }
 
     // add workflow
     public void AddWorkflow(Workflow workflow)
     {
-        _workflows[workflow.Name] = workflow;
+        // throw if workflow already exists
+        if (_workflows.Find(w => w.Name == workflow.Name) is not null)
+        {
+            throw new ArgumentException($"Workflow {workflow.Name} already exists");
+        }
+
+        _workflows.Add(workflow);
     }
 
     public void RemoveWorkflow(string workflowName)
     {
-        _workflows.TryRemove(workflowName, out _);
+        _workflows.RemoveAll(w => w.Name == workflowName);
     }
 
     // list workflows
     public IEnumerable<Workflow> ListWorkflow()
     {
-        return _workflows.Values;
+        return _workflows;
     }
 
     // get step
     public Step? GetStep(string workflowName, string stepName)
     {
-        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        if (_workflows.Find(w => w.Name == workflowName) is Workflow workflow)
         {
-            return null;
+            if (workflow.Steps.TryGetValue(stepName, out var step))
+            {
+                return step;
+            }
         }
 
-        if (!workflow.Steps.TryGetValue(stepName, out var step))
-        {
-            return null;
-        }
-
-        return step;
+        return null;
     }
 
     // execute step
@@ -77,7 +76,7 @@ public class StepWiseClient
         int maxParallel = 1,
         StepVariable[]? input = null)
     {
-        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        if (_workflows.Find(w => w.Name == workflowName) is not Workflow workflow)
         {
             yield break;
         }
@@ -114,12 +113,12 @@ public class StepWiseClient
     // list steps
     public IEnumerable<Step> ListSteps(string workflowName)
     {
-        if (!_workflows.TryGetValue(workflowName, out var workflow))
+        if (_workflows.Find(w => w.Name == workflowName) is Workflow workflow)
         {
-            return Enumerable.Empty<Step>();
+            return workflow.Steps.Values;
         }
 
-        return workflow.Steps.Values;
+        return Array.Empty<Step>();
     }
 }
 

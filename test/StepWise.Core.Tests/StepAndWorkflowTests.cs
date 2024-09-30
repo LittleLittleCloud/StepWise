@@ -28,6 +28,30 @@ public class StepAndWorkflowTests
         return false;
     }
 
+    [StepWiseUINumberInput]
+    public async Task<double?> GetNumber()
+    {
+        return null;
+    }
+
+    public async Task<int?> IllegalNumberInputStep()
+    {
+        // because the return type is not Task<double?>
+        return null;
+    }
+
+    [StepWiseUISwitchInput]
+    public async Task<bool?> GetSwitch()
+    {
+        return null;
+    }
+
+    public async Task<int?> IllegalSwitchInputStep()
+    {
+        // because the return type is not Task<bool?>
+        return null;
+    }
+
     public DateTime GetDate()
     {
         return DateTime.Now;
@@ -52,10 +76,12 @@ public class StepAndWorkflowTests
     {
         var workflow = Workflow.CreateFromInstance(this);
 
-        workflow.Steps.Should().HaveCount(3);
+        workflow.Steps.Should().HaveCount(5);
         workflow.Steps.Should().ContainKey(nameof(GetCurrentDateAsync));
         workflow.Steps.Should().ContainKey(nameof(GetWeather));
         workflow.Steps.Should().ContainKey(nameof(GetCity));
+        workflow.Steps.Should().ContainKey(nameof(GetNumber));
+        workflow.Steps.Should().ContainKey(nameof(GetSwitch));
     }
 
     [Fact]
@@ -150,5 +176,41 @@ public class StepAndWorkflowTests
         step.Name.Should().Be(nameof(GetCity));
         step.OutputType.Should().Be(typeof(Task<string?>));
         step.StepType.Should().Be(StepType.StepWiseUITextInput);
+    }
+
+    [Fact]
+    public async Task StepWiseNumberInputStepMustReturnDouble()
+    {
+        var act = () => Step.CreateFromStepWiseUINumberInput(IllegalNumberInputStep);
+
+        act.Should().Throw<ArgumentException>().WithMessage("The return type of the StepWiseUINumberInput method must be Task<double?>.");
+    }
+
+    [Fact]
+    public async Task ItCreateStepWiseNumberInputStepFromGetNumber()
+    {
+        var step = Step.CreateFromStepWiseUINumberInput(GetNumber);
+
+        step.Name.Should().Be(nameof(GetNumber));
+        step.OutputType.Should().Be(typeof(Task<double?>));
+        step.StepType.Should().Be(StepType.StepWiseUINumberInput);
+    }
+
+    [Fact]
+    public async Task StepWiseSwitchInputStepMustReturnBool()
+    {
+        var act = () => Step.CreateFromStepWiseUISwitchInput(IllegalSwitchInputStep);
+
+        act.Should().Throw<ArgumentException>().WithMessage("The return type of the StepWiseUISwitchInput method must be Task<bool?>.");
+    }
+
+    [Fact]
+    public async Task ItCreateStepWiseSwitchInputStepFromGetSwitch()
+    {
+        var step = Step.CreateFromStepWiseUISwitchInput(GetSwitch);
+
+        step.Name.Should().Be(nameof(GetSwitch));
+        step.OutputType.Should().Be(typeof(Task<bool?>));
+        step.StepType.Should().Be(StepType.StepWiseUISwitchInput);
     }
 }

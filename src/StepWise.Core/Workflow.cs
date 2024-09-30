@@ -75,6 +75,21 @@ public class Workflow
                 var step = Step.CreateFromStepWiseUITextInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name, textInputAttribute.Description);
                 steps.Add(step.Name, step);
             }
+            else if (method.GetCustomAttribute<StepWiseUINumberInputAttribute>() is StepWiseUINumberInputAttribute numberInputAttribute)
+            {
+                var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
+                var returnType = method.ReturnType;
+                var step = Step.CreateFromStepWiseUINumberInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name, numberInputAttribute.Description);
+                steps.Add(step.Name, step);
+            }
+            else if (method.GetCustomAttribute<StepWiseUISwitchInputAttribute>() is StepWiseUISwitchInputAttribute switchInputAttribute)
+            {
+                var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
+                var returnType = method.ReturnType;
+                var step = Step.CreateFromStepWiseUISwitchInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name, switchInputAttribute.Description);
+                steps.Add(step.Name, step);
+            }
+
         }
 
         return new Workflow(name, steps);

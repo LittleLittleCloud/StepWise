@@ -9,6 +9,8 @@ public enum StepType
 {
     Ordinary,
     StepWiseUITextInput,
+    StepWiseUINumberInput,
+    StepWiseUISwitchInput,
 }
 
 public class Step
@@ -80,6 +82,30 @@ public class Step
         }
 
         return CreateFromMethod(stepMethod, name, description, stepType: StepType.StepWiseUITextInput);
+    }
+
+    public static Step CreateFromStepWiseUINumberInput(Delegate stepMethod, string? name = null, string? description = null)
+    {
+        // step 1: Check if the return type is Task<double?>
+        var outputType = stepMethod.Method.ReturnType;
+        if (outputType != typeof(Task<double?>))
+        {
+            throw new ArgumentException("The return type of the StepWiseUINumberInput method must be Task<double?>.");
+        }
+
+        return CreateFromMethod(stepMethod, name, description, stepType: StepType.StepWiseUINumberInput);
+    }
+
+    public static Step CreateFromStepWiseUISwitchInput(Delegate stepMethod, string? name = null, string? description = null)
+    {
+        // step 1: Check if the return type is Task<bool?>
+        var outputType = stepMethod.Method.ReturnType;
+        if (outputType != typeof(Task<bool?>))
+        {
+            throw new ArgumentException("The return type of the StepWiseUISwitchInput method must be Task<bool?>.");
+        }
+
+        return CreateFromMethod(stepMethod, name, description, stepType: StepType.StepWiseUISwitchInput);
     }
 
     public string Name { get; set; }
