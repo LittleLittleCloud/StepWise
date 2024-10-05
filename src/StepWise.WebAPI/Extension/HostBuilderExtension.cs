@@ -12,11 +12,15 @@ namespace StepWise.WebAPI;
 
 public static class HostBuilderExtension
 {
-    public static IHostBuilder UseStepWiseServer(this IHostBuilder hostBuilder)
+    public static IHostBuilder UseStepWiseServer(
+        this IHostBuilder hostBuilder,
+        StepWiseServiceConfiguration? configuration = null)
     {
+
         hostBuilder.ConfigureServices(services =>
         {
             services.AddSingleton<StepWiseClient>();
+            services.AddSingleton(configuration ?? new StepWiseServiceConfiguration());
         });
 
         return hostBuilder.ConfigureWebHost(webBuilder =>

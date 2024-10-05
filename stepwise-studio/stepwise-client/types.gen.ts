@@ -28,6 +28,13 @@ export type StepRunDTO = {
 	status: string;
 };
 
+export type StepWiseImage = {
+	url?: string | null;
+	name?: string | null;
+	content_type?: string | null;
+	readonly blob_type?: string | null;
+};
+
 export type VariableDTO = {
 	value?: unknown;
 	displayValue?: string | null;
@@ -94,3 +101,13 @@ export type PostApiV1StepWiseControllerV1ExecuteStepError = unknown;
 export type GetApiV1StepWiseControllerV1ExecuteStepSseResponse = unknown;
 
 export type GetApiV1StepWiseControllerV1ExecuteStepSseError = unknown;
+
+export type PostApiV1StepWiseControllerV1UploadImageData = {
+	body?: {
+		image?: Blob | File;
+	};
+};
+
+export type PostApiV1StepWiseControllerV1UploadImageResponse = StepWiseImage;
+
+export type PostApiV1StepWiseControllerV1UploadImageError = unknown;

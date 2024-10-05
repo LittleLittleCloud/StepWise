@@ -4,6 +4,7 @@ import {
 	createClient,
 	createConfig,
 	type Options,
+	formDataBodySerializer,
 } from "@hey-api/client-fetch";
 import type {
 	GetApiV1StepWiseControllerV1GetError,
@@ -23,6 +24,9 @@ import type {
 	PostApiV1StepWiseControllerV1ExecuteStepResponse,
 	GetApiV1StepWiseControllerV1ExecuteStepSseError,
 	GetApiV1StepWiseControllerV1ExecuteStepSseResponse,
+	PostApiV1StepWiseControllerV1UploadImageData,
+	PostApiV1StepWiseControllerV1UploadImageError,
+	PostApiV1StepWiseControllerV1UploadImageResponse,
 } from "./types.gen";
 
 export const client = createClient(createConfig());
@@ -135,5 +139,27 @@ export const getApiV1StepWiseControllerV1ExecuteStepSse = <
 	>({
 		...options,
 		url: "/api/v1/StepWiseControllerV1/ExecuteStepSse",
+	});
+};
+
+export const postApiV1StepWiseControllerV1UploadImage = <
+	ThrowOnError extends boolean = false,
+>(
+	options?: Options<
+		PostApiV1StepWiseControllerV1UploadImageData,
+		ThrowOnError
+	>,
+) => {
+	return (options?.client ?? client).post<
+		PostApiV1StepWiseControllerV1UploadImageResponse,
+		PostApiV1StepWiseControllerV1UploadImageError,
+		ThrowOnError
+	>({
+		...options,
+		...formDataBodySerializer,
+		headers: {
+			"Content-Type": null,
+		},
+		url: "/api/v1/StepWiseControllerV1/UploadImage",
 	});
 };

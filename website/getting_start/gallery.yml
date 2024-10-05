@@ -11,14 +11,14 @@ items:
     repository:
       type: git
       url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/HelloWorld.cs"
-  - name: Cumulative
-    description: A cumulative workflow.
+  - name: User Input
+    description: A demo to show how to get user input from stepwise UI.
     type: Internal
-    thumbnail: ../image/gallery-cumulative.png
-    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Cumulative.cs
+    thumbnail: ../image/gallery-user-input.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/UserInput.cs
     repository:
       type: git
-      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Cumulative.cs"
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/UserInput.cs"
 
   - name: Prepare Dinner
     description: A stepwise workflow that prepares dinner in parallel.
