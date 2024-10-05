@@ -89,7 +89,13 @@ public class Workflow
                 var step = Step.CreateFromStepWiseUISwitchInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name, switchInputAttribute.Description);
                 steps.Add(step.Name, step);
             }
-
+            else if (method.GetCustomAttribute<StepWiseUIImageInputAttribute>() is StepWiseUIImageInputAttribute imageInputAttribute)
+            {
+                var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
+                var returnType = method.ReturnType;
+                var step = Step.CreateFromStepWiseUIImageInput(method.CreateDelegate(Expression.GetFuncType([.. parameterTypes, returnType]), instance), method.Name, imageInputAttribute.Description);
+                steps.Add(step.Name, step);
+            }
         }
 
         return new Workflow(name, steps);

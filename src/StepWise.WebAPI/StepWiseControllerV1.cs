@@ -5,121 +5,18 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging;
 using StepWise.Core;
-using StepWise.Core.Extension;
 
 namespace StepWise.WebAPI;
 
-public class StepWiseClient
+public class StepWiseServiceConfiguration
 {
-    private readonly ILogger<StepWiseClient>? _logger;
-    private readonly List<Workflow> _workflows = new();
-    public StepWiseClient(ILogger<StepWiseClient>? logger = null)
-    {
-        _logger = logger;
-    }
-
-    public event EventHandler<StepRunDTO>? StepRunEvent;
-
-    // get workflow
-    public Workflow? GetWorkflow(string workflowName)
-    {
-        return _workflows.Find(w => w.Name == workflowName);
-    }
-
-    // add workflow
-    public void AddWorkflow(Workflow workflow)
-    {
-        // throw if workflow already exists
-        if (_workflows.Find(w => w.Name == workflow.Name) is not null)
-        {
-            throw new ArgumentException($"Workflow {workflow.Name} already exists");
-        }
-
-        _workflows.Add(workflow);
-    }
-
-    public void RemoveWorkflow(string workflowName)
-    {
-        _workflows.RemoveAll(w => w.Name == workflowName);
-    }
-
-    // list workflows
-    public IEnumerable<Workflow> ListWorkflow()
-    {
-        return _workflows;
-    }
-
-    // get step
-    public Step? GetStep(string workflowName, string stepName)
-    {
-        if (_workflows.Find(w => w.Name == workflowName) is Workflow workflow)
-        {
-            if (workflow.Steps.TryGetValue(stepName, out var step))
-            {
-                return step;
-            }
-        }
-
-        return null;
-    }
-
-    // execute step
-    public async IAsyncEnumerable<StepRun> ExecuteStep(
-        string workflowName,
-        string? stepName = null,
-        int? maxSteps = null,
-        int maxParallel = 1,
-        StepVariable[]? input = null)
-    {
-        if (_workflows.Find(w => w.Name == workflowName) is not Workflow workflow)
-        {
-            yield break;
-        }
-
-        var engine = new StepWiseEngine(workflow, logger: _logger);
-        input ??= Array.Empty<StepVariable>();
-
-        var stopStragety = new StopStrategyPipeline();
-
-        if (stepName is not null && workflow.Steps.TryGetValue(stepName, out var step))
-        {
-            var earlyStopStrategy = new EarlyStopStrategy(stepName);
-            stopStragety.AddStrategy(earlyStopStrategy);
-
-            this._logger?.LogInformation($"Early stop strategy added for step {stepName}");
-        }
-
-        if (maxSteps is not null)
-        {
-            var maxStepsStopStrategy = new MaxStepsStopStrategy(maxSteps.Value);
-            stopStragety.AddStrategy(maxStepsStopStrategy);
-
-            this._logger?.LogInformation($"Max steps stop strategy added for {maxSteps} steps");
-        }
-
-
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, inputs: input, maxConcurrency: maxParallel, stopStrategy: stopStragety))
-        {
-            yield return stepRunAndResult;
-            StepRunEvent?.Invoke(this, StepRunDTO.FromStepRun(stepRunAndResult));
-        }
-    }
-
-    // list steps
-    public IEnumerable<Step> ListSteps(string workflowName)
-    {
-        if (_workflows.Find(w => w.Name == workflowName) is Workflow workflow)
-        {
-            return workflow.Steps.Values;
-        }
-
-        return Array.Empty<Step>();
-    }
+    public int BlobRetentionDays { get; set; } = 30;
 }
 
 [ApiController]
@@ -128,11 +25,20 @@ internal class StepWiseControllerV1 : ControllerBase
 {
     private readonly ILogger<StepWiseControllerV1>? _logger = null;
     private readonly StepWiseClient _client;
+    private readonly IWebHostEnvironment _environment;
+    private readonly StepWiseServiceConfiguration _stepWiseServiceConfiguration;
+    private static readonly ConcurrentDictionary<string, DateTime> _fileExpirations = new ConcurrentDictionary<string, DateTime>();
 
-    public StepWiseControllerV1(StepWiseClient client, ILogger<StepWiseControllerV1>? logger = null)
+    public StepWiseControllerV1(
+        StepWiseClient client,
+        IWebHostEnvironment environment,
+        StepWiseServiceConfiguration configuration,
+        ILogger<StepWiseControllerV1>? logger = null)
     {
         _client = client;
         _logger = logger;
+        _environment = environment;
+        _stepWiseServiceConfiguration = configuration;
     }
 
     [HttpGet]
@@ -225,11 +131,32 @@ internal class StepWiseControllerV1 : ControllerBase
         foreach (var variable in variables)
         {
             var stepVariable = VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name]);
+
+            if (stepVariable.Value is StepWiseBlob blob && blob.Url is not null)
+            {
+                // load the blob from the file system
+                var filePath = Path.Combine(_environment.WebRootPath, blob.Url.TrimStart('/'));
+                if (System.IO.File.Exists(filePath))
+                {
+                    var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                    blob.Blob = BinaryData.FromBytes(fileBytes);
+                }
+            }
+
             inputs.Add(stepVariable);
         }
 
         await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel, [.. inputs]))
         {
+            if (stepRun.Variable?.Value is StepWiseBlob blob && blob.Blob is not null && blob.Url is null)
+            {
+                // save the blob to the file system
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + blob.Name;
+                var filePath = Path.Combine(_environment.WebRootPath, "uploads", uniqueFileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, blob.Blob.ToArray());
+                blob.Url = $"/uploads/{uniqueFileName}";
+            }
+
             var dto = StepRunDTO.FromStepRun(stepRun);
 
             yield return dto;
@@ -276,6 +203,58 @@ internal class StepWiseControllerV1 : ControllerBase
         }
 
         _client.StepRunEvent -= eventHandler;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<StepWiseImage>> UploadImage(IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest("No image file provided.");
+        }
+
+        try
+        {
+            string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + image.FileName;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            // Read the incoming byte array
+            byte[] fileBytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                await image.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
+
+            // Log the first 100 bytes
+            _logger?.LogInformation($"First 100 bytes: {BitConverter.ToString(fileBytes.Take(100).ToArray())}");
+
+            // Save the original file
+            await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
+
+            // Set expiration time
+            int retentionDays = _stepWiseServiceConfiguration.BlobRetentionDays;
+            DateTime expirationDate = DateTime.UtcNow.AddDays(retentionDays);
+            _fileExpirations[uniqueFileName] = expirationDate;
+            var result = new StepWiseImage
+            {
+                Url = $"/uploads/{uniqueFileName}",
+                Name = image.FileName,
+                ContentType = image.ContentType,
+            };
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
 }
 

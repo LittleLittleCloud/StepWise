@@ -52,6 +52,18 @@ public class StepAndWorkflowTests
         return null;
     }
 
+    [StepWiseUIImageInput]
+    public async Task<StepWiseImage?> GetImage()
+    {
+        return null;
+    }
+
+    public async Task<int?> IllegalImageInputStep()
+    {
+        // because the return type is not Task<byte[]?>
+        return null;
+    }
+
     public DateTime GetDate()
     {
         return DateTime.Now;
@@ -76,12 +88,13 @@ public class StepAndWorkflowTests
     {
         var workflow = Workflow.CreateFromInstance(this);
 
-        workflow.Steps.Should().HaveCount(5);
+        workflow.Steps.Should().HaveCount(6);
         workflow.Steps.Should().ContainKey(nameof(GetCurrentDateAsync));
         workflow.Steps.Should().ContainKey(nameof(GetWeather));
         workflow.Steps.Should().ContainKey(nameof(GetCity));
         workflow.Steps.Should().ContainKey(nameof(GetNumber));
         workflow.Steps.Should().ContainKey(nameof(GetSwitch));
+        workflow.Steps.Should().ContainKey(nameof(GetImage));
     }
 
     [Fact]
@@ -212,5 +225,23 @@ public class StepAndWorkflowTests
         step.Name.Should().Be(nameof(GetSwitch));
         step.OutputType.Should().Be(typeof(Task<bool?>));
         step.StepType.Should().Be(StepType.StepWiseUISwitchInput);
+    }
+
+    [Fact]
+    public async Task StepWiseImageInputStepMustReturnByteArray()
+    {
+        var act = () => Step.CreateFromStepWiseUIImageInput(IllegalImageInputStep);
+
+        act.Should().Throw<ArgumentException>().WithMessage("The return type of the StepWiseUIImageInput method must be Task<StepWiseImage?>.");
+    }
+
+    [Fact]
+    public async Task ItCreateStepWiseImageInputStepFromGetImage()
+    {
+        var step = Step.CreateFromStepWiseUIImageInput(GetImage);
+
+        step.Name.Should().Be(nameof(GetImage));
+        step.OutputType.Should().Be(typeof(Task<StepWiseImage?>));
+        step.StepType.Should().Be(StepType.StepWiseUIImageInput);
     }
 }

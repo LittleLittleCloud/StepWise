@@ -16,6 +16,7 @@
     <PackageReference Include="Octokit" />
     <PackageReference Include="AutoGen.DotnetInteractive" />
     <PackageReference Include="AutoGen.SourceGenerator" />
+    <PackageReference Include="SixLabors.ImageSharp" />
   </ItemGroup>
 
   <ItemGroup>

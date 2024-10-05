@@ -1,6 +1,7 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
 // Step.cs
 
+using System;
 using System.Reflection;
 
 namespace StepWise.Core;
@@ -11,6 +12,7 @@ public enum StepType
     StepWiseUITextInput,
     StepWiseUINumberInput,
     StepWiseUISwitchInput,
+    StepWiseUIImageInput,
 }
 
 public class Step
@@ -106,6 +108,18 @@ public class Step
         }
 
         return CreateFromMethod(stepMethod, name, description, stepType: StepType.StepWiseUISwitchInput);
+    }
+
+    public static Step CreateFromStepWiseUIImageInput(Delegate stepMethod, string? name = null, string? description = null)
+    {
+        // step 1: Check if the return type is Task<StepWiseImage?>
+        var outputType = stepMethod.Method.ReturnType;
+        if (outputType != typeof(Task<StepWiseImage?>))
+        {
+            throw new ArgumentException("The return type of the StepWiseUIImageInput method must be Task<StepWiseImage?>.");
+        }
+
+        return CreateFromMethod(stepMethod, name, description, stepType: StepType.StepWiseUIImageInput);
     }
 
     public string Name { get; set; }

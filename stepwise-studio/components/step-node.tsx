@@ -51,6 +51,7 @@ import "react-resizable/css/styles.css";
 import { ResizableDiv } from "./ui/resizableDiv";
 import { on } from "events";
 import { Switch } from "./ui/switch";
+import ImageUpload from "./image-upload";
 
 export type StepNodeStatus =
 	| "Running"
@@ -526,7 +527,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						variable_name="error"
 						variable={{
 							name: "error",
-							type: "",
+							type: "error",
 							displayValue:
 								exceptionDTO.message +
 								"\n" +
@@ -707,6 +708,27 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						</Button>
 					</div>
 				</div>
+			)}
+
+			{/* Process Image Input */}
+			{stepType === "StepWiseUIImageInput" && status === "Queue" && (
+				<ImageUpload
+					onCanceled={() => {
+						prop.data.onCancelInput();
+					}}
+					onUpload={async (file) => {
+						var variable = {
+							name: step.name,
+							type: 'StepWiseImage',
+							displayValue: file.name,
+							value: file,
+							generation: prop.data.generation,
+						} as VariableDTO;
+
+						prop.data.onClearClick(step);
+						prop.data.onSubmitOutput(variable);
+					}}
+				/>
 			)}
 		</div>
 	);
