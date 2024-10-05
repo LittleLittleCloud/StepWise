@@ -719,7 +719,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					onUpload={async (file) => {
 						var variable = {
 							name: step.name,
-							type: 'StepWiseImage',
+							type: "StepWiseImage",
 							displayValue: file.name,
 							value: file,
 							generation: prop.data.generation,

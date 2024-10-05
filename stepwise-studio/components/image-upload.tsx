@@ -3,7 +3,10 @@ import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { postApiV1StepWiseControllerV1UploadImage, StepWiseImage } from "@/stepwise-client";
+import {
+	postApiV1StepWiseControllerV1UploadImage,
+	StepWiseImage,
+} from "@/stepwise-client";
 
 interface UploadStatus {
 	type: "success" | "error";
@@ -47,16 +50,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 		formData.append("image", file);
 
 		try {
-			const response = await postApiV1StepWiseControllerV1UploadImage(
-                {
-                    body: {
-                        image: file
-                    },
-                }
-            )
+			const response = await postApiV1StepWiseControllerV1UploadImage({
+				body: {
+					image: file,
+				},
+			});
 
 			if (response.data) {
-                onUpload(response.data);
+				onUpload(response.data);
 				setUploadStatus({
 					type: "success",
 					message: "Image uploaded successfully!",

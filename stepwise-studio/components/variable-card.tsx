@@ -36,11 +36,13 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 				</div>
 			)}
 
-			{
-				variable.type === "StepWiseImage" && previewImageUrl && (
-					<img src={previewImageUrl} alt="Preview" className="w-full rounded-lg" />
-				)
-			}
+			{variable.type === "StepWiseImage" && previewImageUrl && (
+				<img
+					src={previewImageUrl}
+					alt="Preview"
+					className="w-full rounded-lg"
+				/>
+			)}
 		</div>
 	);
 };
