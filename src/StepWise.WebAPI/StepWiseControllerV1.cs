@@ -134,12 +134,18 @@ internal class StepWiseControllerV1 : ControllerBase
 
             if (stepVariable.Value is StepWiseBlob blob && blob.Url is not null)
             {
+                var mediaType = blob switch
+                {
+                    StepWiseImage image => image.ContentType,
+                    _ => null,
+                };
+
                 // load the blob from the file system
                 var filePath = Path.Combine(_environment.WebRootPath, blob.Url.TrimStart('/'));
                 if (System.IO.File.Exists(filePath))
                 {
                     var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-                    blob.Blob = BinaryData.FromBytes(fileBytes);
+                    blob.Blob = BinaryData.FromBytes(fileBytes, mediaType: mediaType);
                 }
             }
 
