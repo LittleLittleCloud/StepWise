@@ -3,14 +3,38 @@
 documentType: dashboard
 contributionLink: https://github.com/LittleLittleCloud/StepWise/edit/main/website/getting_start/gallery.yml
 items:
-  - name: Hello World
-    description: A stepwise workflow that prints "Hello World".
+  - name: Sequential
+    description: A demo to show how to create a sequential workflow.
     type: Internal
-    thumbnail: ../image/gallery-hello-world.png
-    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/HelloWorld.cs
+    thumbnail: ../image/gallery-sequential.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Sequential.cs
     repository:
       type: git
-      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/HelloWorld.cs"
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Sequential.cs"
+  - name: If Else
+    description: A demo to show how to create a if else workflow.
+    type: Internal
+    thumbnail: ../image/gallery-if-else-branching.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/IfElseBranching.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/IfElseBranching.cs"
+  - name: Loop
+    description: A demo to show how to create a loop workflow.
+    type: Internal
+    thumbnail: ../image/gallery-loop.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Loop.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Loop.cs"
+  - name: Parallel
+    description: A demo to show how to create a parallel workflow.
+    type: Internal
+    thumbnail: ../image/gallery-parallel.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ParallelWorkflow.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ParallelWorkflow.cs"
   - name: User Input
     description: A demo to show how to get user input from stepwise UI.
     type: Internal
@@ -44,3 +68,11 @@ items:
     repository:
       type: git
       url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/CodeInterpreter.cs"
+  - name: OCR
+    description: A stepwise workflow for extracting text from image using OCR.
+    type: Internal
+    thumbnail: ../image/gallery-ocr.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/OCR.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/OCR.cs"
