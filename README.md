@@ -7,8 +7,8 @@
 
 # StepWise
 
-![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=stepwise&labelColor=grey&color=green)
-![NuGet Version](https://img.shields.io/nuget/vpre/LittleLittleCloud.StepWIse.Gallery?label=stepwise-gallery&labelColor=grey&color=green)
+[![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=stepwise&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
+[![NuGet Version](https://img.shields.io/nuget/vpre/LittleLittleCloud.StepWIse.Gallery?label=stepwise-gallery&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise.Gallery)
 [![Website](https://img.shields.io/badge/Website-StepWise-blue)](https://littlelittlecloud.github.io/StepWise/)
 </div>
 
