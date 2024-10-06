@@ -31,13 +31,22 @@ var basicSteps = new BasicSteps();
 var releaseMaster = new ReleaseMaster();
 var codeInterpreter = CodeInterpreter.Create();
 var ocrWorkflow = new OCR();
+var sequential = new Sequential();
+var ifElse = new IfElseBranching();
+var parallel = new ParallelWorkflow();
 
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(sequential));
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ifElse));
+stepWiseClient.AddWorkflow(loopWorkflow);
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(parallel));
 stepWiseClient.AddWorkflow(userInputWorkflow);
+
+stepWiseClient.AddWorkflow(helloWorldWorkflow);
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(codeInterpreter));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ocrWorkflow));
-stepWiseClient.AddWorkflow(helloWorldWorkflow);
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
+
 // Wait for the host to shutdown
 await host.WaitForShutdownAsync();
 

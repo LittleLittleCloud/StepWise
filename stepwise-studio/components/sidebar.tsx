@@ -15,6 +15,7 @@ import { WorkflowDTO } from "@/stepwise-client";
 import Workflow, { WorkflowData } from "./workflow";
 import ThemeSwitch from "./theme-switch";
 import {
+	Bug,
 	FileTextIcon,
 	Github,
 	Icon,
@@ -128,6 +129,25 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
 			{/* buttom bar */}
 			<div className="flex flex-col gap-1">
 				<Link
+					href={
+						"https://github.com/LittleLittleCloud/StepWise/issues/new"
+					}
+					target="_blank"
+					className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
+				>
+					<div className="flex items-center gap-2 ">
+						<div
+							className={buttonVariants({
+								variant: "outline",
+								size: "tinyIcon",
+							})}
+						>
+							<Bug size={iconSize} />
+						</div>
+						<span className="text-sm">Create Issue</span>
+					</div>
+				</Link>
+				<Link
 					href={"https://littlelittlecloud.github.io/StepWise"}
 					target="_blank"
 					className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
@@ -141,7 +161,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
 						>
 							<FileTextIcon size={iconSize} />
 						</div>
-						<span className="text-sm">Docs</span>
+						<span className="text-sm">Documents</span>
 					</div>
 				</Link>
 				<div
@@ -163,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
 								<Sun size={iconSize} />
 							)}
 						</div>
-						<span className="text-sm">Theme</span>
+						<span className="text-sm">Switch Theme</span>
 					</div>
 				</div>
 			</div>

@@ -1,66 +1,74 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
 // Loop.cs
 
-// Create a web host running on 5123 port
 using StepWise.Core;
 
 public class Loop
 {
-    [Step]
-    public async Task<int> SetCurrentToZero()
+    [Step(description: """
+        To Start the workflow, click the start button(▶) in the tool bar.
+
+        TIPS:
+        - You can run multiple steps at once by increasing the Max Step in the tool bar.
+        - You can re-run a single step by clicking the rotate button(↻) on the right side of the step.
+        - You can re-run the entire workflow by clicking the rotate button(↻) in the tool bar.
+        """)]
+    public async Task<string> Start()
     {
-        return 0;
+        await Task.Delay(1000);
+        return "Start";
     }
 
     [Step]
-    [DependOn(nameof(SetCurrentToZero))]
-    public async Task<int> Current(
-        [FromStep(nameof(SetCurrentToZero))] int number,
-        [FromStep(nameof(AddOneAsync))] int? currentNumber = null)
+    [DependOn(nameof(Start))]
+    public async Task<int?> A(
+        [FromStep(nameof(PlusOne))] Status? a = null)
     {
-        return currentNumber ?? number;
-    }
+        await Task.Delay(1000);
 
-    [Step]
-    [DependOn(nameof(Current))]
-    public async Task<string> BreakWhenReachTen(
-        [FromStep(nameof(Current))] int current)
-    {
-        if (current < 10)
-        {
-            return "continue";
-        }
-
-        return "Loop finished";
-    }
-
-    [Step]
-    [DependOn(nameof(BreakWhenReachTen))]
-    [DependOn(nameof(Current))]
-    public async Task<int?> AddOneAsync(
-        [FromStep(nameof(Current))] int number,
-        [FromStep(nameof(BreakWhenReachTen))] string end)
-    {
-        if (end == "Loop finished")
+        if (a?.exit == true)
         {
             return null;
         }
 
-        return number + 1;
+        return a?.A ?? 0;
     }
 
     [Step]
-    [DependOn(nameof(AddOneAsync))]
-    [DependOn(nameof(BreakWhenReachTen))]
-    public async Task<string?> End(
-        [FromStep(nameof(BreakWhenReachTen))] string end)
+    [DependOn(nameof(A))]
+    public async Task<Status> PlusOne(
+        [FromStep(nameof(A))] int a)
     {
-        if (end == "Loop finished")
-        {
-            return "Loop finished";
-        }
+        await Task.Delay(1000);
 
-        return null;
+        if (a > 3)
+        {
+            return new Status(a, true);
+        }
+        else
+        {
+            return new Status(a + 1, false);
+        }
+    }
+
+    [Step(description: "add 1 to a until a > 3")]
+    [DependOn(nameof(PlusOne))]
+    public async Task<string?> End(
+        [FromStep(nameof(PlusOne))] Status status)
+    {
+        if (status.exit)
+        {
+            return "End: Exit";
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public record Status(int A, bool exit)
+    {
+        public override string ToString() => $"A: {A}, Exit: {exit}";
     }
 }
 
