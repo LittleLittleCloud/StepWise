@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using StepWise.Core;
+using StepWise.Gallery;
 using StepWise.WebAPI;
 
 var host = Host.CreateDefaultBuilder()
@@ -29,12 +30,13 @@ var cumulativeWorkflow = Workflow.CreateFromInstance(new Cumulative());
 var basicSteps = new BasicSteps();
 var releaseMaster = new ReleaseMaster();
 var codeInterpreter = CodeInterpreter.Create();
+var ocrWorkflow = new OCR();
 
 stepWiseClient.AddWorkflow(userInputWorkflow);
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(codeInterpreter));
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ocrWorkflow));
 stepWiseClient.AddWorkflow(helloWorldWorkflow);
-stepWiseClient.AddWorkflow(cumulativeWorkflow);
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
 // Wait for the host to shutdown
 await host.WaitForShutdownAsync();
