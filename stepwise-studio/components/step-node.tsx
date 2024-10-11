@@ -31,6 +31,7 @@ import {
 	CheckCircle2,
 	CircleUserRound,
 	Clock,
+	FileText,
 	FormInputIcon,
 	Loader2,
 	LoaderCircle,
@@ -100,7 +101,7 @@ const StepNodeStatusIndicator: React.FC<{
 		setIsRunning(isWorkflowRunning);
 	}, [status, isWorkflowRunning, stepType]);
 
-	const size = 12;
+	const size = 16;
 
 	const getStatusInfo = (status: StepNodeStatus) => {
 		switch (status) {
@@ -173,7 +174,7 @@ const StepNodeStatusIndicator: React.FC<{
 					variant: "outline",
 					size: "tinyIcon",
 				}),
-				"w-4 h-4",
+				"flex h-full items-center justify-center",
 			)}
 		>
 			<Icon
@@ -223,6 +224,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	);
 	const [width, setWidth] = useState<number | undefined>(prop.data.width);
 	const [height, setHeight] = useState<number | undefined>(prop.data.height);
+	const [collapseDescription, setCollapseDescription] =
+		useState<boolean>(true);
 
 	const [exceptionDTO, setExceptionDTO] = useState<ExceptionDTO | undefined>(
 		prop.data.exception,
@@ -233,6 +236,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	) => {
 		return status === "Queue" && stepType !== "Ordinary";
 	};
+
+	const iconSize = 16;
 
 	useEffect(() => {
 		if (!stepNodeRef.current) return;
@@ -320,7 +325,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	var resizeCallback = useCallback(() => {
 		const offsets = Array.from(parameterRefMap.current.values()).map(
-			(el) => el.offsetTop + 11,
+			(el) => el.offsetTop + 16,
 		);
 		var newOffsetMap = new Map<string, number>();
 		offsets.forEach((offset, index) => {
@@ -362,13 +367,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	return (
 		<div
 			className={cn(
-				"border-2 rounded-md shadow-md p-1 bg-background/50 group",
+				"border-2 rounded-md shadow-md p-2 bg-background/50 group",
 				// set weight and height
 				isSelected ? "border-primary/40" : "border-transparent",
 				width ?? "max-w-48",
-				shouldWaitForInput(status, stepType)
-					? "border-primary p-2"
-					: "",
+				shouldWaitForInput(status, stepType) ? "border-primary" : "",
 			)}
 			ref={stepNodeRef}
 		>
@@ -404,16 +407,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			{/* settings bar */}
 			{/* appear when hover */}
 			<div className="invisible flex group-hover:visible absolute -top-5 right-0 bg-background/50 rounded gap-1 m-0 p-1">
-				{/* <Button
-					variant={"outline"}
-					size={"xxsIcon"}
-					className="m-0 p-0"
-					onClick={() => {
-						prop.data.onRerunClick(step);
-					}}
-				>
-					<Play />
-				</Button> */}
 				<Button
 					variant={"outline"}
 					size={"xxsIcon"}
@@ -427,16 +420,16 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			{step.name && (
 				<div className="flex flex-col">
 					<div className="flex gap-1 items-center">
-						<div ref={titleRef}>
+						<div ref={titleRef} className="items-center">
 							<StepNodeStatusIndicator
 								status={status}
 								isWorkflowRunning={isWorkflowRunning}
 								stepType={stepType ?? "Ordinary"}
 							/>
 						</div>
-						<h2 className="text-xs font-semibold text-nowrap pr-5 truncate">
+						<h1 className="font-semibold text-nowrap pr-5 truncate">
 							{step.name}
-						</h2>
+						</h1>
 						<Handle
 							type="source"
 							position={Position.Right}
@@ -447,9 +440,38 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						/>
 					</div>
 					{step.description && (
-						<h6 className="text-xs text-primary/80">
-							{step.description}
-						</h6>
+						<div className="w-full">
+							<div className="flex gap-1 items-center">
+								<Button
+									variant={"outline"}
+									size={"tinyIcon"}
+									className="m-0 p-0"
+								>
+									<FileText size={iconSize} />
+								</Button>
+								<h1 className="font-semibold">Description</h1>
+							</div>
+							<div
+								className={cn(
+									"flex gap-1 items-center nodrag nopan cursor-text",
+									"bg-accent rounded-md hover:bg-accent/60",
+								)}
+								style={{ userSelect: "text" }}
+								onClick={() =>
+									setCollapseDescription(!collapseDescription)
+								}
+							>
+								{collapseDescription ? (
+									<Markdown className="w-full overflow-x-auto">
+										{step.description}
+									</Markdown>
+								) : (
+									<span className="truncate p-1 px-2">
+										{step.description}
+									</span>
+								)}
+							</div>
+						</div>
 					)}
 				</div>
 			)}
@@ -460,12 +482,12 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<Brackets size={12} />
+							<Brackets size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold">Parameter</h3>
+						<h1 className="font-semibold">Parameter</h1>
 					</div>
 					<div className="flex flex-col gap-1">
 						{parameters.map((param, index) => (
@@ -497,7 +519,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 										top: targetHandleTopOffsets.get(
 											param.variable_name!,
 										),
-										left: 10,
+										left: 13,
 									}}
 								/>
 							</div>
@@ -545,16 +567,16 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<FormInputIcon size={12} />
+							<FormInputIcon size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold">Input</h3>
+						<p className="font-semibold">Input</p>
 					</div>
 					<textarea
 						onDrag={(e) => e.stopPropagation()}
-						className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
+						className="border border-gray-300 rounded p-1 focus:border-accent/50 nodrag"
 						placeholder="Enter text"
 						value={inputText}
 						onChange={(e) => setInputText(e.target.value)}
@@ -563,7 +585,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"outline"}
 							size={"tiny"}
-							className="bg-accent hover:bg-accent/50"
+							className="bg-accent hover:bg-accent/50 text-base"
 							onClick={() => {
 								if (output?.displayValue === inputText) return;
 								var variable = {
@@ -582,6 +604,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"destructive"}
 							size={"tiny"}
+							className="text-base"
 							onClick={() => {
 								prop.data.onCancelInput();
 							}}
@@ -598,17 +621,17 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<FormInputIcon size={12} />
+							<FormInputIcon size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold">Input</h3>
+						<h3 className="font-semibold">Input</h3>
 					</div>
 
 					<input
 						type="number"
-						className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
+						className="border border-gray-300 rounded p-1 focus:border-accent/50 nodrag"
 						placeholder="Enter number"
 						value={inputNumber ?? ""}
 						onChange={(e) => setInputNumber(Number(e.target.value))}
@@ -618,7 +641,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"outline"}
 							size={"tiny"}
-							className="bg-accent hover:bg-accent/50"
+							className="bg-accent hover:bg-accent/50 text-base"
 							onClick={() => {
 								if (
 									output?.displayValue ===
@@ -641,6 +664,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"destructive"}
 							size={"tiny"}
+							className="text-base"
 							onClick={() => {
 								prop.data.onCancelInput();
 							}}
@@ -657,12 +681,12 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<FormInputIcon size={12} />
+							<FormInputIcon size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold grow">Input</h3>
+						<h3 className="font-semibold grow">Input</h3>
 
 						<Switch
 							checked={inputSwitch}
@@ -675,7 +699,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"outline"}
 							size={"tiny"}
-							className="bg-accent hover:bg-accent/50"
+							className="bg-accent hover:bg-accent/50 text-base"
 							onClick={() => {
 								if (
 									output?.displayValue ===
@@ -700,6 +724,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"destructive"}
 							size={"tiny"}
+							className="text-base"
 							onClick={() => {
 								prop.data.onCancelInput();
 							}}

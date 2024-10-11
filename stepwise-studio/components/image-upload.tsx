@@ -86,7 +86,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 	};
 
 	return (
-		<div className="max-w-md mx-auto p-2 rounded-lg shadow-md">
+		<div className="max-w-md mx-auto p-2">
 			{!preview && (
 				<div className="mb-4">
 					<Input
@@ -99,9 +99,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 					<label htmlFor="imageInput">
 						<div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-primary/60 transition-colors">
 							<Upload className="mx-auto mb-2" size={15} />
-							<h6 className="text-xs">
-								Click to select an image
-							</h6>
+							<h6>Click to select an image</h6>
 						</div>
 					</label>
 				</div>
@@ -121,7 +119,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 					variant="outline"
 					size={"tiny"}
 					onClick={handleUpload}
-					className="bg-accent hover:bg-accent/50"
+					className="bg-accent hover:bg-accent/50 text-base"
 					disabled={!file || uploading}
 				>
 					{uploading ? "Uploading..." : "Submit"}
@@ -130,6 +128,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 					variant="destructive"
 					size={"tiny"}
 					onClick={handleRemove}
+					className="text-base"
 					disabled={!file || uploading}
 				>
 					Cancel

@@ -10,6 +10,7 @@ export const Markdown = (props: ReactMarkdownOptions) => {
 	return (
 		<ReactMarkdown
 			{...props}
+			className="prose prose-default max-w-none rounded-md p-1 px-2 "
 			remarkPlugins={[remarkGfm]}
 			components={{
 				code: ({ node, inline, className, children, ...props }) => {
