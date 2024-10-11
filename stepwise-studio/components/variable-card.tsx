@@ -29,7 +29,7 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 	return (
 		<div>
 			{variable.type !== "StepWiseImage" && variable.displayValue && (
-				<div className="flex flex-col gap-1 bg-background/50 rounded p-1">
+				<div className="flex flex-col gap-1 rounded-md">
 					<Markdown className="text-xs w-full overflow-x-auto">
 						{variable.displayValue}
 					</Markdown>
