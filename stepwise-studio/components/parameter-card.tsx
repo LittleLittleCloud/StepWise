@@ -74,11 +74,11 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 						</span>
 					)}
 			</div>
-			{!collapsed && variable &&
-			<div className="flex flex-col gap-1 rounded-md bg-background">
-
-			<VariableCard variable={variable} />
-			</div>}
+			{!collapsed && variable && (
+				<div className="flex flex-col gap-1 rounded-md bg-background">
+					<VariableCard variable={variable} />
+				</div>
+			)}
 		</div>
 	);
 };

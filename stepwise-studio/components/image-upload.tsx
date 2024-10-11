@@ -99,9 +99,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 					<label htmlFor="imageInput">
 						<div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-primary/60 transition-colors">
 							<Upload className="mx-auto mb-2" size={15} />
-							<h6>
-								Click to select an image
-							</h6>
+							<h6>Click to select an image</h6>
 						</div>
 					</label>
 				</div>
