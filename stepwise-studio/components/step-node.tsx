@@ -120,26 +120,26 @@ const StepNodeStatusIndicator: React.FC<{
 				}
 				return isRunning
 					? {
-						icon: Clock,
-						label: status,
-						animation: "animate-[spin_3s_linear_infinite]",
-					}
+							icon: Clock,
+							label: status,
+							animation: "animate-[spin_3s_linear_infinite]",
+						}
 					: {
-						icon: SquareFunction,
-						label: status,
-					};
+							icon: SquareFunction,
+							label: status,
+						};
 			case "Running":
 				return isRunning
 					? {
-						icon: Loader2,
-						color: "text-yellow-500",
-						label: status,
-						animation: "animate-spin",
-					}
+							icon: Loader2,
+							color: "text-yellow-500",
+							label: status,
+							animation: "animate-spin",
+						}
 					: {
-						icon: SquareFunction,
-						label: status,
-					};
+							icon: SquareFunction,
+							label: status,
+						};
 			case "Completed":
 				return {
 					icon: CheckCircle2,
@@ -348,7 +348,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		if (stepNodeRef.current) {
 			// this usually means that the content of this node has changed
 			// so we want to automatically adjust the weight to present the content in a nicer way
-			// by setting the width to undefined, the prop.data.onResize will be invoked 
+			// by setting the width to undefined, the prop.data.onResize will be invoked
 			// and the new width will be re-calculated when the node is re-rendered
 			// if (
 			// 	height !== stepNodeRef.current.offsetHeight &&

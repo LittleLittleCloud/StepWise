@@ -193,7 +193,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					zoom: viewport.zoom,
 				};
 			});
-		}
+		},
 	});
 	const { theme } = useTheme();
 	const [workflow, setWorkflow] = useState<WorkflowData | undefined>(
@@ -342,7 +342,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 								...prev,
 								stepSizes: {
 									...prev.stepSizes,
-									[step.name]: height && width ? { height, width } : undefined,
+									[step.name]:
+										height && width
+											? { height, width }
+											: undefined,
 								},
 							};
 						});
@@ -378,31 +381,28 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		return { nodes, edges };
 	};
 
-
-	useOnViewportChange(
-		{
-			onChange: (viewport) => {
-				console.log("Viewport changed: ", viewport);
-				setWorkflow((prev) => {
-					if (!prev) return prev;
-					return {
-						...prev,
-						viewPort: viewport,
-					};
-				});
-			},
-			onEnd: (viewport) => {
-				console.log("Viewport changed: ", viewport);
-				setWorkflow((prev) => {
-					if (!prev) return prev;
-					return {
-						...prev,
-						viewPort: viewport,
-					};
-				});
-			}
-		}
-	);
+	useOnViewportChange({
+		onChange: (viewport) => {
+			console.log("Viewport changed: ", viewport);
+			setWorkflow((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					viewPort: viewport,
+				};
+			});
+		},
+		onEnd: (viewport) => {
+			console.log("Viewport changed: ", viewport);
+			setWorkflow((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					viewPort: viewport,
+				};
+			});
+		},
+	});
 
 	useEffect(() => {
 		if (!workflow) return;
@@ -412,7 +412,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		setEdges(graph.edges);
 		props.onWorkflowChange?.(workflow);
 	}, [workflow, fitView, maxParallelRun, maxStep, isRunning]);
-
 
 	const onStepNodeRunClick = async (
 		workflow: WorkflowData,
