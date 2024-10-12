@@ -404,7 +404,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					}}
 					onResize={(event, param) => {
 						if (Math.abs(param.width - width) > 10) {
-							console.log("Setting width to ", param.width, width);
 							setWidth(param.width);
 						}
 					}}
