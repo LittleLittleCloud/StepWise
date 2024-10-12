@@ -34,6 +34,7 @@ var ocrWorkflow = new OCR();
 var sequential = new Sequential();
 var ifElse = new IfElseBranching();
 var parallel = new ParallelWorkflow();
+var textToImage = new TextToImage();
 
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(sequential));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ifElse));
@@ -46,6 +47,7 @@ stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(codeInterpreter));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ocrWorkflow));
+stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(textToImage));
 
 // Wait for the host to shutdown
 await host.WaitForShutdownAsync();

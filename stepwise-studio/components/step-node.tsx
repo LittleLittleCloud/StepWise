@@ -120,26 +120,26 @@ const StepNodeStatusIndicator: React.FC<{
 				}
 				return isRunning
 					? {
-							icon: Clock,
-							label: status,
-							animation: "animate-[spin_3s_linear_infinite]",
-						}
+						icon: Clock,
+						label: status,
+						animation: "animate-[spin_3s_linear_infinite]",
+					}
 					: {
-							icon: SquareFunction,
-							label: status,
-						};
+						icon: SquareFunction,
+						label: status,
+					};
 			case "Running":
 				return isRunning
 					? {
-							icon: Loader2,
-							color: "text-yellow-500",
-							label: status,
-							animation: "animate-spin",
-						}
+						icon: Loader2,
+						color: "text-yellow-500",
+						label: status,
+						animation: "animate-spin",
+					}
 					: {
-							icon: SquareFunction,
-							label: status,
-						};
+						icon: SquareFunction,
+						label: status,
+					};
 			case "Completed":
 				return {
 					icon: CheckCircle2,
@@ -217,6 +217,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const [inputNumber, setInputNumber] = useState<number | undefined>(
 		undefined,
 	);
+	const [description, setDescription] = useState<string | undefined>(prop.data.step?.description ?? undefined);
 	const [inputSwitch, setInputSwitch] = useState<boolean>(false);
 
 	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
@@ -278,6 +279,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	useEffect(() => {
 		setOutput(prop.data.result ?? undefined);
 	}, [prop.data.result]);
+
+	useEffect(() => {
+		setDescription(prop.data.step?.description ?? undefined);
+	}, [prop.data.step?.description]);
 
 	useEffect(() => {
 		setIsSelected(prop.selected ?? false);
@@ -459,9 +464,13 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							style={{ top: sourceHandleTopOffset, right: 5 }}
 						/>
 					</div>
-					{step.description && (
-						<div className="w-full">
-							<div className="flex gap-1 items-center">
+					{description && (
+						<div className="w-full py-1 bg-accent rounded-md hover:bg-accent/50">
+							<div className="flex flex-wrap gap-x-5 gap-y-1 items-center cursor-pointer"
+								onClick={() =>
+									setCollapseDescription(!collapseDescription)
+								}>
+									<div className="flex gap-1 flex-grow items-center">
 								<Button
 									variant={"outline"}
 									size={"tinyIcon"}
@@ -470,27 +479,23 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 									<FileText size={iconSize} />
 								</Button>
 								<h1 className="font-semibold">Description</h1>
+								</div>
+								{!collapseDescription && (
+									<span className="bg-background max-w-[10rem] rounded-md truncate px-2">
+										{description}
+									</span>)
+								}
 							</div>
-							<div
+							{collapseDescription && <div
 								className={cn(
-									"flex gap-1 items-center nodrag nopan cursor-text",
-									"bg-accent rounded-md hover:bg-accent/60",
+									"flex rounded-md m-1 bg-background items-center nodrag nopan cursor-text",
 								)}
 								style={{ userSelect: "text" }}
-								onClick={() =>
-									setCollapseDescription(!collapseDescription)
-								}
 							>
-								{collapseDescription ? (
-									<Markdown className="w-full overflow-x-auto">
-										{step.description}
-									</Markdown>
-								) : (
-									<span className="truncate p-1 px-2">
-										{step.description}
-									</span>
-								)}
-							</div>
+								<Markdown className="w-full overflow-x-auto">
+									{description}
+								</Markdown>
+							</div>}
 						</div>
 					)}
 				</div>
