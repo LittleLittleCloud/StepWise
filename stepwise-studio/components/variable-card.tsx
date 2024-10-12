@@ -16,8 +16,15 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 			const image = variable.value as StepWiseImage;
 			if (image.url) {
 				console.log("Setting preview image URL:", image.url);
-				var baseAddress = client.getConfig().baseUrl;
-				setPreviewImageUrl(`${baseAddress}${image.url}`);
+
+				// if url is absolute, use it as is
+				if (image.url.startsWith("http")) {
+					setPreviewImageUrl(image.url);
+				} else {
+					// if url is relative, use the base address from the client
+					var baseAddress = client.getConfig().baseUrl;
+					setPreviewImageUrl(`${baseAddress}${image.url}`);
+				}
 			}
 		}
 	}, [variable]);
@@ -38,7 +45,7 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 				<img
 					src={previewImageUrl}
 					alt="Preview"
-					className="rounded-lg max-h-48"
+					className="rounded-lg max-h-96"
 				/>
 			)}
 		</div>
