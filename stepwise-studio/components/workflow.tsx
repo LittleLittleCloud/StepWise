@@ -23,6 +23,8 @@ import ReactFlow, {
 	ReactFlowProvider,
 	MarkerType,
 	NodeChange,
+	useOnViewportChange,
+	Viewport,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { StepNode, StepNodeProps } from "./step-node";
@@ -42,6 +44,7 @@ import {
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
 	stepSizes: { [key: string]: { width: number; height: number } | undefined };
+	viewPort: Viewport;
 };
 export type WorkflowData = WorkflowDTO &
 	WorkflowLayout &
@@ -154,7 +157,6 @@ export function clearStepRunResult(
 			var param = run.step?.parameters?.find(
 				(param) => param.variable_name === step.name,
 			)!;
-			console.log("param: ", param);
 			return {
 				...run,
 				status: "NotReady",
@@ -176,11 +178,23 @@ export function clearStepRunResult(
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
 	const [edges, setEdges, _] = useEdgesState([]);
-	const [maxStep, setMaxStep] = useState<number>(props.dto?.maxSteps ?? 1);
+	const [maxStep, setMaxStep] = useState<number>(props.dto?.maxSteps ?? 5);
 	const [maxParallelRun, setMaxParallelRun] = useState<number>(
-		props.dto?.maxParallelRun ?? 10,
+		props.dto?.maxParallelRun ?? 3,
 	);
-	const { fitView } = useReactFlow();
+	const { fitView, getViewport, setViewport } = useReactFlow();
+	useOnViewportChange({
+		onEnd: (viewport) => {
+			setWorkflow((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					transform: [viewport.x, viewport.y],
+					zoom: viewport.zoom,
+				};
+			});
+		},
+	});
 	const { theme } = useTheme();
 	const [workflow, setWorkflow] = useState<WorkflowData | undefined>(
 		undefined,
@@ -197,6 +211,9 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			props.dto.stepRuns ?? [],
 		);
 		setWorkflow({ ...props.dto, stepRuns: latestSnapshot });
+		if (props.dto.viewPort) {
+			setViewport(props.dto.viewPort);
+		}
 		setIsRunning(false);
 	}, [props.dto]);
 
@@ -325,7 +342,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 								...prev,
 								stepSizes: {
 									...prev.stepSizes,
-									[step.name]: { height, width },
+									[step.name]:
+										height && width
+											? { height, width }
+											: undefined,
 								},
 							};
 						});
@@ -361,11 +381,33 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		return { nodes, edges };
 	};
 
+	useOnViewportChange({
+		onChange: (viewport) => {
+			console.log("Viewport changed: ", viewport);
+			setWorkflow((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					viewPort: viewport,
+				};
+			});
+		},
+		onEnd: (viewport) => {
+			console.log("Viewport changed: ", viewport);
+			setWorkflow((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					viewPort: viewport,
+				};
+			});
+		},
+	});
+
 	useEffect(() => {
 		if (!workflow) return;
 		setCompletedRunSteps(workflow.stepRuns ?? []);
 		var graph = createGraphFromWorkflow(workflow, isRunning);
-		console.log("Graph: ", graph);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
 		props.onWorkflowChange?.(workflow);
@@ -387,7 +429,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			);
 			es.addEventListener("StepRunDTO", async (event) => {
 				var data = JSON.parse(event.data) as StepRunDTO;
-				console.log("Received step run data: ", data);
 				existingRunSteps.push(data);
 				var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
 					workflow,
@@ -512,7 +553,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				),
 			};
 		});
-	}, [nodes, edges, setNodes, setEdges, fitView]);
+	}, [nodes, edges, setNodes, setEdges, fitView, getViewport]);
 
 	const onMaxStepsChange = (maxSteps: number) => {
 		setMaxStep(maxSteps);

@@ -27,21 +27,16 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 		setStepRun(props.stepRun);
 	}, [props.stepRun]);
 
+	const iconSize = 16;
+
 	return (
 		<div className="flex w-full flex-col gap-2 p-2 bg-accent rounded-lg">
 			<div className="flex justify-between flex-wrap  gap-2">
-				<div className="flex items-center gap-2">
-					<div
-						className={cn(
-							buttonVariants({
-								variant: "outline",
-								size: "tinyIcon",
-							}),
-						)}
-					>
-						{stepRun?.step && <SquareFunction size={16} />}
-						{stepRun?.result && <VariableIcon size={16} />}
-					</div>
+				<div className="flex items-center gap-1">
+					{stepRun?.step && !stepRun?.result && (
+						<SquareFunction size={iconSize} />
+					)}
+					{stepRun?.result && <VariableIcon size={iconSize} />}
 					<span className="text-xs">
 						{stepRun?.step?.name ?? stepRun?.result?.name}
 					</span>
