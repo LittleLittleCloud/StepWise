@@ -120,26 +120,26 @@ const StepNodeStatusIndicator: React.FC<{
 				}
 				return isRunning
 					? {
-						icon: Clock,
-						label: status,
-						animation: "animate-[spin_3s_linear_infinite]",
-					}
+							icon: Clock,
+							label: status,
+							animation: "animate-[spin_3s_linear_infinite]",
+						}
 					: {
-						icon: SquareFunction,
-						label: status,
-					};
+							icon: SquareFunction,
+							label: status,
+						};
 			case "Running":
 				return isRunning
 					? {
-						icon: Loader2,
-						color: "text-yellow-500",
-						label: status,
-						animation: "animate-spin",
-					}
+							icon: Loader2,
+							color: "text-yellow-500",
+							label: status,
+							animation: "animate-spin",
+						}
 					: {
-						icon: SquareFunction,
-						label: status,
-					};
+							icon: SquareFunction,
+							label: status,
+						};
 			case "Completed":
 				return {
 					icon: CheckCircle2,
@@ -217,7 +217,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const [inputNumber, setInputNumber] = useState<number | undefined>(
 		undefined,
 	);
-	const [description, setDescription] = useState<string | undefined>(prop.data.step?.description ?? undefined);
+	const [description, setDescription] = useState<string | undefined>(
+		prop.data.step?.description ?? undefined,
+	);
 	const [inputSwitch, setInputSwitch] = useState<boolean>(false);
 
 	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
@@ -466,36 +468,42 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					</div>
 					{description && (
 						<div className="w-full py-1 bg-accent rounded-md hover:bg-accent/50">
-							<div className="flex flex-wrap gap-x-5 gap-y-1 items-center cursor-pointer"
+							<div
+								className="flex flex-wrap gap-x-5 gap-y-1 items-center cursor-pointer"
 								onClick={() =>
 									setCollapseDescription(!collapseDescription)
-								}>
-									<div className="flex gap-1 flex-grow items-center">
-								<Button
-									variant={"outline"}
-									size={"tinyIcon"}
-									className="m-0 p-0"
-								>
-									<FileText size={iconSize} />
-								</Button>
-								<h1 className="font-semibold">Description</h1>
+								}
+							>
+								<div className="flex gap-1 flex-grow items-center">
+									<Button
+										variant={"outline"}
+										size={"tinyIcon"}
+										className="m-0 p-0"
+									>
+										<FileText size={iconSize} />
+									</Button>
+									<h1 className="font-semibold">
+										Description
+									</h1>
 								</div>
 								{!collapseDescription && (
 									<span className="bg-background max-w-[10rem] rounded-md truncate px-2">
 										{description}
-									</span>)
-								}
-							</div>
-							{collapseDescription && <div
-								className={cn(
-									"flex rounded-md m-1 bg-background items-center nodrag nopan cursor-text",
+									</span>
 								)}
-								style={{ userSelect: "text" }}
-							>
-								<Markdown className="w-full overflow-x-auto">
-									{description}
-								</Markdown>
-							</div>}
+							</div>
+							{collapseDescription && (
+								<div
+									className={cn(
+										"flex rounded-md m-1 bg-background items-center nodrag nopan cursor-text",
+									)}
+									style={{ userSelect: "text" }}
+								>
+									<Markdown className="w-full overflow-x-auto">
+										{description}
+									</Markdown>
+								</div>
+							)}
 						</div>
 					)}
 				</div>
