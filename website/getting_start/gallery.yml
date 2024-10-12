@@ -76,3 +76,19 @@ items:
     repository:
       type: git
       url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/OCR.cs"
+  - name: Text To Image
+    description: A stepwise workflow for generating image from text using OpenAI Dalle.
+    type: Internal
+    thumbnail: ../image/gallery-image-generation.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/TextToImage.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/TextToImage.cs"
+  - name: Image Classification
+    description: A stepwise workflow for classifying image using OpenAI gpt-4o-mini.
+    type: Internal
+    thumbnail: ../image/gallery-image-classification.png
+    homepage: https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ImageClassification.cs
+    repository:
+      type: git
+      url: "https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ImageClassification.cs"

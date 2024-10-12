@@ -45,7 +45,7 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 				<img
 					src={previewImageUrl}
 					alt="Preview"
-					className="rounded-lg max-h-48"
+					className="rounded-lg max-h-96"
 				/>
 			)}
 		</div>
