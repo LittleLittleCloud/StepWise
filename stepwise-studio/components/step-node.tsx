@@ -81,7 +81,7 @@ export interface StepNodeProps extends StepRunDTO {
 	onClearClick: (step: StepDTO) => void;
 	onSubmitOutput: (output: VariableDTO) => void;
 	onCancelInput: () => void;
-	onResize: (height: number, width: number) => void;
+	onResize: (height?: number, width?: number) => void;
 	isWorkflowRunning: boolean;
 	width?: number;
 	height?: number;
@@ -120,26 +120,26 @@ const StepNodeStatusIndicator: React.FC<{
 				}
 				return isRunning
 					? {
-							icon: Clock,
-							label: status,
-							animation: "animate-[spin_3s_linear_infinite]",
-						}
+						icon: Clock,
+						label: status,
+						animation: "animate-[spin_3s_linear_infinite]",
+					}
 					: {
-							icon: SquareFunction,
-							label: status,
-						};
+						icon: SquareFunction,
+						label: status,
+					};
 			case "Running":
 				return isRunning
 					? {
-							icon: Loader2,
-							color: "text-yellow-500",
-							label: status,
-							animation: "animate-spin",
-						}
+						icon: Loader2,
+						color: "text-yellow-500",
+						label: status,
+						animation: "animate-spin",
+					}
 					: {
-							icon: SquareFunction,
-							label: status,
-						};
+						icon: SquareFunction,
+						label: status,
+					};
 			case "Completed":
 				return {
 					icon: CheckCircle2,
@@ -346,6 +346,24 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	useEffect(() => {
 		if (stepNodeRef.current) {
+			// this usually means that the content of this node has changed
+			// so we want to automatically adjust the weight to present the content in a nicer way
+			// by setting the width to undefined, the prop.data.onResize will be invoked 
+			// and the new width will be re-calculated when the node is re-rendered
+			// if (
+			// 	height !== stepNodeRef.current.offsetHeight &&
+			// 	width === stepNodeRef.current.offsetWidth &&
+			// 	width !== undefined
+			// ) {
+			// 	console.log("Setting width to undefined");
+			// 	prop.data.onResize(
+			// 		undefined,
+			// 		undefined,
+			// 	);
+
+			// 	return;
+			// }
+
 			if (
 				height !== stepNodeRef.current.offsetHeight ||
 				width !== stepNodeRef.current.offsetWidth
@@ -354,6 +372,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					stepNodeRef.current.offsetHeight ?? height,
 					width ?? stepNodeRef.current.offsetWidth,
 				);
+
+				return;
 			}
 		}
 	}, [
@@ -370,7 +390,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				"border-2 rounded-md shadow-md p-2 bg-background/50 group",
 				// set weight and height
 				isSelected ? "border-primary/40" : "border-transparent",
-				width ?? "max-w-48",
+				width ?? "max-w-80",
 				shouldWaitForInput(status, stepType) ? "border-primary" : "",
 			)}
 			ref={stepNodeRef}
@@ -383,11 +403,12 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						border: "none",
 					}}
 					onResize={(event, param) => {
-						setWidth(param.width);
-						setHeight(param.height);
+						if (Math.abs(param.width - width) > 10) {
+							console.log("Setting width to ", param.width, width);
+							setWidth(param.width);
+						}
 					}}
 					onResizeEnd={(event, param) => {
-						setHeight(stepNodeRef.current!.offsetHeight);
 						setWidth(stepNodeRef.current!.offsetWidth);
 					}}
 					minWidth={128}
@@ -406,10 +427,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			)}
 			{/* settings bar */}
 			{/* appear when hover */}
-			<div className="invisible flex group-hover:visible absolute -top-5 right-0 bg-background/50 rounded gap-1 m-0 p-1">
+			<div className="invisible flex group-hover:visible absolute -top-7 right-0 bg-background/50 rounded gap-1 m-0 p-1">
 				<Button
 					variant={"outline"}
-					size={"xxsIcon"}
+					size={"tinyIcon"}
 					className="m-0 p-0"
 					onClick={() => prop.data.onClearClick(step)}
 				>

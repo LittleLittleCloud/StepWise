@@ -154,7 +154,6 @@ export function clearStepRunResult(
 			var param = run.step?.parameters?.find(
 				(param) => param.variable_name === step.name,
 			)!;
-			console.log("param: ", param);
 			return {
 				...run,
 				status: "NotReady",
@@ -325,7 +324,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 								...prev,
 								stepSizes: {
 									...prev.stepSizes,
-									[step.name]: { height, width },
+									[step.name]: height && width ? { height, width } : undefined,
 								},
 							};
 						});

@@ -27,10 +27,12 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 	}, [props.variable]);
 
 	return (
-		<div>
+		<div
+			className="bg-transparent items-center flex flex-col gap-1 rounded-md p-1 "
+		>
 			{variable.type !== "StepWiseImage" && variable.displayValue && (
-				<div className="flex flex-col gap-1 rounded-md">
-					<Markdown className="text-xs w-full overflow-x-auto">
+				<div className="w-full overflow-x-auto">
+					<Markdown>
 						{variable.displayValue}
 					</Markdown>
 				</div>
@@ -40,7 +42,7 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 				<img
 					src={previewImageUrl}
 					alt="Preview"
-					className="w-full rounded-lg"
+					className="rounded-lg max-h-48"
 				/>
 			)}
 		</div>

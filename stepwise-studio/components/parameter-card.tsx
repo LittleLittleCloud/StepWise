@@ -40,23 +40,22 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 		<div
 			style={{ userSelect: "text" }}
 			className={cn(
-				"w-full flex flex-col gap-1 rounded cursor-default px-2 py-1 nodrag nopan ",
+				"w-full flex flex-col gap-1 rounded cursor-default px-1 py-1 nodrag nopan ",
 			)}
 		>
 			<div
 				className="flex flex-wrap gap-x-5 justify-between hover:cursor-pointer"
 				onClick={() => setCollapsed(!collapsed)}
 			>
-				<div className="flex gap-2 items-center">
+				<div className="flex flex-wrap gap-2 items-center">
 					<p>{name}</p>
 					{parameterType != "" && (
 						<p
 							className={cn(
 								badgeVariants({
 									variant: "green",
-									size: "tiny",
 								}),
-								"px-1 py-0 border truncate flex items-center",
+								"px-3 py-0 h-4 justify-center text-sm truncate flex items-center",
 							)}
 						>
 							{getDisplayType(parameterType)}
