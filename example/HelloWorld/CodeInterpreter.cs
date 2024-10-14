@@ -49,7 +49,7 @@ public class CodeInterpreter
         var kernel = DotnetInteractiveKernelBuilder
             .CreateDefaultInProcessKernelBuilder()
             .AddPowershellKernel()
-            .AddPythonKernel("python3")
+            // .AddPythonKernel("python3")
             .Build();
         var openAIApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new ArgumentNullException("OPENAI_API_KEY is not found");
         var model = "gpt-4o-mini";
