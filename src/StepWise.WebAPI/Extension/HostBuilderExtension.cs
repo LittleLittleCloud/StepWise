@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 namespace StepWise.WebAPI;
 
@@ -16,11 +18,33 @@ public static class HostBuilderExtension
         this IHostBuilder hostBuilder,
         StepWiseServiceConfiguration? configuration = null)
     {
+        configuration ??= new StepWiseServiceConfiguration();
+        var dateTimeNow = DateTime.Now;
+        var clientLogPath = Path.Combine(configuration.Workspace.FullName, StepWiseServiceConfiguration.LogFolderName, $"clients-{dateTimeNow:yyyy-MM-dd_HH-mm-ss}.log");
+        var debugLogTemplate = "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] ({SourceContext}) {Message:lj}{NewLine}{Exception}";
 
+        hostBuilder.ConfigureLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+
+            var serilogLogger = new LoggerConfiguration()
+                .Enrich.FromLogContext()
+                .WriteTo.File(clientLogPath, outputTemplate: debugLogTemplate)
+#if DEBUG
+                .WriteTo.Console(outputTemplate: debugLogTemplate)
+#else
+                .WriteTo.Conditional((le) => le.Level >= Serilog.Events.LogEventLevel.Information, lc => lc.Console(outputTemplate: "{Message:lj}{NewLine}{Exception}"))
+#endif
+                .CreateLogger();
+
+            loggingBuilder.AddSerilog(serilogLogger);
+        });
+
+        // ...
         hostBuilder.ConfigureServices(services =>
         {
             services.AddSingleton<StepWiseClient>();
-            services.AddSingleton(configuration ?? new StepWiseServiceConfiguration());
+            services.AddSingleton(configuration);
         });
 
         return hostBuilder.ConfigureWebHost(webBuilder =>

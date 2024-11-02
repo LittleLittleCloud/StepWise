@@ -266,6 +266,28 @@
         }
       }
     },
+    "/blob/{path}": {
+      "get": {
+        "tags": [
+          "StepWiseControllerV1"
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/StepWiseControllerV1/ExecuteStepSse": {
       "get": {
         "tags": [
