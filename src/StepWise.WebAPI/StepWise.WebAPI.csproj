@@ -10,6 +10,10 @@
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Swagger" />
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" />
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />

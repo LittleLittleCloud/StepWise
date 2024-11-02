@@ -16,7 +16,17 @@ namespace StepWise.WebAPI;
 
 public class StepWiseServiceConfiguration
 {
+    public const string DefaultWorkspace = "stepwise-workspace";
+
+    public const string BlobFolderName = "blob";
+
+    public const string LogFolderName = "logs";
+
+    public const string CheckpointFolderName = "checkpoints";
+
     public int BlobRetentionDays { get; set; } = 30;
+
+    public DirectoryInfo Workspace { get; set; } = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, DefaultWorkspace));
 }
 
 [ApiController]
@@ -28,6 +38,7 @@ internal class StepWiseControllerV1 : ControllerBase
     private readonly IWebHostEnvironment _environment;
     private readonly StepWiseServiceConfiguration _stepWiseServiceConfiguration;
     private static readonly ConcurrentDictionary<string, DateTime> _fileExpirations = new ConcurrentDictionary<string, DateTime>();
+    private string _blobFolder;
 
     public StepWiseControllerV1(
         StepWiseClient client,
@@ -39,6 +50,23 @@ internal class StepWiseControllerV1 : ControllerBase
         _logger = logger;
         _environment = environment;
         _stepWiseServiceConfiguration = configuration;
+        _blobFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.BlobFolderName);
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        // create the workspace directory if it does not exist
+        if (!_stepWiseServiceConfiguration.Workspace.Exists)
+        {
+            _stepWiseServiceConfiguration.Workspace.Create();
+        }
+
+
+        if (!Directory.Exists(_blobFolder))
+        {
+            Directory.CreateDirectory(_blobFolder);
+        }
     }
 
     [HttpGet]
@@ -132,7 +160,7 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             var stepVariable = VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name]);
 
-            if (stepVariable.Value is StepWiseBlob blob && blob.Url is not null)
+            if (stepVariable.Value is StepWiseBlob blob && blob.Url?.StartsWith("/blob/") == true)
             {
                 var mediaType = blob switch
                 {
@@ -141,7 +169,7 @@ internal class StepWiseControllerV1 : ControllerBase
                 };
 
                 // load the blob from the file system
-                var filePath = Path.Combine(_environment.WebRootPath, blob.Url.TrimStart('/'));
+                var filePath = Path.Combine(_blobFolder, blob.Url.Replace("/blob/", ""));
                 if (System.IO.File.Exists(filePath))
                 {
                     var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
@@ -158,9 +186,9 @@ internal class StepWiseControllerV1 : ControllerBase
             {
                 // save the blob to the file system
                 var uniqueFileName = Guid.NewGuid().ToString() + "_" + blob.Name;
-                var filePath = Path.Combine(_environment.WebRootPath, "uploads", uniqueFileName);
+                var filePath = Path.Combine(_blobFolder, uniqueFileName);
                 await System.IO.File.WriteAllBytesAsync(filePath, blob.Blob.ToArray());
-                blob.Url = $"/uploads/{uniqueFileName}";
+                blob.Url = $"/blob/{uniqueFileName}";
             }
 
             var dto = StepRunDTO.FromStepRun(stepRun);
@@ -172,6 +200,18 @@ internal class StepWiseControllerV1 : ControllerBase
                 yield break;
             }
         }
+    }
+
+    // redirect all /blob/* requests to the uploads folder
+    [HttpGet("/blob/{path}")]
+    public IActionResult GetUploads(string path)
+    {
+        var filePath = Path.Combine(_blobFolder, path);
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound();
+        }
+        return PhysicalFile(filePath, "application/octet-stream");
     }
 
     [HttpGet]
@@ -221,14 +261,13 @@ internal class StepWiseControllerV1 : ControllerBase
 
         try
         {
-            string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
-            if (!Directory.Exists(uploadsFolder))
+            if (!Directory.Exists(_blobFolder))
             {
-                Directory.CreateDirectory(uploadsFolder);
+                Directory.CreateDirectory(_blobFolder);
             }
 
             string uniqueFileName = Guid.NewGuid().ToString() + "_" + image.FileName;
-            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            string filePath = Path.Combine(_blobFolder, uniqueFileName);
 
             // Read the incoming byte array
             byte[] fileBytes;
@@ -250,7 +289,7 @@ internal class StepWiseControllerV1 : ControllerBase
             _fileExpirations[uniqueFileName] = expirationDate;
             var result = new StepWiseImage
             {
-                Url = $"/uploads/{uniqueFileName}",
+                Url = $"/blob/{uniqueFileName}",
                 Name = image.FileName,
                 ContentType = image.ContentType,
             };
