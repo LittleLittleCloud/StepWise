@@ -11,6 +11,7 @@ import { Network } from "lucide-react";
 import Divider from "./divider";
 import { Badge } from "./ui/badge";
 import { Markdown } from "./markdown";
+import { VariableCard } from "./variable-card";
 
 export interface StepRunSidebarProps {
 	stepRuns: StepRunDTO[];
@@ -58,12 +59,9 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 				</div>
 			</div>
 
-			{/* display text value if exist */}
-			{stepRun.result?.displayValue && (
-				<div className="flex flex-col justify-between bg-background rounded-lg px-2 overflow-x-auto">
-					<Markdown className="text-xs text-nowarp">
-						{stepRun.result?.displayValue}
-					</Markdown>
+			{stepRun.result && (
+				<div className="flex flex-col justify-between bg-background rounded-lg overflow-x-auto">
+					<VariableCard variable={stepRun.result} />
 				</div>
 			)}
 		</div>
