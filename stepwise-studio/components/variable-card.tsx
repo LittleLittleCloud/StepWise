@@ -44,7 +44,7 @@ export const VariableCard: React.FC<VariableCardProps> = (props) => {
 					</div>
 					<div className="w-full px-1 flex justify-end">
 						<CopyToClipboardIcon
-							size={12}	
+							size={12}
 							textValue={variable.displayValue}
 						/>
 					</div>
