@@ -4,11 +4,13 @@ import { FC, useEffect, useState } from "react";
 interface CopyToClipboardIconProps {
 	textValue: string;
 	size?: number;
+	showCopiedText?: boolean;
 }
 
 export const CopyToClipboardIcon: FC<CopyToClipboardIconProps> = ({
 	textValue,
 	size = 18,
+	showCopiedText = true,
 }) => {
 	const [isCopied, setIsCopied] = useState<Boolean>(false);
 	const [valueToCopy, setValueToCopy] = useState<string>("");
@@ -33,7 +35,7 @@ export const CopyToClipboardIcon: FC<CopyToClipboardIconProps> = ({
 
 	return (
 		<button
-			className="flex items-center rounded py-0.5 px-2 text-xs focus:outline-none"
+			className="flex items-center rounded py-0.5 text-xs focus:outline-none"
 			onClick={copyToClipboard}
 		>
 			{isCopied ? (
@@ -41,7 +43,7 @@ export const CopyToClipboardIcon: FC<CopyToClipboardIconProps> = ({
 			) : (
 				<Clipboard size={size} className="mr-1.5" />
 			)}
-			{isCopied ? "Copied!" : "Copy"}
+			{showCopiedText && <span>{isCopied ? "Copied!" : "Copy"}</span>}
 		</button>
 	);
 };
