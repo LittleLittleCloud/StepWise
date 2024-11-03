@@ -308,7 +308,7 @@ internal class StepWiseControllerV1 : ControllerBase
         var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
         if (!Directory.Exists(checkpointFolder))
         {
-            return NotFound($"Checkpoint folder for workflow {workflow} not found");
+            return Ok(Array.Empty<string>());
         }
         var checkpoints = Directory.GetFiles(checkpointFolder).Select(Path.GetFileName).ToArray();
         return Ok(checkpoints);
