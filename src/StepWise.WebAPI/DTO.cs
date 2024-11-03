@@ -130,7 +130,7 @@ public record StepRunDTO(
     [property:JsonPropertyName("step")]
     StepDTO? Step,
     [property:JsonPropertyName("variables")]
-    VariableDTO[] Variables,
+    VariableDTO[]? Variables,
     [property:JsonPropertyName("result")]
     VariableDTO? Result,
     [property:JsonPropertyName("exception")]

@@ -207,9 +207,12 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 						var checkpointName = "checkpoint_" + highest + ".json";
 						await onSaveCheckpoint?.({ name: checkpointName });
 						await fetchCheckpoints(workflow);
-
 						toast("Checkpoint saved", {
 							description: `Checkpoint has been saved successfully as ${checkpointName}`,
+						});
+					} catch (err) {
+						toast.error("Error", {
+							description: "Failed to save checkpoint" + err,
 						});
 					} finally {
 						setIsSaving(false);

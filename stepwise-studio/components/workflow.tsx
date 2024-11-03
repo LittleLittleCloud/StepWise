@@ -625,7 +625,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 										checkpoint.name,
 									);
 
-									await postApiV1StepWiseControllerV1SaveCheckpoint(
+									var res = await postApiV1StepWiseControllerV1SaveCheckpoint(
 										{
 											query: {
 												checkpointName: checkpoint.name,
@@ -634,6 +634,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 											body: completedRunSteps,
 										} as PostApiV1StepWiseControllerV1SaveCheckpointData,
 									);
+
+									if (res.error)
+									{
+										throw new Error("Failed to save checkpoint: " + res.error);
+									}
 								}}
 								onCheckpointSelect={async (checkpoint) => {
 									console.log(

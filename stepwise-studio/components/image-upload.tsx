@@ -129,19 +129,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 					size={"tiny"}
 					onClick={handleRemove}
 					className="text-base"
-					disabled={!file || uploading}
 				>
 					Cancel
 				</Button>
 			</div>
-			{/* 
-			{uploadStatus && (
-				<Alert
-					className={`mt-4 ${uploadStatus.type === "success" ? "bg-green-100" : "bg-red-100"}`}
-				>
-					<AlertDescription>{uploadStatus.message}</AlertDescription>
-				</Alert>
-			)} */}
 		</div>
 	);
 };
