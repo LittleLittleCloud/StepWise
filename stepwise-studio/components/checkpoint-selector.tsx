@@ -96,57 +96,57 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 								className="flex items-center justify-between p-1"
 							>
 								<SelectItem value={checkpoint.name}>
-                                    {checkpoint.name}
+									{checkpoint.name}
 								</SelectItem>
-									{deletingId === checkpoint.name ? (
-										<Loader2 className="pl-2 h-4 w-4 animate-spin" />
-									) : (
-										<button
-											onClick={async (e) => {
-												e.preventDefault(); // Prevent select from closing
-												setDeletingId(checkpoint.name);
-												try {
-													await deleteApiV1StepWiseControllerV1DeleteCheckpoint(
-														{
-															query: {
-																checkpointName:
-																	checkpoint.name,
-																workflow:
-																	workflow?.name,
-															},
-														},
-													);
-
-													setCheckpoints(
-														checkpoints.filter(
-															(c) =>
-																c.name !==
+								{deletingId === checkpoint.name ? (
+									<Loader2 className="pl-2 h-4 w-4 animate-spin" />
+								) : (
+									<button
+										onClick={async (e) => {
+											e.preventDefault(); // Prevent select from closing
+											setDeletingId(checkpoint.name);
+											try {
+												await deleteApiV1StepWiseControllerV1DeleteCheckpoint(
+													{
+														query: {
+															checkpointName:
 																checkpoint.name,
-														),
-													);
-													await onDeleteCheckpoint?.(
-														checkpoint,
-													);
-												} catch (err) {
-													setError(
-														"Failed to delete checkpoint",
-													);
-												} finally {
-													setDeletingId(null);
-												}
-											}}
-											className={cn(
-												buttonVariants({
-													variant: "ghost",
-													size: "tinyIcon",
-												}),
-                                                "z-10 ml-2"
-											)}
-										>
-											<Trash2 className="h-4 w-4 text-destructive" />
-										</button>
-									)}
-                                </div>
+															workflow:
+																workflow?.name,
+														},
+													},
+												);
+
+												setCheckpoints(
+													checkpoints.filter(
+														(c) =>
+															c.name !==
+															checkpoint.name,
+													),
+												);
+												await onDeleteCheckpoint?.(
+													checkpoint,
+												);
+											} catch (err) {
+												setError(
+													"Failed to delete checkpoint",
+												);
+											} finally {
+												setDeletingId(null);
+											}
+										}}
+										className={cn(
+											buttonVariants({
+												variant: "ghost",
+												size: "tinyIcon",
+											}),
+											"z-10 ml-2",
+										)}
+									>
+										<Trash2 className="h-4 w-4 text-destructive" />
+									</button>
+								)}
+							</div>
 						))}
 					</SelectContent>
 				</Select>
