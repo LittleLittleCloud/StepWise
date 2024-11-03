@@ -43,6 +43,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "./ui/resizable";
+import { toast } from "sonner";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
@@ -423,10 +424,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		maxParallelRun?: number,
 		maxSteps?: number,
 	) => {
-		console.log("Run step: ", step);
 		if (!workflow.name) return;
 		try {
 			setIsRunning(true);
+			toast("Running workflow", {
+				description: "started running workflow",
+			});
 			var existingRunSteps = [...workflow.stepRuns];
 			var es = new EventSource(
 				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse`,
@@ -484,7 +487,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			return;
 		}
 
-		console.log("Step run data: ", res.data);
 		var updateStepRuns = [...workflow.stepRuns, ...res.data];
 		var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
 			workflow,
@@ -493,6 +495,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		setWorkflow((prev) => {
 			if (!prev) return prev;
 			return { ...prev, stepRuns: latestSnapshot };
+		});
+
+		toast("Workflow run completed", {
+			description: "Workflow run completed successfully",
 		});
 	};
 
@@ -598,6 +604,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 										stepRuns: [],
 									} as WorkflowData;
 									setWorkflow(updatedWorkflow);
+									toast("Reset workflow", {
+										description:
+											"All step runs have been reset",
+									});
 								}}
 								onAutoLayoutClick={onLayout}
 								onRunClick={() => {
