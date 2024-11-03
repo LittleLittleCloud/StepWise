@@ -16,7 +16,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { WorkflowData } from "./workflow";
-import { SelectItemText } from "@radix-ui/react-select";
+import { toast } from "sonner";
 
 export interface Checkpoint {
 	name: string;
@@ -76,18 +76,30 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 				<Loader2 className="h-5 w-5 animate-spin text-gray-500" />
 			) : (
 				<Select
-					defaultValue={workflow?.selectedCheckpoint}
 					onValueChange={(value) => {
 						const checkpoint = checkpoints.find(
 							(c) => c.name === value,
 						);
 						if (checkpoint) {
 							onCheckpointSelect?.(checkpoint);
+							toast.info("Select Checkpoint", {
+								description: `Checkpoint ${checkpoint.name} has been selected`,
+							});
 						}
 					}}
+					disabled={checkpoints.length === 0}
 				>
-					<SelectTrigger className="w-[180px]">
-						<SelectValue placeholder="Select checkpoint" />
+					<SelectTrigger
+						className="w-[180px]"
+						disabled={checkpoints.length === 0}
+					>
+						<SelectValue
+							placeholder={
+								checkpoints.length === 0
+									? "No checkpoints"
+									: "Select checkpoint"
+							}
+						/>
 					</SelectTrigger>
 					<SelectContent>
 						{checkpoints.map((checkpoint) => (
@@ -105,7 +117,17 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 										onClick={async (e) => {
 											e.preventDefault(); // Prevent select from closing
 											setDeletingId(checkpoint.name);
+											if (!workflow) {
+												return;
+											}
 											try {
+												if (
+													!confirm(
+														"Are you sure you want to delete this checkpoint?",
+													)
+												) {
+													return;
+												}
 												await deleteApiV1StepWiseControllerV1DeleteCheckpoint(
 													{
 														query: {
@@ -117,20 +139,20 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 													},
 												);
 
-												setCheckpoints(
-													checkpoints.filter(
-														(c) =>
-															c.name !==
-															checkpoint.name,
-													),
+												await fetchCheckpoints(
+													workflow,
 												);
-												await onDeleteCheckpoint?.(
-													checkpoint,
+												toast.success(
+													"Checkpoint deleted",
+													{
+														description: `Checkpoint ${checkpoint.name} has been deleted successfully`,
+													},
 												);
 											} catch (err) {
-												setError(
-													"Failed to delete checkpoint",
-												);
+												toast.error("Error", {
+													description:
+														"Failed to delete checkpoint",
+												});
 											} finally {
 												setDeletingId(null);
 											}
@@ -185,6 +207,10 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 						var checkpointName = "checkpoint_" + highest + ".json";
 						await onSaveCheckpoint?.({ name: checkpointName });
 						await fetchCheckpoints(workflow);
+
+						toast("Checkpoint saved", {
+							description: `Checkpoint has been saved successfully as ${checkpointName}`,
+						});
 					} finally {
 						setIsSaving(false);
 					}

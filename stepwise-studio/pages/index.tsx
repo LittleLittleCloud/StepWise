@@ -30,6 +30,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -184,6 +185,7 @@ export default function Home() {
 					})
 				}
 			/>
+			<Toaster />
 		</div>
 	);
 }
