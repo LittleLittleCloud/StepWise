@@ -1,6 +1,9 @@
 import {
 	client,
+	getApiV1StepWiseControllerV1LoadCheckpoint,
 	postApiV1StepWiseControllerV1ExecuteStep,
+	postApiV1StepWiseControllerV1SaveCheckpoint,
+	PostApiV1StepWiseControllerV1SaveCheckpointData,
 	StepDTO,
 	StepRunDTO,
 	VariableDTO,
@@ -51,6 +54,7 @@ export type WorkflowData = WorkflowDTO &
 	StepRunSidebarProps & {
 		maxParallelRun?: number;
 		maxSteps?: number;
+		selectedCheckpoint?: string;
 	};
 
 export interface WorkflowProps {
@@ -583,6 +587,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							<ControlBar
 								isRunning={isRunning}
 								maxParallel={maxParallelRun}
+								workflow={workflow!}
 								maxSteps={maxStep}
 								onMaxParallelChange={onMaxParallelChange}
 								onMaxStepsChange={onMaxStepsChange}
@@ -602,6 +607,40 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 										maxParallelRun,
 										maxStep,
 									);
+								}}
+								onSaveCheckpoint={async (checkpoint) => {
+									// yyyy-MM-dd-HH-mm-ss
+									console.log("Saving checkpoint: ", checkpoint.name);
+
+									await postApiV1StepWiseControllerV1SaveCheckpoint({
+										query:{
+											checkpointName: checkpoint.name,
+											workflow: workflow?.name,
+										},
+										body: completedRunSteps,
+									} as PostApiV1StepWiseControllerV1SaveCheckpointData);
+								}}
+								onCheckpointSelect={async (checkpoint) => {
+									console.log("Selecting checkpoint: ", checkpoint);
+									if (workflow === undefined) return;
+									var response = await getApiV1StepWiseControllerV1LoadCheckpoint({
+										query: {
+											checkpointName: checkpoint.name,
+											workflow: workflow?.name,
+										},
+									})
+
+									if (response.error) {
+										console.error("Failed to load checkpoint: ", response.error);
+										return;
+									}
+
+									if (response.data === undefined) {
+										console.error("No data returned from loading checkpoint");
+										return;
+									}
+
+									setWorkflow({...workflow, stepRuns: response.data, selectedCheckpoint: checkpoint.name});
 								}}
 							/>
 						</div>
