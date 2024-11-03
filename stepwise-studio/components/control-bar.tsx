@@ -1,5 +1,9 @@
 // | <autolayout> | <run> | <clean> | <max_parallel>: <input> | <max_steps>: <input> |
 
+// | <autolayout> | <run> | <clean> | <max_parallel>: <input> | <max_steps>: <input> |
+
+// | <autolayout> | <run> | <clean> | <max_parallel>: <input> | <max_steps>: <input> |
+
 import { ChangeEvent, FC, useEffect, useState } from "react";
 import { buttonVariants } from "./ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +17,9 @@ import {
 	RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
+import { Checkpoint, CheckpointSelector } from "./checkpoint-selector";
+import { WorkflowDTO } from "@/stepwise-client";
+import { WorkflowData } from "./workflow";
 
 interface ControlBarProps {
 	onRunClick: () => void;
@@ -23,6 +30,9 @@ interface ControlBarProps {
 	onAutoLayoutClick: () => void;
 	onMaxStepsChange: (value: number) => void;
 	isRunning: boolean;
+	workflow: WorkflowData;
+	onCheckpointSelect?: (checkpoint: Checkpoint) => void;
+	onSaveCheckpoint?: (checkpoint: Checkpoint) => void;
 }
 
 export const ControlBar: FC<ControlBarProps> = (props) => {
@@ -101,6 +111,11 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 							className="w-12 p-1 text-xs bg-background rounded-lg border border-accent"
 						/>
 					</div>
+					<CheckpointSelector
+						workflow={props.workflow}
+						onCheckpointSelect={props.onCheckpointSelect}
+						onSaveCheckpoint={props.onSaveCheckpoint}
+					/>
 				</div>
 				<div className="h-6 w-0.5 bg-accent/50" />
 				<button

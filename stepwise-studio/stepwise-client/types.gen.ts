@@ -98,6 +98,61 @@ export type PostApiV1StepWiseControllerV1ExecuteStepResponse =
 
 export type PostApiV1StepWiseControllerV1ExecuteStepError = unknown;
 
+export type GetBlobByPathData = {
+	path: {
+		path: string;
+	};
+};
+
+export type GetBlobByPathResponse = unknown;
+
+export type GetBlobByPathError = unknown;
+
+export type PostApiV1StepWiseControllerV1SaveCheckpointData = {
+	body?: Array<StepRunDTO>;
+	query?: {
+		checkpointName?: string;
+		workflow?: string;
+	};
+};
+
+export type PostApiV1StepWiseControllerV1SaveCheckpointResponse = string;
+
+export type PostApiV1StepWiseControllerV1SaveCheckpointError = unknown;
+
+export type GetApiV1StepWiseControllerV1LoadCheckpointData = {
+	query?: {
+		checkpointName?: string;
+		workflow?: string;
+	};
+};
+
+export type GetApiV1StepWiseControllerV1LoadCheckpointResponse =
+	Array<StepRunDTO>;
+
+export type GetApiV1StepWiseControllerV1LoadCheckpointError = unknown;
+
+export type DeleteApiV1StepWiseControllerV1DeleteCheckpointData = {
+	query?: {
+		checkpointName?: string;
+		workflow?: string;
+	};
+};
+
+export type DeleteApiV1StepWiseControllerV1DeleteCheckpointResponse = unknown;
+
+export type DeleteApiV1StepWiseControllerV1DeleteCheckpointError = unknown;
+
+export type GetApiV1StepWiseControllerV1ListCheckpointsData = {
+	query?: {
+		workflow?: string;
+	};
+};
+
+export type GetApiV1StepWiseControllerV1ListCheckpointsResponse = Array<string>;
+
+export type GetApiV1StepWiseControllerV1ListCheckpointsError = unknown;
+
 export type GetApiV1StepWiseControllerV1ExecuteStepSseResponse = unknown;
 
 export type GetApiV1StepWiseControllerV1ExecuteStepSseError = unknown;

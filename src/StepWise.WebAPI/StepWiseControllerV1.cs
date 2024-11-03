@@ -202,7 +202,6 @@ internal class StepWiseControllerV1 : ControllerBase
         }
     }
 
-    // redirect all /blob/* requests to the uploads folder
     [HttpGet("/blob/{path}")]
     public IActionResult GetUploads(string path)
     {
@@ -212,6 +211,107 @@ internal class StepWiseControllerV1 : ControllerBase
             return NotFound();
         }
         return PhysicalFile(filePath, "application/octet-stream");
+    }
+
+    // save checkpoint
+    [HttpPost]
+    public async Task<ActionResult<string>> SaveCheckpointAsync(
+        string workflow,
+        string checkpointName,
+        StepRunDTO[] steps)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+
+        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            Directory.CreateDirectory(checkpointFolder);
+        }
+
+        var checkpointPath = Path.Combine(checkpointFolder, checkpointName);
+        // check if the checkpoint exists in the workspace
+        if (Directory.Exists(checkpointPath))
+        {
+            return Conflict($"Checkpoint {checkpointName} already exists for workflow {workflow}");
+        }
+
+        var json = JsonSerializer.Serialize(steps);
+        await System.IO.File.WriteAllTextAsync(checkpointPath, json);
+
+        return Ok(checkpointName);
+    }
+
+    // load checkpoint
+    [HttpGet]
+    public async Task<ActionResult<StepRunDTO[]>> LoadCheckpointAsync(
+        string workflow,
+        string checkpointName)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            return NotFound($"Checkpoint folder for workflow {workflow} not found");
+        }
+        var checkpointPath = Path.Combine(checkpointFolder, checkpointName);
+        if (!System.IO.File.Exists(checkpointPath))
+        {
+            return NotFound($"Checkpoint {checkpointName} not found for workflow {workflow}");
+        }
+        var json = await System.IO.File.ReadAllTextAsync(checkpointPath);
+        var variables = JsonSerializer.Deserialize<StepRunDTO[]>(json);
+        return Ok(variables);
+    }
+
+    // delete checkpoint
+    [HttpDelete]
+    public async Task<ActionResult> DeleteCheckpointAsync(
+        string workflow,
+        string checkpointName)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            return NotFound($"Checkpoint folder for workflow {workflow} not found");
+        }
+        var checkpointPath = Path.Combine(checkpointFolder, checkpointName);
+        if (!System.IO.File.Exists(checkpointPath))
+        {
+            return NotFound($"Checkpoint {checkpointName} not found for workflow {workflow}");
+        }
+        System.IO.File.Delete(checkpointPath);
+        return Ok();
+    }
+
+    // list checkpoints
+    [HttpGet]
+    public async Task<ActionResult<string[]>> ListCheckpointsAsync(string workflow)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            return NotFound($"Checkpoint folder for workflow {workflow} not found");
+        }
+        var checkpoints = Directory.GetFiles(checkpointFolder).Select(Path.GetFileName).ToArray();
+        return Ok(checkpoints);
     }
 
     [HttpGet]

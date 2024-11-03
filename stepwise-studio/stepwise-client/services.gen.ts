@@ -22,6 +22,21 @@ import type {
 	PostApiV1StepWiseControllerV1ExecuteStepData,
 	PostApiV1StepWiseControllerV1ExecuteStepError,
 	PostApiV1StepWiseControllerV1ExecuteStepResponse,
+	GetBlobByPathData,
+	GetBlobByPathError,
+	GetBlobByPathResponse,
+	PostApiV1StepWiseControllerV1SaveCheckpointData,
+	PostApiV1StepWiseControllerV1SaveCheckpointError,
+	PostApiV1StepWiseControllerV1SaveCheckpointResponse,
+	GetApiV1StepWiseControllerV1LoadCheckpointData,
+	GetApiV1StepWiseControllerV1LoadCheckpointError,
+	GetApiV1StepWiseControllerV1LoadCheckpointResponse,
+	DeleteApiV1StepWiseControllerV1DeleteCheckpointData,
+	DeleteApiV1StepWiseControllerV1DeleteCheckpointError,
+	DeleteApiV1StepWiseControllerV1DeleteCheckpointResponse,
+	GetApiV1StepWiseControllerV1ListCheckpointsData,
+	GetApiV1StepWiseControllerV1ListCheckpointsError,
+	GetApiV1StepWiseControllerV1ListCheckpointsResponse,
 	GetApiV1StepWiseControllerV1ExecuteStepSseError,
 	GetApiV1StepWiseControllerV1ExecuteStepSseResponse,
 	PostApiV1StepWiseControllerV1UploadImageData,
@@ -124,6 +139,91 @@ export const postApiV1StepWiseControllerV1ExecuteStep = <
 	>({
 		...options,
 		url: "/api/v1/StepWiseControllerV1/ExecuteStep",
+	});
+};
+
+export const getBlobByPath = <ThrowOnError extends boolean = false>(
+	options: Options<GetBlobByPathData, ThrowOnError>,
+) => {
+	return (options?.client ?? client).get<
+		GetBlobByPathResponse,
+		GetBlobByPathError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/blob/{path}",
+	});
+};
+
+export const postApiV1StepWiseControllerV1SaveCheckpoint = <
+	ThrowOnError extends boolean = false,
+>(
+	options?: Options<
+		PostApiV1StepWiseControllerV1SaveCheckpointData,
+		ThrowOnError
+	>,
+) => {
+	return (options?.client ?? client).post<
+		PostApiV1StepWiseControllerV1SaveCheckpointResponse,
+		PostApiV1StepWiseControllerV1SaveCheckpointError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/api/v1/StepWiseControllerV1/SaveCheckpoint",
+	});
+};
+
+export const getApiV1StepWiseControllerV1LoadCheckpoint = <
+	ThrowOnError extends boolean = false,
+>(
+	options?: Options<
+		GetApiV1StepWiseControllerV1LoadCheckpointData,
+		ThrowOnError
+	>,
+) => {
+	return (options?.client ?? client).get<
+		GetApiV1StepWiseControllerV1LoadCheckpointResponse,
+		GetApiV1StepWiseControllerV1LoadCheckpointError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/api/v1/StepWiseControllerV1/LoadCheckpoint",
+	});
+};
+
+export const deleteApiV1StepWiseControllerV1DeleteCheckpoint = <
+	ThrowOnError extends boolean = false,
+>(
+	options?: Options<
+		DeleteApiV1StepWiseControllerV1DeleteCheckpointData,
+		ThrowOnError
+	>,
+) => {
+	return (options?.client ?? client).delete<
+		DeleteApiV1StepWiseControllerV1DeleteCheckpointResponse,
+		DeleteApiV1StepWiseControllerV1DeleteCheckpointError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/api/v1/StepWiseControllerV1/DeleteCheckpoint",
+	});
+};
+
+export const getApiV1StepWiseControllerV1ListCheckpoints = <
+	ThrowOnError extends boolean = false,
+>(
+	options?: Options<
+		GetApiV1StepWiseControllerV1ListCheckpointsData,
+		ThrowOnError
+	>,
+) => {
+	return (options?.client ?? client).get<
+		GetApiV1StepWiseControllerV1ListCheckpointsResponse,
+		GetApiV1StepWiseControllerV1ListCheckpointsError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/api/v1/StepWiseControllerV1/ListCheckpoints",
 	});
 };
 
