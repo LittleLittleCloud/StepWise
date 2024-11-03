@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { Checkpoint, CheckpointSelector } from "./checkpoint-selector";
 import { WorkflowDTO } from "@/stepwise-client";
+import { WorkflowData } from "./workflow";
 
 interface ControlBarProps {
 	onRunClick: () => void;
@@ -29,7 +30,7 @@ interface ControlBarProps {
 	onAutoLayoutClick: () => void;
 	onMaxStepsChange: (value: number) => void;
 	isRunning: boolean;
-	workflow: WorkflowDTO;
+	workflow: WorkflowData;
 	onCheckpointSelect?: (checkpoint: Checkpoint) => void;
 	onSaveCheckpoint?: (checkpoint: Checkpoint) => void;
 }
