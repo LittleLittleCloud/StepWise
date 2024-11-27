@@ -31,38 +31,31 @@ import { Badge } from "./ui/badge";
 import StepWiseIcon from "@/public/stepwise-logo.svg";
 import Image from "next/image";
 import Link from "next/link";
+import { useVersion } from "@/hooks/useVersion";
+import { useWorkflowStore } from "@/hooks/useWorkflow";
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupContent,
+	SidebarGroupLabel,
+	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	SidebarSeparator,
+} from "./ui/sidebar";
 
-interface SidebarProps {
-	user: string;
-	version: string;
-	workflows: WorkflowData[];
-	selectedWorkflow?: WorkflowData;
-	onWorkflowSelect: (workflow: WorkflowData) => void;
-}
+interface SidebarProps {}
 
-const Sidebar: React.FC<SidebarProps> = (props) => {
-	const [username, setUsername] = useState<string>(props.user);
-	const [workflows, setWorkflows] = useState<WorkflowData[]>(props.workflows);
+const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const iconSize = 14;
-	const [selectedWorkflow, setSelectedWorkflow] = useState<
-		WorkflowData | undefined
-	>(undefined);
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
-
-	useEffect(() => {
-		setUsername(props.user);
-		setWorkflows(props.workflows);
-		setSelectedWorkflow(
-			props.selectedWorkflow ?? props.workflows[0] ?? undefined,
-		);
-	}, [props.user, props.workflows, props.selectedWorkflow]);
-
-	useEffect(() => {
-		if (selectedWorkflow) {
-			props.onWorkflowSelect(selectedWorkflow);
-		}
-	}, [selectedWorkflow]);
+	const version = useVersion();
+	const { workflows, selectedWorkflow, setSelectedWorkflow } =
+		useWorkflowStore();
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
@@ -80,119 +73,116 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
 	}
 
 	return (
-		<div className="flex flex-col h-screen p-4 shadow-xl bg-background">
+		<Sidebar collapsible="icon">
 			{/* top bar */}
-			<div className="flex items-center gap-2 mb-2">
-				<Image
-					src={StepWiseIcon}
-					alt="StepWise Logo"
-					className="w-6 h-6"
-				/>
-				<span className="text-x font-bold text-nowrap">StepWise</span>
-			</div>
-			<div>
-				<Badge variant="pink" size="sm" className="text-xs">
-					{props.version}
-				</Badge>
-			</div>
-
-			<Divider />
+			<SidebarHeader>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							size="lg"
+							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+						>
+							<div className="flex aspect-square size-10 items-center justify-center rounded-lg">
+								<Image src={StepWiseIcon} alt="StepWise Logo" />
+							</div>
+							<Link
+								href={
+									"https://github.com/LittleLittleCloud/StepWise"
+								}
+								target="_blank"
+								className="flex flex-col gap-1 leading-none"
+							>
+								<span className="text-xl font-semibold">
+									StepWise
+								</span>
+								<span className="">v{version}</span>
+							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarHeader>
+			<SidebarSeparator />
 			{/* workflows */}
-			<div className="flex flex-col grow mb-4 gap-2">
-				{workflows.map((workflow, index) => (
-					<div
-						key={index}
-						className={cn(
-							"flex items-center py-1 pr-2 gap-2 rounded-lg",
-							// hover
-							"hover:bg-accent/50 cursor-pointer",
-							// selected
-							selectedWorkflow === workflow ? "bg-accent" : "",
-						)}
-						onClick={() => setSelectedWorkflow(workflow)}
-					>
-						<div
-							className={buttonVariants({
-								variant: "outline",
-								size: "tinyIcon",
-							})}
-						>
-							<Network size={iconSize} />
-						</div>
-						<span className={cn("text-sm text-nowrap")}>
-							{workflow.name}
-						</span>
-					</div>
-				))}
-			</div>
-			<Divider />
-			{/* buttom bar */}
-			<div className="flex flex-col gap-1">
-				<Link
-					href={
-						"https://github.com/LittleLittleCloud/StepWise/issues/new"
-					}
-					target="_blank"
-					className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
-				>
-					<div className="flex items-center gap-2 ">
-						<div
-							className={buttonVariants({
-								variant: "outline",
-								size: "tinyIcon",
-							})}
-						>
+			<SidebarContent>
+				<SidebarGroup>
+					<SidebarGroupLabel>Workflows</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							{workflows.map((workflow, index) => (
+								<SidebarMenuItem key={index}>
+									<SidebarMenuButton
+										onClick={() =>
+											setSelectedWorkflow(workflow)
+										}
+									>
+										<Network size={iconSize} />
+										<span className="text-sm">
+											{workflow.name}
+										</span>
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							))}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+			</SidebarContent>
+			<SidebarSeparator />
+			<SidebarFooter>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton>
+							<CircleUserRound size={iconSize} />
+							<span className="text-sm">Account</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton>
 							<Bug size={iconSize} />
-						</div>
-						<span className="text-sm">Create Issue</span>
-					</div>
-				</Link>
-				<Link
-					href={"https://littlelittlecloud.github.io/StepWise"}
-					target="_blank"
-					className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
-				>
-					<div className="flex items-center gap-2 ">
-						<div
-							className={buttonVariants({
-								variant: "outline",
-								size: "tinyIcon",
-							})}
-						>
+							<Link
+								href={
+									"https://github.com/LittleLittleCloud/StepWise/issues/new"
+								}
+								target="_blank"
+								className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
+							>
+								<span className="text-sm">Create Issue</span>
+							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton>
 							<FileTextIcon size={iconSize} />
-						</div>
-						<span className="text-sm">Documents</span>
-					</div>
-				</Link>
-				<div
-					className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
-					onClick={() =>
-						theme === "dark" ? setTheme("light") : setTheme("dark")
-					}
-				>
-					<div className="flex items-center gap-2">
-						<div
-							className={buttonVariants({
-								variant: "outline",
-								size: "tinyIcon",
-							})}
+							<Link
+								href={
+									"https://littlelittlecloud.github.io/StepWise"
+								}
+								target="_blank"
+								className="flex justify-between hover:bg-accent/50 cursor-pointer rounded-lg"
+							>
+								<span className="text-sm">Documents</span>
+							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							onClick={() =>
+								theme === "dark"
+									? setTheme("light")
+									: setTheme("dark")
+							}
 						>
 							{theme === "dark" ? (
 								<Moon size={iconSize} />
 							) : (
 								<Sun size={iconSize} />
 							)}
-						</div>
-						<span className="text-sm">Switch Theme</span>
-					</div>
-				</div>
-			</div>
-		</div>
+							<span className="text-sm">Switch Theme</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarFooter>
+		</Sidebar>
 	);
 };
 
-export default Sidebar;
-
-function setMounted(arg0: boolean) {
-	throw new Error("Function not implemented.");
-}
+export default StepWiseSidebar;
