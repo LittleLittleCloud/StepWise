@@ -46,6 +46,7 @@ import {
 	SidebarMenuItem,
 	SidebarSeparator,
 } from "./ui/sidebar";
+import SidebarAccountMenu from "./account";
 
 interface SidebarProps {}
 
@@ -54,8 +55,8 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
 	const version = useVersion();
-	const { workflows, selectedWorkflow, setSelectedWorkflow } =
-		useWorkflowStore();
+	const workflows = useWorkflowStore((state) => state.workflows);
+	const setSelectedWorkflow = useWorkflowStore(state => state.setSelectedWorkflow);
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
@@ -87,9 +88,9 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 							</div>
 							<Link
 								href={
-									"https://github.com/LittleLittleCloud/StepWise"
+									// jump to index
+									"/"
 								}
-								target="_blank"
 								className="flex flex-col gap-1 leading-none"
 							>
 								<span className="text-xl font-semibold">
@@ -129,12 +130,6 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 			<SidebarSeparator />
 			<SidebarFooter>
 				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton>
-							<CircleUserRound size={iconSize} />
-							<span className="text-sm">Account</span>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
 					<SidebarMenuItem>
 						<SidebarMenuButton>
 							<Bug size={iconSize} />
@@ -180,6 +175,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>
+				<SidebarAccountMenu />
 			</SidebarFooter>
 		</Sidebar>
 	);

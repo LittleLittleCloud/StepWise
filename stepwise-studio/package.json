@@ -12,6 +12,7 @@
 		"openapi-ts": "openapi-ts -c @hey-api/client-fetch -i ../schema/StepWiseControllerV1.schema.json -o stepwise-client"
 	},
 	"dependencies": {
+		"@auth0/auth0-react": "^2.2.4",
 		"@emoji-mart/data": "^1.2.1",
 		"@emoji-mart/react": "^1.1.1",
 		"@hey-api/client-fetch": "^0.2.4",

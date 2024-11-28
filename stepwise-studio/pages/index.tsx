@@ -3,34 +3,13 @@ import localFont from "next/font/local";
 import StepWiseSidebar from "@/components/sidebar";
 import {
 	client,
-	getApiV1StepWiseControllerV1ListWorkflow,
-	getApiV1StepWiseControllerV1Version,
-	postApiV1StepWiseControllerV1ExecuteStep,
-	StepDTO,
-	StepRunDTO,
-	WorkflowDTO,
 } from "@/stepwise-client";
-import ReactFlow, {
-	Background,
-	Controls,
-	Edge,
-	Connection,
-	Node,
-	useNodesState,
-	useEdgesState,
-} from "reactflow";
 import "reactflow/dist/style.css";
 import Workflow, { WorkflowData } from "@/components/workflow";
 import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
 import { getLayoutedElements } from "@/lib/utils";
 
-import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { Toaster } from "@/components/ui/sonner";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
 
 const geistSans = localFont({
@@ -68,13 +47,7 @@ export default function Home() {
 		<div
 			className={`w-full flex bg-accent gap-5 min-h-screen ${geistSans} ${geistMono}`}
 		>
-			<Workflow
-				dto={selectedWorkflow}
-				onWorkflowChange={(workflowData) =>
-					updateWorkflow(workflowData)
-				}
-			/>
-			<Toaster />
+			<Workflow />
 		</div>
 	);
 }

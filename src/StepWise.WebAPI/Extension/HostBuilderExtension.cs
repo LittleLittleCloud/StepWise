@@ -2,6 +2,7 @@
 // HostBuilderExtension.cs
 
 using System.Reflection;
+using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,8 +57,9 @@ public static class HostBuilderExtension
             var webRoot = Path.Combine(assemblyDirectory, "wwwroot");
             webBuilder.UseWebRoot(webRoot);
 
-            webBuilder.ConfigureServices(services =>
+            webBuilder.ConfigureServices((ctx, services) =>
             {
+                var configuration = ctx.Configuration;
                 services
                 .AddControllers()
                 .AddMvcOptions(options =>
@@ -67,6 +69,15 @@ public static class HostBuilderExtension
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Add(new StepWiseControllerV1Provider());
+                });
+
+                services.AddAuth0WebAppAuthentication(options =>
+                {
+                    options.Domain = ctx.Configuration["Auth0:Domain"] ?? string.Empty;
+                    options.ClientId = ctx.Configuration["Auth0:ClientId"] ?? string.Empty;
+
+                    // add email to scope
+                    options.Scope = "openid profile email";
                 });
 
                 services.AddSwaggerGen(c =>
@@ -91,14 +102,17 @@ public static class HostBuilderExtension
                 // enable cors from the same origin
                 app.UseCors(builder =>
                 {
-                    builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+                    builder.SetIsOriginAllowed(origin => origin.Contains("localhost"))
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
+                app.UseAuthentication();
+                app.UseAuthorization();
                 app.UseMvc();
                 app.UseHttpsRedirection();
                 app.UseDefaultFiles();
                 app.UseStaticFiles();
+
             });
         });
     }

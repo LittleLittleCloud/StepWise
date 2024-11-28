@@ -4,6 +4,7 @@
     <AutoGenVersion>0.2.0</AutoGenVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Auth0.AspNetCore.Authentication" Version="1.4.1" />
     <PackageVersion Include="JsonSchema.Net.Generation" Version="4.3.0.2" />
     <PackageVersion Include="LittleLittleCloud.StepWise" Version="0.0.2" />
     <PackageVersion Include="Meziantou.Extensions.Logging.Xunit" Version="1.0.7" />

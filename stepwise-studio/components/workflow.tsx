@@ -44,6 +44,7 @@ import {
 	ResizablePanelGroup,
 } from "./ui/resizable";
 import { toast } from "sonner";
+import { useWorkflowStore } from "@/hooks/useWorkflow";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
@@ -59,8 +60,6 @@ export type WorkflowData = WorkflowDTO &
 	};
 
 export interface WorkflowProps {
-	dto: WorkflowData | undefined;
-	onWorkflowChange?: (workflow: WorkflowData) => void;
 	setMaxParallelRun?: (maxParallelRun: number) => void;
 	setMaxStep?: (maxStep: number) => void;
 }
@@ -183,9 +182,11 @@ export function clearStepRunResult(
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
 	const [edges, setEdges, _] = useEdgesState([]);
-	const [maxStep, setMaxStep] = useState<number>(props.dto?.maxSteps ?? 5);
+	const selectedWorkflow = useWorkflowStore((state) => state.selectedWorkflow);
+	const onWorkflowChange = useWorkflowStore((state) => state.updateWorkflow);
+	const [maxStep, setMaxStep] = useState<number>(selectedWorkflow?.maxSteps ?? 5);
 	const [maxParallelRun, setMaxParallelRun] = useState<number>(
-		props.dto?.maxParallelRun ?? 3,
+		selectedWorkflow?.maxParallelRun ?? 3,
 	);
 	const { fitView, getViewport, setViewport } = useReactFlow();
 	useOnViewportChange({
@@ -205,22 +206,22 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		undefined,
 	);
 	const [completedRunSteps, setCompletedRunSteps] = useState<StepRunDTO[]>(
-		() => props.dto?.stepRuns ?? [],
+		() => selectedWorkflow?.stepRuns ?? [],
 	);
 	const [isRunning, setIsRunning] = useState<boolean>(false);
 
 	useEffect(() => {
-		if (!props.dto) return;
+		if (!selectedWorkflow) return;
 		var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
-			props.dto,
-			props.dto.stepRuns ?? [],
+			selectedWorkflow,
+			selectedWorkflow.stepRuns ?? [],
 		);
-		setWorkflow({ ...props.dto, stepRuns: latestSnapshot });
-		if (props.dto.viewPort) {
-			setViewport(props.dto.viewPort);
+		setWorkflow({ ...selectedWorkflow, stepRuns: latestSnapshot });
+		if (selectedWorkflow.viewPort) {
+			setViewport(selectedWorkflow.viewPort);
 		}
 		setIsRunning(false);
-	}, [props.dto]);
+	}, [selectedWorkflow]);
 
 	const nodeTypes = useMemo(
 		() => ({
@@ -236,10 +237,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	}, [workflow?.maxParallelRun]);
 
 	useEffect(() => {
-		if (props.dto?.maxSteps) {
-			setMaxStep(props.dto.maxSteps);
+		if (selectedWorkflow?.maxSteps) {
+			setMaxStep(selectedWorkflow.maxSteps);
 		}
-	}, [props.dto?.maxSteps]);
+	}, [selectedWorkflow?.maxSteps]);
 
 	const createGraphFromWorkflow = (
 		workflow: WorkflowData,
@@ -415,7 +416,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		var graph = createGraphFromWorkflow(workflow, isRunning);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
-		props.onWorkflowChange?.(workflow);
+		onWorkflowChange?.(workflow);
 	}, [workflow, fitView, maxParallelRun, maxStep, isRunning]);
 
 	const onStepNodeRunClick = async (
