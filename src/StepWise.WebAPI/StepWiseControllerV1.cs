@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -24,9 +25,17 @@ public class StepWiseServiceConfiguration
 
     public const string CheckpointFolderName = "checkpoints";
 
+    [JsonIgnore]
     public int BlobRetentionDays { get; set; } = 30;
 
+    [JsonIgnore]
     public DirectoryInfo Workspace { get; set; } = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, DefaultWorkspace));
+
+    public bool EnableAuth0Authentication { get; set; } = false;
+
+    public string? Auth0Domain { get; set; } = "";
+
+    public string? Auth0ClientId { get; set; } = "";
 }
 
 [ApiController]
@@ -123,6 +132,12 @@ internal class StepWiseControllerV1 : ControllerBase
 
         _logger?.LogInformation($"List workflows: {workflows.Count()}");
         return Ok(workflows.Select(WorkflowDTO.FromWorkflow).ToArray());
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<StepWiseServiceConfiguration>> GetConfiguration()
+    {
+        return Ok(_stepWiseServiceConfiguration);
     }
 
     [HttpPost]

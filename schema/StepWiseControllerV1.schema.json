@@ -5,79 +5,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/StepWiseAuth0Account/Login": {
-      "get": {
-        "tags": [
-          "StepWiseAuth0Account"
-        ],
-        "parameters": [
-          {
-            "name": "returnUrl",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "default": "/"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/StepWiseAuth0Account/Logout": {
-      "get": {
-        "tags": [
-          "StepWiseAuth0Account"
-        ],
-        "parameters": [
-          {
-            "name": "returnUrl",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "default": "/"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/StepWiseAuth0Account/Profile": {
-      "get": {
-        "tags": [
-          "StepWiseAuth0Account"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserProfileDTO"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserProfileDTO"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserProfileDTO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/StepWiseControllerV1/Get": {
       "get": {
         "tags": [
@@ -233,6 +160,35 @@
                   "items": {
                     "$ref": "#/components/schemas/WorkflowDTO"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/StepWiseControllerV1/GetConfiguration": {
+      "get": {
+        "tags": [
+          "StepWiseControllerV1"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepWiseServiceConfiguration"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepWiseServiceConfiguration"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepWiseServiceConfiguration"
                 }
               }
             }
@@ -760,25 +716,19 @@
         },
         "additionalProperties": false
       },
-      "UserProfileDTO": {
-        "required": [
-          "email_address",
-          "name",
-          "profile_image"
-        ],
+      "StepWiseServiceConfiguration": {
         "type": "object",
         "properties": {
-          "email_address": {
-            "minLength": 1,
-            "type": "string"
+          "enableAuth0Authentication": {
+            "type": "boolean"
           },
-          "name": {
-            "minLength": 1,
-            "type": "string"
+          "auth0Domain": {
+            "type": "string",
+            "nullable": true
           },
-          "profile_image": {
-            "minLength": 1,
-            "type": "string"
+          "auth0ClientId": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

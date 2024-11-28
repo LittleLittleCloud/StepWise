@@ -182,9 +182,13 @@ export function clearStepRunResult(
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
 	const [edges, setEdges, _] = useEdgesState([]);
-	const selectedWorkflow = useWorkflowStore((state) => state.selectedWorkflow);
+	const selectedWorkflow = useWorkflowStore(
+		(state) => state.selectedWorkflow,
+	);
 	const onWorkflowChange = useWorkflowStore((state) => state.updateWorkflow);
-	const [maxStep, setMaxStep] = useState<number>(selectedWorkflow?.maxSteps ?? 5);
+	const [maxStep, setMaxStep] = useState<number>(
+		selectedWorkflow?.maxSteps ?? 5,
+	);
 	const [maxParallelRun, setMaxParallelRun] = useState<number>(
 		selectedWorkflow?.maxParallelRun ?? 3,
 	);

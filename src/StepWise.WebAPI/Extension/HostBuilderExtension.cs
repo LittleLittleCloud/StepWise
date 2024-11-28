@@ -2,7 +2,6 @@
 // HostBuilderExtension.cs
 
 using System.Reflection;
-using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,15 +70,6 @@ public static class HostBuilderExtension
                     manager.FeatureProviders.Add(new StepWiseControllerV1Provider());
                 });
 
-                services.AddAuth0WebAppAuthentication(options =>
-                {
-                    options.Domain = ctx.Configuration["Auth0:Domain"] ?? string.Empty;
-                    options.ClientId = ctx.Configuration["Auth0:ClientId"] ?? string.Empty;
-
-                    // add email to scope
-                    options.Scope = "openid profile email";
-                });
-
                 services.AddSwaggerGen(c =>
                 {
                     c.SwaggerDoc("v1", new OpenApiInfo { Title = "StepWise Controller", Version = "v1" });
@@ -106,6 +96,7 @@ public static class HostBuilderExtension
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
+
                 app.UseAuthentication();
                 app.UseAuthorization();
                 app.UseMvc();

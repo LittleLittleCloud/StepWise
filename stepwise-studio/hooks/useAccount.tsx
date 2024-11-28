@@ -1,19 +1,18 @@
-import { create } from 'zustand';
+import { create } from "zustand";
+import { getBaseUrl } from "./useStepwiseClient";
 
 export interface AccountState {
-  username: string;
-  email: string;
-  isLoggedIn: boolean;
-  login: (username: string, email: string) => void;
-  logout: () => void;
+	username: string;
+	email: string;
+	profilePicture: string;
+	isLoggedIn: boolean;
 }
 
 const useAccount = create<AccountState>((set) => ({
-  username: 'John',
-  email: 'g22@gmail.com',
-  isLoggedIn: false,
-  login: (username, email) => set({ username, email, isLoggedIn: true }),
-  logout: () => set({ username: '', email: '', isLoggedIn: false }),
+	username: "",
+	email: "",
+	profilePicture: "",
+	isLoggedIn: false,
 }));
 
 export default useAccount;

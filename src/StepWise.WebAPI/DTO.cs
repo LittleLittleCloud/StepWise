@@ -181,16 +181,3 @@ public record WorkflowDTO(
     [Required]
     public required StepDTO[] Steps { get; init; }
 }
-
-public record UserProfileDTO
-{
-    [JsonPropertyName("email_address")]
-    public string? EmailAddress { get; init; }
-
-    [JsonPropertyName("name")]
-    [Required]
-    public required string Name { get; init; }
-
-    [JsonPropertyName("profile_image")]
-    public string? ProfileImage { get; init; }
-}
