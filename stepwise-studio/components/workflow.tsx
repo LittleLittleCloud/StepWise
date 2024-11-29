@@ -580,12 +580,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		props.setMaxParallelRun?.(maxParallelRun);
 	};
 
-	const minimapStyle = {
-		height: 60,
-		width: 100,
-		background: theme === "light" ? "#777" : "#111",
-	};
-
 	return (
 		<div className="w-full h-full bg-accent/10 items-center justify-center flex">
 			<ResizablePanelGroup
@@ -698,7 +692,14 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						>
 							<Controls />
 							{/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
-							<MiniMap style={minimapStyle} zoomable pannable />
+							<MiniMap
+								style={{
+									background:
+										theme === "dark" ? "#333" : "#fff",
+								}}
+								zoomable
+								pannable
+							/>
 						</ReactFlow>
 					</div>
 				</ResizablePanel>

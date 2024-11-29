@@ -24,21 +24,17 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 	setSelectedWorkflow: (workflow) => set({ selectedWorkflow: workflow }),
 	updateWorkflow: (workflow) => {
 		set((state) => {
-			if (state.workflows === undefined) {
-				return state;
-			}
-			console.log("Updating workflow: ", state.workflows);
-			const index = state.workflows.findIndex(
-				(w) => w.name === workflow.name,
-			);
-			if (index === -1) {
-				return state;
-			}
-			state.workflows[index] = workflow;
-			return { workflows: state.workflows };
+			const workflows = state.workflows.map((w) => {
+				if (w.name === workflow.name) {
+					return workflow;
+				}
+				return w;
+			});
+			return { workflows };
 		});
 	},
 	fetchWorkflows: async () => {
+		console.log("Fetching workflows");
 		getApiV1StepWiseControllerV1ListWorkflow()
 			.then((res) => {
 				var workflows: WorkflowData[] = [];
