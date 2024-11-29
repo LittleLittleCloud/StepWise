@@ -35,6 +35,12 @@ export type StepWiseImage = {
 	readonly blob_type?: string | null;
 };
 
+export type StepWiseServiceConfiguration = {
+	enableAuth0Authentication?: boolean;
+	auth0Domain?: string | null;
+	auth0ClientId?: string | null;
+};
+
 export type VariableDTO = {
 	value?: unknown;
 	displayValue?: string | null;
@@ -82,6 +88,11 @@ export type GetApiV1StepWiseControllerV1ListWorkflowResponse =
 	Array<WorkflowDTO>;
 
 export type GetApiV1StepWiseControllerV1ListWorkflowError = unknown;
+
+export type GetApiV1StepWiseControllerV1GetConfigurationResponse =
+	StepWiseServiceConfiguration;
+
+export type GetApiV1StepWiseControllerV1GetConfigurationError = unknown;
 
 export type PostApiV1StepWiseControllerV1ExecuteStepData = {
 	body?: Array<VariableDTO>;

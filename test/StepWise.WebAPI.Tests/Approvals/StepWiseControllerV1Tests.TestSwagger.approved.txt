@@ -167,6 +167,35 @@
         }
       }
     },
+    "/api/v1/StepWiseControllerV1/GetConfiguration": {
+      "get": {
+        "tags": [
+          "StepWiseControllerV1"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepWiseServiceConfiguration"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepWiseServiceConfiguration"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepWiseServiceConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/StepWiseControllerV1/ExecuteStep": {
       "post": {
         "tags": [
@@ -683,6 +712,23 @@
             "type": "string",
             "nullable": true,
             "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StepWiseServiceConfiguration": {
+        "type": "object",
+        "properties": {
+          "enableAuth0Authentication": {
+            "type": "boolean"
+          },
+          "auth0Domain": {
+            "type": "string",
+            "nullable": true
+          },
+          "auth0ClientId": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

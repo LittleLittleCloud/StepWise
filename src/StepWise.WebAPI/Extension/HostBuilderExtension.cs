@@ -56,8 +56,9 @@ public static class HostBuilderExtension
             var webRoot = Path.Combine(assemblyDirectory, "wwwroot");
             webBuilder.UseWebRoot(webRoot);
 
-            webBuilder.ConfigureServices(services =>
+            webBuilder.ConfigureServices((ctx, services) =>
             {
+                var configuration = ctx.Configuration;
                 services
                 .AddControllers()
                 .AddMvcOptions(options =>
@@ -91,14 +92,18 @@ public static class HostBuilderExtension
                 // enable cors from the same origin
                 app.UseCors(builder =>
                 {
-                    builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+                    builder.SetIsOriginAllowed(origin => origin.Contains("localhost"))
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
+
+                app.UseAuthentication();
+                app.UseAuthorization();
                 app.UseMvc();
                 app.UseHttpsRedirection();
                 app.UseDefaultFiles();
                 app.UseStaticFiles();
+
             });
         });
     }

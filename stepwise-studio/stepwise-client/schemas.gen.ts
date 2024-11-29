@@ -126,6 +126,24 @@ export const StepWiseImageSchema = {
 	additionalProperties: false,
 } as const;
 
+export const StepWiseServiceConfigurationSchema = {
+	type: "object",
+	properties: {
+		enableAuth0Authentication: {
+			type: "boolean",
+		},
+		auth0Domain: {
+			type: "string",
+			nullable: true,
+		},
+		auth0ClientId: {
+			type: "string",
+			nullable: true,
+		},
+	},
+	additionalProperties: false,
+} as const;
+
 export const VariableDTOSchema = {
 	required: ["generation", "name", "type"],
 	type: "object",

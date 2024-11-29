@@ -19,6 +19,8 @@ import type {
 	GetApiV1StepWiseControllerV1GetWorkflowResponse,
 	GetApiV1StepWiseControllerV1ListWorkflowError,
 	GetApiV1StepWiseControllerV1ListWorkflowResponse,
+	GetApiV1StepWiseControllerV1GetConfigurationError,
+	GetApiV1StepWiseControllerV1GetConfigurationResponse,
 	PostApiV1StepWiseControllerV1ExecuteStepData,
 	PostApiV1StepWiseControllerV1ExecuteStepError,
 	PostApiV1StepWiseControllerV1ExecuteStepResponse,
@@ -121,6 +123,21 @@ export const getApiV1StepWiseControllerV1ListWorkflow = <
 	>({
 		...options,
 		url: "/api/v1/StepWiseControllerV1/ListWorkflow",
+	});
+};
+
+export const getApiV1StepWiseControllerV1GetConfiguration = <
+	ThrowOnError extends boolean = false,
+>(
+	options?: Options<unknown, ThrowOnError>,
+) => {
+	return (options?.client ?? client).get<
+		GetApiV1StepWiseControllerV1GetConfigurationResponse,
+		GetApiV1StepWiseControllerV1GetConfigurationError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/api/v1/StepWiseControllerV1/GetConfiguration",
 	});
 };
 

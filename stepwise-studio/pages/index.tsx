@@ -1,37 +1,18 @@
 import Image from "next/image";
 import localFont from "next/font/local";
 import StepWiseSidebar from "@/components/sidebar";
-import {
-	client,
-	getApiV1StepWiseControllerV1ListWorkflow,
-	getApiV1StepWiseControllerV1Version,
-	postApiV1StepWiseControllerV1ExecuteStep,
-	StepDTO,
-	StepRunDTO,
-	WorkflowDTO,
-} from "@/stepwise-client";
-import ReactFlow, {
-	Background,
-	Controls,
-	Edge,
-	Connection,
-	Node,
-	useNodesState,
-	useEdgesState,
-} from "reactflow";
+import { client } from "@/stepwise-client";
 import "reactflow/dist/style.css";
 import Workflow, { WorkflowData } from "@/components/workflow";
 import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
 import { getLayoutedElements } from "@/lib/utils";
 
-import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { Toaster } from "@/components/ui/sonner";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { withAuthenticationRequired } from "@auth0/auth0-react";
+import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useRouter } from "next/router";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -54,27 +35,43 @@ if (process.env.NODE_ENV === "development") {
 }
 
 export default function Home() {
-	const selectedWorkflow = useWorkflowStore(
-		(state) => state.selectedWorkflow,
-	);
-	const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
+	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+	const router = useRouter();
 	const fetchWorkflows = useWorkflowStore((state) => state.fetchWorkflows);
+	const configuration = useStepwiseServerConfiguration();
 
 	useEffect(() => {
-		fetchWorkflows();
-	}, []);
+		// Only fetch workflows if authenticated
+		if (isAuthenticated || !configuration?.enableAuth0Authentication) {
+			fetchWorkflows();
+		}
+	}, [isAuthenticated, fetchWorkflows, configuration]);
 
-	return (
+	useEffect(() => {
+		// Check authentication after loading completes
+		if (
+			!isLoading &&
+			!isAuthenticated &&
+			configuration?.enableAuth0Authentication
+		) {
+			loginWithRedirect({
+				appState: { returnTo: router.asPath },
+			});
+		}
+	}, [
+		isLoading,
+		isAuthenticated,
+		configuration,
+		loginWithRedirect,
+		router.asPath,
+	]);
+
+	// Only render main content if authenticated
+	return isAuthenticated || !configuration?.enableAuth0Authentication ? (
 		<div
 			className={`w-full flex bg-accent gap-5 min-h-screen ${geistSans} ${geistMono}`}
 		>
-			<Workflow
-				dto={selectedWorkflow}
-				onWorkflowChange={(workflowData) =>
-					updateWorkflow(workflowData)
-				}
-			/>
-			<Toaster />
+			<Workflow />
 		</div>
-	);
+	) : null;
 }
