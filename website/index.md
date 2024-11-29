@@ -8,7 +8,7 @@
 # StepWise
 
 [![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=stepwise&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
-[![NuGet Version](https://img.shields.io/nuget/vpre/LittleLittleCloud.StepWIse.Gallery?label=stepwise-gallery&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise.Gallery)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fstepwisegallery20241128154731.azurewebsites.net%2F&up_message=demo&label=stepwise)](https://stepwisegallery20241128154731.azurewebsites.net/)
 
 </div>
 
@@ -57,13 +57,9 @@ To use StepWise, you can install the LittleLittleCloud.StepWise package from NuG
 dotnet add package LittleLittleCloud.StepWise
 ```
 
-### Example and Gallery
-You can find more examples in the [example](https://github.com/LittleLittleCloud/StepWise/tree/main/example) folder. We also publish these examples as a .NET tool package to NuGet. You can install the package and run the example directly from the command line.
+### Example
+You can find more examples in the [example](https://github.com/LittleLittleCloud/StepWise/tree/main/example) folder. 
 
-```bash
-dotnet tool install -g LittleLittleCloud.StepWise.Gallery
-
-# Run the gallery example
-stepwise-gallery
-```
+### Online Demo
+You can try out StepWise in the [online demo](https://stepwisegallery20241128154731.azurewebsites.net/).
 
