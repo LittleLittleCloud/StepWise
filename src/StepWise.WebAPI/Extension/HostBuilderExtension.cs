@@ -6,6 +6,7 @@ using System.Reflection.PortableExecutable;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -120,8 +121,6 @@ public static class HostBuilderExtension
         var clientLogPath = Path.Combine(configuration.Workspace.FullName, StepWiseServiceConfiguration.LogFolderName, $"clients-{dateTimeNow:yyyy-MM-dd_HH-mm-ss}.log");
         var debugLogTemplate = "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] ({SourceContext}) {Message:lj}{NewLine}{Exception}";
 
-        hostBuilder.Logging.ClearProviders();
-
         hostBuilder.Logging.Configure(loggingBuilder =>
         {
             var serilogLogger = new LoggerConfiguration()
@@ -182,6 +181,10 @@ public static class HostBuilderExtension
             .AddMvcOptions(options =>
             {
                 options.EnableEndpointRouting = false;
+                if (!configuration.EnableAuth0Authentication)
+                {
+                    options.Filters.Add(new AllowAnonymousFilter());
+                }
             })
             .ConfigureApplicationPartManager(manager =>
             {

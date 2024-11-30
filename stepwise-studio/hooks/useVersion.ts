@@ -5,16 +5,32 @@ import {
 	StepWiseServiceConfiguration,
 } from "@/stepwise-client";
 import { useStepwiseClient } from "./useStepwiseClient";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export function useVersion() {
 	const [version, setVersion] = useState<string | null>(null);
-	const stepwiseClient = useStepwiseClient();
+	const { getAccessTokenSilently, getAccessTokenWithPopup } = useAuth0();
 
 	useEffect(() => {
-		getApiV1StepWiseControllerV1Version().then((res) => {
-			setVersion(res.data ?? "Unknown");
-		});
-	}, []);
+		// Create async function inside useEffect
+		const fetchVersion = async () => {
+		  try {
+			const accessToken = await getAccessTokenSilently();
+			console.log('Access token:', accessToken);
+			const response = await getApiV1StepWiseControllerV1Version({
+			  headers: {
+				Authorization: `Bearer ${accessToken}`,
+			  },
+			});
+			setVersion(response.data ?? "Unknown");
+		  } catch (error) {
+			setVersion("Error");
+		  }
+		};
+
+		// Call the async function
+		fetchVersion();
+	  }, [getAccessTokenSilently]); // Add dependency
 
 	return version;
 }

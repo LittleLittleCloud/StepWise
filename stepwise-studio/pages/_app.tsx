@@ -33,6 +33,7 @@ export default function App({ Component, pageProps }: AppProps) {
 			}}
 			authorizationParams={{
 				redirect_uri: redirect_uri ?? "http://localhost:3000",
+				audience: "http://localhost:5123",
 			}}
 		>
 			<SidebarProvider>

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,7 @@ public class StepWiseServiceConfiguration
     public string? Auth0ClientId { get; set; } = "";
 }
 
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]/[action]")]
 internal class StepWiseControllerV1 : ControllerBase
@@ -135,6 +137,7 @@ internal class StepWiseControllerV1 : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<StepWiseServiceConfiguration>> GetConfiguration()
     {
         return Ok(_stepWiseServiceConfiguration);
