@@ -17,7 +17,6 @@ const useStepwiseStore = create<StepwiseState>((set) => ({
 	clearConfiguration: () => set({ configuration: null }),
 }));
 
-
 // Custom hook to access the configuration
 export const useStepwiseServerConfiguration = () => {
 	const configuration = useStepwiseStore((state) => state.configuration);

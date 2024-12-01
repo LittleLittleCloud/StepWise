@@ -23,11 +23,9 @@ export interface Checkpoint {
 	name: string;
 }
 
-export interface CheckpointSelectorProps {
-}
+export interface CheckpointSelectorProps {}
 
-export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
-}) => {
+export const CheckpointSelector: FC<CheckpointSelectorProps> = ({}) => {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const {
@@ -97,7 +95,9 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 												) {
 													return;
 												}
-												await deleteCheckpoint(checkpoint);
+												await deleteCheckpoint(
+													checkpoint,
+												);
 
 												toast.success(
 													"Checkpoint deleted",

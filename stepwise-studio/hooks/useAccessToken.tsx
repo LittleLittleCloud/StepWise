@@ -3,11 +3,13 @@ import { useStepwiseServerConfiguration } from "./useVersion";
 import { useAuth0 } from "@auth0/auth0-react";
 
 export const useAccessToken = () => {
-    const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
+	const [accessToken, setAccessToken] = useState<string | undefined>(
+		undefined,
+	);
 
-    const configuration = useStepwiseServerConfiguration();
+	const configuration = useStepwiseServerConfiguration();
 
-    const { getAccessTokenSilently } = useAuth0();
+	const { getAccessTokenSilently } = useAuth0();
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -16,11 +18,11 @@ export const useAccessToken = () => {
 				token = await getAccessTokenSilently();
 			}
 
-            setAccessToken(token);
+			setAccessToken(token);
 		};
 
 		fetchData();
 	}, []);
 
-    return accessToken;
-}
+	return accessToken;
+};

@@ -54,7 +54,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const iconSize = 14;
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
-	const {workflows, setSelectedWorkflow}  = useWorkflow();
+	const { workflows, setSelectedWorkflow } = useWorkflow();
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
 
 	// useEffect only runs on the client, so now we can safely show the UI
@@ -95,7 +95,9 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 								<span className="text-xl font-semibold">
 									StepWise
 								</span>
-								<span className="">v{stepwiseConfiguration?.version}</span>
+								<span className="">
+									v{stepwiseConfiguration?.version}
+								</span>
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>

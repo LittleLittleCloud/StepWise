@@ -57,7 +57,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 					image: file,
 				},
 				headers: {
-					Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
+					Authorization: accessToken
+						? `Bearer ${accessToken}`
+						: undefined,
 				},
 			});
 
@@ -81,7 +83,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 		} finally {
 			setUploading(false);
 		}
-	}
+	};
 
 	const handleRemove = () => {
 		setFile(null);

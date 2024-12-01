@@ -46,7 +46,7 @@ import {
 import { toast } from "sonner";
 import { useWorkflow } from "@/hooks/useWorkflow";
 import { useAccessToken } from "@/hooks/useAccessToken";
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
