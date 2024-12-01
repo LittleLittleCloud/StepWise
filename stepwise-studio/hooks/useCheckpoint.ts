@@ -6,31 +6,28 @@ import { toast } from "sonner";
 import { Checkpoint } from "@/components/checkpoint-selector";
 import { useStepwiseServerConfiguration } from "./useVersion";
 import { useWorkflow } from "./useWorkflow";
+import { useAccessToken } from "./useAccessToken";
 
 export interface CheckpointStore {}
 
 export function useCheckpoints() {
-    const {selectedWorkflow, setSelectedWorkflow, updateWorkflow} = useWorkflow();
+    const {selectedWorkflow, setSelectedWorkflow, updateWorkflow, workflows} = useWorkflow();
 	const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
     const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | undefined>(undefined);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const { getAccessTokenSilently } = useAuth0();
-	const configuration = useStepwiseServerConfiguration();
+    const accessToken = useAccessToken();
 
     const loadCheckpoint = async (checkpoint: Checkpoint) => {
         try {
             var token = undefined;
-            if (configuration?.enableAuth0Authentication) {
-                token = await getAccessTokenSilently();
-            }
             const response = await getApiV1StepWiseControllerV1LoadCheckpoint({
                 query: {
                     workflow: selectedWorkflow?.name,
                     checkpointName: checkpoint.name,
                 },
                 headers: {
-                    Authorization: token ? `Bearer ${token}` : undefined,
+                    Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
                 },
             });
             if (response.data) {
@@ -53,16 +50,12 @@ export function useCheckpoints() {
 	const fetchCheckpoints = async () => {
 		setLoading(true);
 		try {
-            var token = undefined;
-            if (configuration?.enableAuth0Authentication) {
-                token = await getAccessTokenSilently();
-            }
 			const response = await getApiV1StepWiseControllerV1ListCheckpoints({
 				query: {
 					workflow: selectedWorkflow?.name,
 				},
 				headers: {
-					Authorization: token ? `Bearer ${token}` : undefined,
+					Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
 				},
 			});
 
@@ -87,20 +80,16 @@ export function useCheckpoints() {
 
     const saveCheckpoint = async (checkpoint: Checkpoint) => {
         try {
-            var token = undefined;
-            if (configuration?.enableAuth0Authentication) {
-                token = await getAccessTokenSilently();
-            }
-            // Replace with actual API call
             console.log("Saving checkpoint", selectedWorkflow);
+            var latestWorkflow = workflows.find((workflow) => workflow.name === selectedWorkflow?.name);
             await postApiV1StepWiseControllerV1SaveCheckpoint({
                 query: {
-                    workflow: selectedWorkflow!.name,
+                    workflow: latestWorkflow!.name,
                     checkpointName: checkpoint.name,
                 },
-                body: selectedWorkflow?.stepRuns ?? [],
+                body: latestWorkflow?.stepRuns ?? [],
                 headers: {
-                    Authorization: token ? `Bearer ${token}` : undefined,
+                    Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
                 },
             });
             setCheckpoints([...checkpoints, checkpoint]);
@@ -116,17 +105,13 @@ export function useCheckpoints() {
 
     const deleteCheckpoint = async (checkpoint: Checkpoint) => {
         try {
-            var token = undefined;
-            if (configuration?.enableAuth0Authentication) {
-                token = await getAccessTokenSilently();
-            }
             await deleteApiV1StepWiseControllerV1DeleteCheckpoint({
                 query: {
                     workflow: selectedWorkflow?.name,
                     checkpointName: checkpoint.name,
                 },
                 headers: {
-                    Authorization: token ? `Bearer ${token}` : undefined,
+                    Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
                 },
             });
             await fetchCheckpoints();

@@ -53,7 +53,6 @@ internal class StepWiseControllerV1 : ControllerBase
     private readonly IWebHostEnvironment _environment;
     private readonly StepWiseServiceConfiguration _stepWiseServiceConfiguration;
     private static readonly ConcurrentDictionary<string, DateTime> _fileExpirations = new ConcurrentDictionary<string, DateTime>();
-    private string _blobFolder;
 
     public StepWiseControllerV1(
         StepWiseClient client,
@@ -65,7 +64,6 @@ internal class StepWiseControllerV1 : ControllerBase
         _logger = logger;
         _environment = environment;
         _stepWiseServiceConfiguration = configuration;
-        _blobFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.BlobFolderName);
         Initialize();
     }
 
@@ -75,12 +73,6 @@ internal class StepWiseControllerV1 : ControllerBase
         if (!_stepWiseServiceConfiguration.Workspace.Exists)
         {
             _stepWiseServiceConfiguration.Workspace.Create();
-        }
-
-
-        if (!Directory.Exists(_blobFolder))
-        {
-            Directory.CreateDirectory(_blobFolder);
         }
 
         if (_stepWiseServiceConfiguration.Version is null)
@@ -150,6 +142,7 @@ internal class StepWiseControllerV1 : ControllerBase
         int maxParallel = 1,
         VariableDTO[]? variables = null)
     {
+        var blobFolder = this.GetOrCreateBlobFolder();
         variables = variables ?? [];
         if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
         {
@@ -177,7 +170,7 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             var stepVariable = VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name]);
 
-            if (stepVariable.Value is StepWiseBlob blob && blob.Url?.StartsWith("/blob/") == true)
+            if (stepVariable.Value is StepWiseBlob blob && blob.Url?.Contains("/blob/") == true)
             {
                 var mediaType = blob switch
                 {
@@ -186,7 +179,7 @@ internal class StepWiseControllerV1 : ControllerBase
                 };
 
                 // load the blob from the file system
-                var filePath = Path.Combine(_blobFolder, blob.Url.Replace("/blob/", ""));
+                var filePath = Path.Combine(blobFolder, blob.Url.Split("/").Last()); // the file name will be the last part of the URL
                 if (System.IO.File.Exists(filePath))
                 {
                     var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
@@ -203,9 +196,9 @@ internal class StepWiseControllerV1 : ControllerBase
             {
                 // save the blob to the file system
                 var uniqueFileName = Guid.NewGuid().ToString() + "_" + blob.Name;
-                var filePath = Path.Combine(_blobFolder, uniqueFileName);
+                var filePath = Path.Combine(blobFolder, uniqueFileName);
                 await System.IO.File.WriteAllBytesAsync(filePath, blob.Blob.ToArray());
-                blob.Url = $"/blob/{uniqueFileName}";
+                blob.Url = User.Identity?.Name is string userName ? $"/blob/{SanitizeStringToFileName(userName)}/{uniqueFileName}" : $"/blob/{uniqueFileName}";
             }
 
             var dto = StepRunDTO.FromStepRun(stepRun);
@@ -219,10 +212,23 @@ internal class StepWiseControllerV1 : ControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpGet("/blob/{path}")]
     public IActionResult GetUploads(string path)
     {
-        var filePath = Path.Combine(_blobFolder, path);
+        var filePath = Path.Combine(GetOrCreateBlobFolder(), path);
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound();
+        }
+        return PhysicalFile(filePath, "application/octet-stream");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("/blob/{userID}/{path}")]
+    public IActionResult GetUploads(string userID, string path)
+    {
+        var filePath = Path.Combine(GetOrCreateUserWorkspace(), userID, StepWiseServiceConfiguration.BlobFolderName, path);
         if (!System.IO.File.Exists(filePath))
         {
             return NotFound();
@@ -243,7 +249,9 @@ internal class StepWiseControllerV1 : ControllerBase
             return NotFound($"Workflow {workflow} not found");
         }
 
-        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        var workspace = this.GetOrCreateUserWorkspace();
+
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
         if (!Directory.Exists(checkpointFolder))
         {
             Directory.CreateDirectory(checkpointFolder);
@@ -273,7 +281,8 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             return NotFound($"Workflow {workflow} not found");
         }
-        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        var workspace = this.GetOrCreateUserWorkspace();
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
         if (!Directory.Exists(checkpointFolder))
         {
             return NotFound($"Checkpoint folder for workflow {workflow} not found");
@@ -299,7 +308,9 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             return NotFound($"Workflow {workflow} not found");
         }
-        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+
+        var workspace = this.GetOrCreateUserWorkspace();
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
         if (!Directory.Exists(checkpointFolder))
         {
             return NotFound($"Checkpoint folder for workflow {workflow} not found");
@@ -322,7 +333,8 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             return NotFound($"Workflow {workflow} not found");
         }
-        var checkpointFolder = Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        var workspace = this.GetOrCreateUserWorkspace();
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
         if (!Directory.Exists(checkpointFolder))
         {
             return Ok(Array.Empty<string>());
@@ -383,15 +395,17 @@ internal class StepWiseControllerV1 : ControllerBase
             return BadRequest("No image file provided.");
         }
 
+        var blobFolder = this.GetOrCreateBlobFolder();
+
         try
         {
-            if (!Directory.Exists(_blobFolder))
+            if (!Directory.Exists(blobFolder))
             {
-                Directory.CreateDirectory(_blobFolder);
+                Directory.CreateDirectory(blobFolder);
             }
 
             string uniqueFileName = Guid.NewGuid().ToString() + "_" + image.FileName;
-            string filePath = Path.Combine(_blobFolder, uniqueFileName);
+            string filePath = Path.Combine(blobFolder, uniqueFileName);
 
             // Read the incoming byte array
             byte[] fileBytes;
@@ -413,7 +427,7 @@ internal class StepWiseControllerV1 : ControllerBase
             _fileExpirations[uniqueFileName] = expirationDate;
             var result = new StepWiseImage
             {
-                Url = $"/blob/{uniqueFileName}",
+                Url = User.Identity?.Name is string userName ? $"/blob/{SanitizeStringToFileName(userName)}/{uniqueFileName}" : $"/blob/{uniqueFileName}",
                 Name = image.FileName,
                 ContentType = image.ContentType,
             };
@@ -424,6 +438,43 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
+
+    private string GetOrCreateUserWorkspace()
+    {
+        var workspace = User.Identity?.Name switch
+        {
+            null => _stepWiseServiceConfiguration.Workspace.FullName,
+            string userName => Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, SanitizeStringToFileName(userName)),
+        };
+
+        if (!Directory.Exists(workspace))
+        {
+            Directory.CreateDirectory(workspace);
+        }
+
+        return workspace;
+    }
+
+    private string SanitizeStringToFileName(string userID)
+    {
+        // remove invalid characters
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var sanitized = new string(userID.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
+        return sanitized;
+    }
+
+    private string GetOrCreateBlobFolder()
+    {
+        var workspace = this.GetOrCreateUserWorkspace();
+        var blobFolder = Path.Combine(workspace, StepWiseServiceConfiguration.BlobFolderName);
+        if (!Directory.Exists(blobFolder))
+        {
+            Directory.CreateDirectory(blobFolder);
+        }
+
+        return blobFolder;
+
     }
 }
 

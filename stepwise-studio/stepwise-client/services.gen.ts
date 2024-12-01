@@ -69,6 +69,7 @@ export const postApiV1StepWiseControllerV1UploadImage = <ThrowOnError extends bo
     ...options,
     ...formDataBodySerializer,
     headers: {
+        ...options?.headers,
         'Content-Type': null
     },
     url: '/api/v1/StepWiseControllerV1/UploadImage'

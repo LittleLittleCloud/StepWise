@@ -21,6 +21,8 @@ public class TextToImage
     [Step(description: """
         ## Convert Text to Image using OpenAI DALL-E-3
 
+        You can find the source code in [TextToImage.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/TextToImage.cs).
+
         ### Required
         - openai api key
         """)]

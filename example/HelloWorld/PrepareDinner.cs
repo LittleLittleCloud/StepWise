@@ -6,6 +6,16 @@ using StepWise.Core;
 
 public class PrepareDinner
 {
+    [Step(description: """
+        This example demonstrates how to use stepwise to create a simple dinner preparation workflow.
+        - source code: [PrepareDinner.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/PrepareDinner.cs)
+        """)]
+    public async Task<string> Start()
+    {
+        await Task.Delay(1000);
+        return "Start";
+    }
+
     [Step]
     public async Task<string> ChopVegetables()
     {

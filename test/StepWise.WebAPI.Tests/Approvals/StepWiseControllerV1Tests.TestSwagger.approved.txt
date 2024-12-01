@@ -296,6 +296,36 @@
         }
       }
     },
+    "/blob/{userID}/{path}": {
+      "get": {
+        "tags": [
+          "StepWiseControllerV1"
+        ],
+        "parameters": [
+          {
+            "name": "userID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/StepWiseControllerV1/SaveCheckpoint": {
       "post": {
         "tags": [

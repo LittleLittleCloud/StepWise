@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useCallback } from "react";
 import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import {
 	postApiV1StepWiseControllerV1UploadImage,
 	StepWiseImage,
 } from "@/stepwise-client";
+import { useAccessToken } from "@/hooks/useAccessToken";
 
 interface UploadStatus {
 	type: "success" | "error";
@@ -23,7 +24,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 	const [preview, setPreview] = useState<string | null>(null);
 	const [uploading, setUploading] = useState<boolean>(false);
 	const [uploadStatus, setUploadStatus] = useState<UploadStatus | null>(null);
-
+	const accessToken = useAccessToken();
 	const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = e.target.files?.[0];
 		setFile(selectedFile || null);
@@ -50,9 +51,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 		formData.append("image", file);
 
 		try {
+			console.log(accessToken);
 			const response = await postApiV1StepWiseControllerV1UploadImage({
 				body: {
 					image: file,
+				},
+				headers: {
+					Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
 				},
 			});
 
@@ -76,7 +81,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onCanceled }) => {
 		} finally {
 			setUploading(false);
 		}
-	};
+	}
 
 	const handleRemove = () => {
 		setFile(null);

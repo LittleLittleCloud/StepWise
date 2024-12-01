@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Edge, Node } from "reactflow";
 import { create } from "zustand";
 import { useStepwiseServerConfiguration } from "./useVersion";
+import { useAccessToken } from "./useAccessToken";
 
 interface WorkflowState {
 	workflows: WorkflowData[];
@@ -24,12 +25,7 @@ const useWorkflowStore = create<WorkflowState>((set) => ({
 	workflows: [],
 	selectedWorkflow: undefined,
 	setWorkflows: (workflows) => set({ workflows }),
-	setSelectedWorkflow: (workflow) => {
-		set((state) => {
-			state.updateWorkflow(workflow);
-			return { selectedWorkflow: workflow };
-		});
-	},
+	setSelectedWorkflow: (workflow) => set({ selectedWorkflow: workflow }),
 	updateWorkflow: (workflow) => {
 		set((state) => {
 			const workflows = state.workflows.map((w) => {
@@ -135,21 +131,16 @@ export const useWorkflow = () => {
 	const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
 	const setWorkflows = useWorkflowStore((state) => state.setWorkflows);
 	const fetchWorkflows = useWorkflowStore((state) => state.fetchWorkflows);
-	const stepwiseConfiguration = useStepwiseServerConfiguration();
-	const { getAccessTokenSilently } = useAuth0();
+	const accessToken = useAccessToken();
 
 	useEffect(() => {
 		const fetchData = async () => {
-			var token = undefined;
-			if (stepwiseConfiguration?.enableAuth0Authentication) {
-				token = await getAccessTokenSilently();
-			}
-			await fetchWorkflows(token);
+			await fetchWorkflows(accessToken);
 			setWorkflows(workflows);
 		};
 
 		fetchData();
-	}, []);
+	}, [accessToken]);
 
 	return {
 		workflows,

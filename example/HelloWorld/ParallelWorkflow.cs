@@ -8,6 +8,9 @@ namespace StepWise.Gallery;
 public class ParallelWorkflow
 {
     [Step(description: """
+        This is a parallel workflow example. 
+        - source code: [ParallelWorkflow.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ParallelWorkflow.cs).
+        
         To Start the workflow, click the start button(▶) in the tool bar.
 
         TIPS:
