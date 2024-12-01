@@ -37,6 +37,10 @@ public class StepWiseServiceConfiguration
     public string? Auth0Domain { get; set; } = "";
 
     public string? Auth0ClientId { get; set; } = "";
+
+    public string? Auth0Audience { get; set; } = "";
+
+    public string? Version { get; set; }
 }
 
 [Authorize]
@@ -78,27 +82,21 @@ internal class StepWiseControllerV1 : ControllerBase
         {
             Directory.CreateDirectory(_blobFolder);
         }
+
+        if (_stepWiseServiceConfiguration.Version is null)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var version = assembly.GetName().Version;
+            var versionString = $"{version!.Major}.{version.Minor}.{version.Build}";
+
+            _stepWiseServiceConfiguration.Version = versionString;
+        }
     }
 
     [HttpGet]
     public IActionResult Get()
     {
         return Ok("Hello, StepWise!");
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<string>> Version()
-    {
-        _logger?.LogInformation("Getting version");
-
-        var assembly = Assembly.GetExecutingAssembly();
-        var version = assembly.GetName().Version;
-
-        // return major.minor.patch
-
-        var versionString = $"{version!.Major}.{version.Minor}.{version.Build}";
-
-        return new OkObjectResult(versionString);
     }
 
     [HttpGet]
@@ -146,6 +144,7 @@ internal class StepWiseControllerV1 : ControllerBase
     [HttpPost]
     public async IAsyncEnumerable<StepRunDTO> ExecuteStep(
         string workflow,
+        Guid sessionID,
         string? step = null,
         int? maxSteps = null,
         int maxParallel = 1,
@@ -198,7 +197,7 @@ internal class StepWiseControllerV1 : ControllerBase
             inputs.Add(stepVariable);
         }
 
-        await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel, [.. inputs]))
+        await foreach (var stepRun in _client.ExecuteStep(workflow, sessionID, step, maxSteps, maxParallel, [.. inputs]))
         {
             if (stepRun.Variable?.Value is StepWiseBlob blob && blob.Blob is not null && blob.Url is null)
             {
@@ -333,23 +332,30 @@ internal class StepWiseControllerV1 : ControllerBase
     }
 
     [HttpGet]
-    public async Task ExecuteStepSse()
+    [AllowAnonymous]
+    public async Task ExecuteStepSse(Guid sessionID)
     {
         _logger?.LogInformation("ExecuteStepSse");
         Response.Headers.Append("Content-Type", "text/event-stream");
         Response.Headers.Append("Content-Type", "text/event-stream");
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
+        _logger?.LogInformation($"SessionID: {sessionID}");
 
-        EventHandler<StepRunDTO> eventHandler = (sender, stepRun) =>
+        EventHandler<(StepRunDTO, Guid)> eventHandler = (sender, stepRun) =>
         {
-            _logger?.LogInformation($"StepRunEvent: {stepRun}");
+            _logger?.LogInformation($"StepRunEvent: {stepRun.Item1}");
+            _logger?.LogInformation($"ssID: {stepRun.Item2}");
+            if (stepRun.Item2 != sessionID)
+            {
+                return;
+            }
             var sseEvent = new SSEEvent
             {
                 Id = DateTime.Now.Ticks.ToString(),
                 Retry = 10,
                 Event = nameof(StepRunDTO),
-                Data = JsonSerializer.Serialize(stepRun),
+                Data = JsonSerializer.Serialize(stepRun.Item1),
             };
 
             var sseData = Encoding.UTF8.GetBytes(sseEvent.ToString());

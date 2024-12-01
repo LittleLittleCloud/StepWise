@@ -111,11 +111,7 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 							className="w-12 p-1 text-xs bg-background rounded-lg border border-accent"
 						/>
 					</div>
-					<CheckpointSelector
-						workflow={props.workflow}
-						onCheckpointSelect={props.onCheckpointSelect}
-						onSaveCheckpoint={props.onSaveCheckpoint}
-					/>
+					<CheckpointSelector />
 				</div>
 				<div className="h-6 w-0.5 bg-accent/50" />
 				<button

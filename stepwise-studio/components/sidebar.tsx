@@ -31,8 +31,8 @@ import { Badge } from "./ui/badge";
 import StepWiseIcon from "@/public/stepwise-logo.svg";
 import Image from "next/image";
 import Link from "next/link";
-import { useStepwiseServerConfiguration, useVersion } from "@/hooks/useVersion";
-import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
+import { useWorkflow } from "@/hooks/useWorkflow";
 import {
 	Sidebar,
 	SidebarContent,
@@ -54,11 +54,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const iconSize = 14;
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
-	const version = useVersion();
-	const workflows = useWorkflowStore((state) => state.workflows);
-	const setSelectedWorkflow = useWorkflowStore(
-		(state) => state.setSelectedWorkflow,
-	);
+	const {workflows, setSelectedWorkflow}  = useWorkflow();
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
 
 	// useEffect only runs on the client, so now we can safely show the UI
@@ -99,7 +95,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 								<span className="text-xl font-semibold">
 									StepWise
 								</span>
-								<span className="">v{version}</span>
+								<span className="">v{stepwiseConfiguration?.version}</span>
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>

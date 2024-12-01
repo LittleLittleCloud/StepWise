@@ -44,7 +44,9 @@ import {
 	ResizablePanelGroup,
 } from "./ui/resizable";
 import { toast } from "sonner";
-import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { useWorkflow } from "@/hooks/useWorkflow";
+import { useAccessToken } from "@/hooks/useAccessToken";
+import {v4 as uuidv4} from 'uuid';
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
@@ -182,16 +184,14 @@ export function clearStepRunResult(
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
 	const [edges, setEdges, _] = useEdgesState([]);
-	const selectedWorkflow = useWorkflowStore(
-		(state) => state.selectedWorkflow,
-	);
-	const onWorkflowChange = useWorkflowStore((state) => state.updateWorkflow);
+	const { selectedWorkflow, updateWorkflow } = useWorkflow();
 	const [maxStep, setMaxStep] = useState<number>(
 		selectedWorkflow?.maxSteps ?? 5,
 	);
 	const [maxParallelRun, setMaxParallelRun] = useState<number>(
 		selectedWorkflow?.maxParallelRun ?? 3,
 	);
+	const accessToken = useAccessToken();
 	const { fitView, getViewport, setViewport } = useReactFlow();
 	useOnViewportChange({
 		onEnd: (viewport) => {
@@ -420,7 +420,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		var graph = createGraphFromWorkflow(workflow, isRunning);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
-		onWorkflowChange?.(workflow);
+		updateWorkflow(workflow);
 	}, [workflow, fitView, maxParallelRun, maxStep, isRunning]);
 
 	const onStepNodeRunClick = async (
@@ -435,9 +435,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			toast("Running workflow", {
 				description: "started running workflow",
 			});
+			// create a random uuid as session id
+			const sessionID = uuidv4();
 			var existingRunSteps = [...workflow.stepRuns];
 			var es = new EventSource(
-				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse`,
+				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse?sessionID=${sessionID}`,
 			);
 			es.addEventListener("StepRunDTO", async (event) => {
 				var data = JSON.parse(event.data) as StepRunDTO;
@@ -449,6 +451,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				setWorkflow((prev) => {
 					if (!prev) return prev;
 					return { ...prev, stepRuns: latestSnapshot };
+				});
+
+				toast.info("Step run completed", {
+					description: `Step run for ${data.step?.name} completed
+					with status ${data.status}`,
 				});
 			});
 
@@ -470,8 +477,14 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					workflow: workflow?.name,
 					maxParallel: maxParallelRun,
 					maxSteps: maxSteps,
+					sessionID: sessionID,
 				},
 				body: [...variables],
+				headers: {
+					Authorization: accessToken
+						? `Bearer ${accessToken}`
+						: undefined,
+				},
 			});
 
 			es.close();

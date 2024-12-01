@@ -5,23 +5,31 @@ import {
 	StepDTO,
 	StepRunDTO,
 } from "@/stepwise-client";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useEffect, useState } from "react";
 import { Edge, Node } from "reactflow";
 import { create } from "zustand";
+import { useStepwiseServerConfiguration } from "./useVersion";
 
-export interface WorkflowState {
+interface WorkflowState {
 	workflows: WorkflowData[];
 	selectedWorkflow: WorkflowData | undefined;
 	updateWorkflow: (workflow: WorkflowData) => void;
 	setWorkflows: (workflows: WorkflowData[]) => void;
-	setSelectedWorkflow: (workflow: WorkflowData | undefined) => void;
-	fetchWorkflows: () => Promise<void>;
+	setSelectedWorkflow: (workflow: WorkflowData) => void;
+	fetchWorkflows: (token: string | undefined) => Promise<void>;
 }
 
-export const useWorkflowStore = create<WorkflowState>((set) => ({
+const useWorkflowStore = create<WorkflowState>((set) => ({
 	workflows: [],
 	selectedWorkflow: undefined,
 	setWorkflows: (workflows) => set({ workflows }),
-	setSelectedWorkflow: (workflow) => set({ selectedWorkflow: workflow }),
+	setSelectedWorkflow: (workflow) => {
+		set((state) => {
+			state.updateWorkflow(workflow);
+			return { selectedWorkflow: workflow };
+		});
+	},
 	updateWorkflow: (workflow) => {
 		set((state) => {
 			const workflows = state.workflows.map((w) => {
@@ -33,9 +41,13 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 			return { workflows };
 		});
 	},
-	fetchWorkflows: async () => {
+	fetchWorkflows: async (token) => {
 		console.log("Fetching workflows");
-		getApiV1StepWiseControllerV1ListWorkflow()
+		getApiV1StepWiseControllerV1ListWorkflow({
+			headers: {
+				Authorization: token ? `Bearer ${token}` : undefined,
+			},
+		})
 			.then((res) => {
 				var workflows: WorkflowData[] = [];
 
@@ -111,3 +123,39 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 			});
 	},
 }));
+
+export const useWorkflow = () => {
+	const workflows = useWorkflowStore((state) => state.workflows);
+	const selectedWorkflow = useWorkflowStore(
+		(state) => state.selectedWorkflow,
+	);
+	const setSelectedWorkflow = useWorkflowStore(
+		(state) => state.setSelectedWorkflow,
+	);
+	const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
+	const setWorkflows = useWorkflowStore((state) => state.setWorkflows);
+	const fetchWorkflows = useWorkflowStore((state) => state.fetchWorkflows);
+	const stepwiseConfiguration = useStepwiseServerConfiguration();
+	const { getAccessTokenSilently } = useAuth0();
+
+	useEffect(() => {
+		const fetchData = async () => {
+			var token = undefined;
+			if (stepwiseConfiguration?.enableAuth0Authentication) {
+				token = await getAccessTokenSilently();
+			}
+			await fetchWorkflows(token);
+			setWorkflows(workflows);
+		};
+
+		fetchData();
+	}, []);
+
+	return {
+		workflows,
+		selectedWorkflow,
+		setSelectedWorkflow,
+		updateWorkflow,
+		setWorkflows,
+	};
+};
