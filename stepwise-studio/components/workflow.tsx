@@ -54,14 +54,9 @@ export type WorkflowLayout = {
 	stepSizes: { [key: string]: { width: number; height: number } | undefined };
 	viewPort: Viewport;
 };
-export type WorkflowData = WorkflowDTO &
-	WorkflowLayout &
-	StepRunSidebarProps & {
-		selectedCheckpoint?: string;
-	};
+export type WorkflowData = WorkflowDTO & WorkflowLayout & StepRunSidebarProps;
 
-export interface WorkflowProps {
-}
+export interface WorkflowProps {}
 
 export function createLatestStepRunSnapShotFromWorkflow(
 	workflow: WorkflowDTO,
@@ -570,8 +565,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				className="w-full h-screen flex"
 			>
 				<ResizablePanel>
-					<div className="flex flex-col items-center gap-8 h-screen">
-						<div className="z-10 top-0">
+					<div className="flex flex-col items-center h-screen">
+						<div className="flex items-center m-2 gap-5">
 							<ControlBar
 								isRunning={isRunning}
 								onResetStepRunResultClick={() => {
@@ -605,7 +600,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							fitView
 						>
 							<Controls />
-							{/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
 							<MiniMap
 								style={{
 									background:

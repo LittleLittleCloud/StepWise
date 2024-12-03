@@ -60,7 +60,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const iconSize = 14;
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
-	const { workflows, setSelectedWorkflow } = useWorkflow();
+	const { workflows, setSelectedWorkflow, selectedWorkflow } = useWorkflow();
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
 	const {
 		state,
@@ -70,7 +70,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 		setOpenMobile,
 		isMobile,
 		toggleSidebar,
-	  } = useSidebar()
+	} = useSidebar();
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
@@ -116,18 +116,18 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 							</Link>
 						</SidebarMenuButton>
 						{state === "expanded" && (
-						<SidebarMenuAction>
-							<button
-								onClick={toggleSidebar}
-								className={cn(
-									"p-2 rounded-lg hover:bg-accent/50",
-									buttonVariants
-								)}
-							>
-								<ArrowLeftToLineIcon size={iconSize} />
-							</button>
-						</SidebarMenuAction>
-					)}
+							<SidebarMenuAction>
+								<button
+									onClick={toggleSidebar}
+									className={cn(
+										"p-2 rounded-lg hover:bg-accent/50",
+										buttonVariants,
+									)}
+								>
+									<ArrowLeftToLineIcon size={iconSize} />
+								</button>
+							</SidebarMenuAction>
+						)}
 					</SidebarMenuItem>
 					{state === "collapsed" && (
 						<SidebarMenuItem>
@@ -135,7 +135,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 								onClick={toggleSidebar}
 								className={cn(
 									"p-2 rounded-lg hover:bg-accent/50",
-									buttonVariants
+									buttonVariants,
 								)}
 							>
 								<ArrowRightToLineIcon size={iconSize} />
@@ -154,6 +154,12 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 							{workflows.map((workflow, index) => (
 								<SidebarMenuItem key={index}>
 									<SidebarMenuButton
+										className={
+											selectedWorkflow?.name ===
+											workflow.name
+												? "bg-accent/50"
+												: ""
+										}
 										onClick={() =>
 											setSelectedWorkflow(workflow)
 										}
