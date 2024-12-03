@@ -15,7 +15,7 @@
 StepWise is a workflow engine build with C# and typescript. In StepWise, you define a workflow in C#, then visualize and execute it in StepWise UI.
 
 ## Demo
-[demo](https://github.com/user-attachments/assets/c2cb7d68-ccc9-4457-87c1-7aeecbf9df3c)
+[TextToImage](https://github.com/user-attachments/assets/9867b073-314a-4080-8b47-539af4cb25bd)
 
 ## Quick Start
 
