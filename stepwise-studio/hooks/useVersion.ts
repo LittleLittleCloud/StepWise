@@ -1,33 +1,64 @@
 import { useEffect, useState } from "react";
 import {
 	getApiV1StepWiseControllerV1GetConfiguration,
-	getApiV1StepWiseControllerV1Version,
 	StepWiseServiceConfiguration,
 } from "@/stepwise-client";
-import { useStepwiseClient } from "./useStepwiseClient";
+import { create } from "zustand";
 
-export function useVersion() {
-	const [version, setVersion] = useState<string | null>(null);
-	const stepwiseClient = useStepwiseClient();
-
-	useEffect(() => {
-		getApiV1StepWiseControllerV1Version().then((res) => {
-			setVersion(res.data ?? "Unknown");
-		});
-	}, []);
-
-	return version;
+interface StepwiseState {
+	configuration: StepWiseServiceConfiguration | null;
+	setConfiguration: (config: StepWiseServiceConfiguration) => void;
+	clearConfiguration: () => void;
 }
 
-export function useStepwiseServerConfiguration() {
-	const [serverConfiguration, setServerConfiguration] =
-		useState<StepWiseServiceConfiguration | null>(null);
-	useEffect(() => {
-		getApiV1StepWiseControllerV1GetConfiguration().then((res) => {
-			setServerConfiguration(res.data ?? null);
-			console.log("Server configuration: ", res.data);
-		});
-	}, []);
+const useStepwiseStore = create<StepwiseState>((set) => ({
+	configuration: null,
+	setConfiguration: (config) => set({ configuration: config }),
+	clearConfiguration: () => set({ configuration: null }),
+}));
 
-	return serverConfiguration;
+// Custom hook to access the configuration
+export const useStepwiseServerConfiguration = () => {
+	const configuration = useStepwiseStore((state) => state.configuration);
+	const setConfiguration = useStepwiseStore(
+		(state) => state.setConfiguration,
+	);
+	const clearConfiguration = useStepwiseStore(
+		(state) => state.clearConfiguration,
+	);
+
+	useEffect(() => {
+		const fetchConfiguration = async () => {
+			try {
+				const config =
+					await getApiV1StepWiseControllerV1GetConfiguration();
+				if (config.data) {
+					setConfiguration(config.data);
+				} else {
+					throw new Error("No configuration data received");
+				}
+			} catch (error) {
+				console.error("Failed to fetch configuration:", error);
+				clearConfiguration();
+			}
+		};
+
+		fetchConfiguration();
+	}, [setConfiguration, clearConfiguration]);
+
+	return configuration;
+};
+
+export interface RunSettingsState {
+	maxParallel: number;
+	maxSteps: number;
+	setMaxParallel: (maxParallel: number) => void;
+	setMaxSteps: (maxSteps: number) => void;
 }
+
+export const useRunSettingsStore = create<RunSettingsState>((set) => ({
+	maxParallel: 5,
+	maxSteps: 10,
+	setMaxParallel: (maxParallel: number) => set({ maxParallel }),
+	setMaxSteps: (maxSteps: number) => set({ maxSteps }),
+}));

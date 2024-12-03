@@ -17,7 +17,7 @@ public class StepWiseClient
         _logger = logger;
     }
 
-    public event EventHandler<StepRunDTO>? StepRunEvent;
+    public event EventHandler<(StepRunDTO, Guid)>? StepRunEvent;
 
     // get workflow
     public Workflow? GetWorkflow(string workflowName)
@@ -65,6 +65,7 @@ public class StepWiseClient
     // execute step
     public async IAsyncEnumerable<StepRun> ExecuteStep(
         string workflowName,
+        Guid sessionID,
         string? stepName = null,
         int? maxSteps = null,
         int maxParallel = 1,
@@ -100,7 +101,7 @@ public class StepWiseClient
         await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, inputs: input, maxConcurrency: maxParallel, stopStrategy: stopStragety))
         {
             yield return stepRunAndResult;
-            StepRunEvent?.Invoke(this, StepRunDTO.FromStepRun(stepRunAndResult));
+            StepRunEvent?.Invoke(this, (StepRunDTO.FromStepRun(stepRunAndResult), sessionID));
         }
     }
 

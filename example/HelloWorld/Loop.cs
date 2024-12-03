@@ -6,6 +6,10 @@ using StepWise.Core;
 public class Loop
 {
     [Step(description: """
+        This is a loop workflow example.
+
+        - source code: [Loop.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Loop.cs).
+        
         To Start the workflow, click the start button(▶) in the tool bar.
 
         TIPS:

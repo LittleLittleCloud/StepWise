@@ -140,6 +140,14 @@ export const StepWiseServiceConfigurationSchema = {
 			type: "string",
 			nullable: true,
 		},
+		auth0Audience: {
+			type: "string",
+			nullable: true,
+		},
+		version: {
+			type: "string",
+			nullable: true,
+		},
 	},
 	additionalProperties: false,
 } as const;

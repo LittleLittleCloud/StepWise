@@ -17,56 +17,26 @@ import {
 } from "@/components/ui/select";
 import { WorkflowData } from "./workflow";
 import { toast } from "sonner";
+import { useCheckpoints } from "@/hooks/useCheckpoint";
 
 export interface Checkpoint {
 	name: string;
 }
 
-export interface CheckpointSelectorProps {
-	onCheckpointSelect?: (checkpoint: Checkpoint) => void;
-	onSaveCheckpoint?: (checkpoint: Checkpoint) => void;
-	workflow?: WorkflowData;
-	onDeleteCheckpoint?: (checkpoint: Checkpoint) => void;
-}
+export interface CheckpointSelectorProps {}
 
-export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
-	onCheckpointSelect,
-	workflow,
-	onSaveCheckpoint,
-	onDeleteCheckpoint,
-}) => {
-	const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+export const CheckpointSelector: FC<CheckpointSelectorProps> = ({}) => {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
-	const iconSize = 14;
-
-	const fetchCheckpoints = async (workflow: WorkflowData) => {
-		try {
-			// Replace with actual API call
-			const response = await getApiV1StepWiseControllerV1ListCheckpoints({
-				query: {
-					workflow: workflow?.name,
-				},
-			} as GetApiV1StepWiseControllerV1ListCheckpointsData);
-			var checkpoints = response.data;
-			setCheckpoints(
-				checkpoints?.map((checkpoint) => ({ name: checkpoint })) ?? [],
-			);
-			setError(null);
-		} catch (err) {
-			setError("Failed to load checkpoints");
-		}
-	};
-
-	useEffect(() => {
-		if (!workflow) {
-			return;
-		}
-
-		fetchCheckpoints(workflow);
-	}, [workflow]);
+	const {
+		checkpoints,
+		loading,
+		error,
+		selectedCheckpoint,
+		loadCheckpoint,
+		saveCheckpoint,
+		deleteCheckpoint,
+	} = useCheckpoints();
 
 	return (
 		<div className={cn("flex items-center gap-2")}>
@@ -76,14 +46,14 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 				<Loader2 className="h-5 w-5 animate-spin text-gray-500" />
 			) : (
 				<Select
-					onValueChange={(value) => {
+					onValueChange={async (value) => {
 						const checkpoint = checkpoints.find(
 							(c) => c.name === value,
 						);
 						if (checkpoint) {
-							onCheckpointSelect?.(checkpoint);
-							toast.info("Select Checkpoint", {
-								description: `Checkpoint ${checkpoint.name} has been selected`,
+							await loadCheckpoint(checkpoint);
+							toast.info("Load Checkpoint", {
+								description: `Checkpoint ${checkpoint.name} has been loaded`,
 							});
 						}
 					}}
@@ -117,9 +87,6 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 										onClick={async (e) => {
 											e.preventDefault(); // Prevent select from closing
 											setDeletingId(checkpoint.name);
-											if (!workflow) {
-												return;
-											}
 											try {
 												if (
 													!confirm(
@@ -128,20 +95,10 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 												) {
 													return;
 												}
-												await deleteApiV1StepWiseControllerV1DeleteCheckpoint(
-													{
-														query: {
-															checkpointName:
-																checkpoint.name,
-															workflow:
-																workflow?.name,
-														},
-													},
+												await deleteCheckpoint(
+													checkpoint,
 												);
 
-												await fetchCheckpoints(
-													workflow,
-												);
 												toast.success(
 													"Checkpoint deleted",
 													{
@@ -181,10 +138,6 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 				)}
 				disabled={isSaving}
 				onClick={async () => {
-					if (!workflow) {
-						return;
-					}
-
 					setIsSaving(true);
 					try {
 						// get the highest number
@@ -205,8 +158,7 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({
 						// increment the highest number
 						highest++;
 						var checkpointName = "checkpoint_" + highest + ".json";
-						await onSaveCheckpoint?.({ name: checkpointName });
-						await fetchCheckpoints(workflow);
+						await saveCheckpoint({ name: checkpointName });
 						toast("Checkpoint saved", {
 							description: `Checkpoint has been saved successfully as ${checkpointName}`,
 						});

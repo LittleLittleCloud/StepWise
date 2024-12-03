@@ -15,6 +15,9 @@ import { WorkflowDTO } from "@/stepwise-client";
 import Workflow, { WorkflowData } from "./workflow";
 import ThemeSwitch from "./theme-switch";
 import {
+	ArrowLeftSquare,
+	ArrowLeftToLineIcon,
+	ArrowRightToLineIcon,
 	Bug,
 	FileTextIcon,
 	Github,
@@ -22,6 +25,7 @@ import {
 	LucideGithub,
 	Moon,
 	Sun,
+	ToggleRightIcon,
 } from "lucide-react";
 import { buttonVariants } from "./ui/button";
 import { CircleUserRound } from "lucide-react";
@@ -31,8 +35,8 @@ import { Badge } from "./ui/badge";
 import StepWiseIcon from "@/public/stepwise-logo.svg";
 import Image from "next/image";
 import Link from "next/link";
-import { useStepwiseServerConfiguration, useVersion } from "@/hooks/useVersion";
-import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
+import { useWorkflow } from "@/hooks/useWorkflow";
 import {
 	Sidebar,
 	SidebarContent,
@@ -42,9 +46,11 @@ import {
 	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuAction,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarSeparator,
+	useSidebar,
 } from "./ui/sidebar";
 import SidebarAccountMenu from "./account";
 
@@ -54,12 +60,17 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const iconSize = 14;
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
-	const version = useVersion();
-	const workflows = useWorkflowStore((state) => state.workflows);
-	const setSelectedWorkflow = useWorkflowStore(
-		(state) => state.setSelectedWorkflow,
-	);
+	const { workflows, setSelectedWorkflow, selectedWorkflow } = useWorkflow();
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
+	const {
+		state,
+		open,
+		setOpen,
+		openMobile,
+		setOpenMobile,
+		isMobile,
+		toggleSidebar,
+	} = useSidebar();
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
@@ -99,10 +110,38 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 								<span className="text-xl font-semibold">
 									StepWise
 								</span>
-								<span className="">v{version}</span>
+								<span className="">
+									v{stepwiseConfiguration?.version}
+								</span>
 							</Link>
 						</SidebarMenuButton>
+						{state === "expanded" && (
+							<SidebarMenuAction>
+								<button
+									onClick={toggleSidebar}
+									className={cn(
+										"p-2 rounded-lg hover:bg-accent/50",
+										buttonVariants,
+									)}
+								>
+									<ArrowLeftToLineIcon size={iconSize} />
+								</button>
+							</SidebarMenuAction>
+						)}
 					</SidebarMenuItem>
+					{state === "collapsed" && (
+						<SidebarMenuItem>
+							<SidebarMenuButton
+								onClick={toggleSidebar}
+								className={cn(
+									"p-2 rounded-lg hover:bg-accent/50",
+									buttonVariants,
+								)}
+							>
+								<ArrowRightToLineIcon size={iconSize} />
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					)}
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarSeparator />
@@ -115,6 +154,12 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 							{workflows.map((workflow, index) => (
 								<SidebarMenuItem key={index}>
 									<SidebarMenuButton
+										className={
+											selectedWorkflow?.name ===
+											workflow.name
+												? "bg-accent/50"
+												: ""
+										}
 										onClick={() =>
 											setSelectedWorkflow(workflow)
 										}

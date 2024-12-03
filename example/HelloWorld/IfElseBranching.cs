@@ -12,6 +12,8 @@ public class IfElseBranching
 
         This workflow demonstrates a simple if-else branching process.
 
+        You can find the source code in [IfElseBranching.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/IfElseBranching.cs).
+
         TIPS:
         - You can run multiple steps at once by increasing the Max Step in the tool bar.
         - You can re-run a single step by clicking the rotate button(↻) on the right side of the step.

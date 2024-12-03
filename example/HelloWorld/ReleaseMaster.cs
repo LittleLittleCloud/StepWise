@@ -19,6 +19,18 @@ public class ReleaseMaster
         WriteIndented = true,
     };
 
+    [Step(description: """
+        This workflow is designed to help you write a release note based on the completed issues in the milestone.
+        You will be asked to provide the name of the github repo, the release milestone, the owner of the repo, and the github token if your repo is private.
+        The workflow will retrieve the completed issues in the milestone and generate a release note based on the issues.
+
+        - source code: [ReleaseMaster.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/ReleaseMaster.cs).
+        """)]
+    public async Task<string> Start()
+    {
+        return "Start";
+    }
+
     [StepWiseUITextInput(description: "Please provide the name of github repo, e.g: StepWise")]
     public async Task<string?> GithubRepoName()
     {

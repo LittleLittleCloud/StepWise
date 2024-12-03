@@ -44,25 +44,19 @@ import {
 	ResizablePanelGroup,
 } from "./ui/resizable";
 import { toast } from "sonner";
-import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { useWorkflow } from "@/hooks/useWorkflow";
+import { useAccessToken } from "@/hooks/useAccessToken";
+import { v4 as uuidv4 } from "uuid";
+import { useRunSettingsStore } from "@/hooks/useVersion";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
 	stepSizes: { [key: string]: { width: number; height: number } | undefined };
 	viewPort: Viewport;
 };
-export type WorkflowData = WorkflowDTO &
-	WorkflowLayout &
-	StepRunSidebarProps & {
-		maxParallelRun?: number;
-		maxSteps?: number;
-		selectedCheckpoint?: string;
-	};
+export type WorkflowData = WorkflowDTO & WorkflowLayout & StepRunSidebarProps;
 
-export interface WorkflowProps {
-	setMaxParallelRun?: (maxParallelRun: number) => void;
-	setMaxStep?: (maxStep: number) => void;
-}
+export interface WorkflowProps {}
 
 export function createLatestStepRunSnapShotFromWorkflow(
 	workflow: WorkflowDTO,
@@ -182,17 +176,10 @@ export function clearStepRunResult(
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
 	const [edges, setEdges, _] = useEdgesState([]);
-	const selectedWorkflow = useWorkflowStore(
-		(state) => state.selectedWorkflow,
-	);
-	const onWorkflowChange = useWorkflowStore((state) => state.updateWorkflow);
-	const [maxStep, setMaxStep] = useState<number>(
-		selectedWorkflow?.maxSteps ?? 5,
-	);
-	const [maxParallelRun, setMaxParallelRun] = useState<number>(
-		selectedWorkflow?.maxParallelRun ?? 3,
-	);
+	const { selectedWorkflow, updateWorkflow } = useWorkflow();
+	const accessToken = useAccessToken();
 	const { fitView, getViewport, setViewport } = useReactFlow();
+	const { maxSteps, maxParallel } = useRunSettingsStore();
 	useOnViewportChange({
 		onEnd: (viewport) => {
 			setWorkflow((prev) => {
@@ -233,18 +220,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		}),
 		[],
 	);
-
-	useEffect(() => {
-		if (workflow?.maxParallelRun) {
-			setMaxParallelRun(workflow.maxParallelRun);
-		}
-	}, [workflow?.maxParallelRun]);
-
-	useEffect(() => {
-		if (selectedWorkflow?.maxSteps) {
-			setMaxStep(selectedWorkflow.maxSteps);
-		}
-	}, [selectedWorkflow?.maxSteps]);
 
 	const createGraphFromWorkflow = (
 		workflow: WorkflowData,
@@ -301,8 +276,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						onStepNodeRunClick(
 							updatedWorkflow,
 							step,
-							workflow.maxParallelRun,
-							workflow.maxSteps,
+							maxParallel,
+							maxSteps,
 						);
 					},
 					onSubmitOutput: (output: VariableDTO) => {
@@ -420,8 +395,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		var graph = createGraphFromWorkflow(workflow, isRunning);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
-		onWorkflowChange?.(workflow);
-	}, [workflow, fitView, maxParallelRun, maxStep, isRunning]);
+		updateWorkflow(workflow);
+	}, [workflow, fitView, isRunning]);
 
 	const onStepNodeRunClick = async (
 		workflow: WorkflowData,
@@ -435,9 +410,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			toast("Running workflow", {
 				description: "started running workflow",
 			});
+			// create a random uuid as session id
+			const sessionID = uuidv4();
 			var existingRunSteps = [...workflow.stepRuns];
 			var es = new EventSource(
-				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse`,
+				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse?sessionID=${sessionID}`,
 			);
 			es.addEventListener("StepRunDTO", async (event) => {
 				var data = JSON.parse(event.data) as StepRunDTO;
@@ -449,6 +426,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				setWorkflow((prev) => {
 					if (!prev) return prev;
 					return { ...prev, stepRuns: latestSnapshot };
+				});
+
+				toast.info("Step run completed", {
+					description: `Step run for ${data.step?.name} completed
+					with status ${data.status}`,
 				});
 			});
 
@@ -470,8 +452,14 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					workflow: workflow?.name,
 					maxParallel: maxParallelRun,
 					maxSteps: maxSteps,
+					sessionID: sessionID,
 				},
 				body: [...variables],
+				headers: {
+					Authorization: accessToken
+						? `Bearer ${accessToken}`
+						: undefined,
+				},
 			});
 
 			es.close();
@@ -570,16 +558,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		});
 	}, [nodes, edges, setNodes, setEdges, fitView, getViewport]);
 
-	const onMaxStepsChange = (maxSteps: number) => {
-		setMaxStep(maxSteps);
-		props.setMaxStep?.(maxSteps);
-	};
-
-	const onMaxParallelChange = (maxParallelRun: number) => {
-		setMaxParallelRun(maxParallelRun);
-		props.setMaxParallelRun?.(maxParallelRun);
-	};
-
 	return (
 		<div className="w-full h-full bg-accent/10 items-center justify-center flex">
 			<ResizablePanelGroup
@@ -587,15 +565,10 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				className="w-full h-screen flex"
 			>
 				<ResizablePanel>
-					<div className="flex flex-col items-center gap-8 h-screen">
-						<div className="z-10 absolute top-0">
+					<div className="flex flex-col items-center h-screen">
+						<div className="flex items-center m-2 gap-5">
 							<ControlBar
 								isRunning={isRunning}
-								maxParallel={maxParallelRun}
-								workflow={workflow!}
-								maxSteps={maxStep}
-								onMaxParallelChange={onMaxParallelChange}
-								onMaxStepsChange={onMaxStepsChange}
 								onResetStepRunResultClick={() => {
 									setCompletedRunSteps([]);
 									var updatedWorkflow = {
@@ -613,73 +586,9 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 									onStepNodeRunClick(
 										workflow!,
 										undefined,
-										maxParallelRun,
-										maxStep,
+										maxParallel,
+										maxSteps,
 									);
-								}}
-								onSaveCheckpoint={async (checkpoint) => {
-									// yyyy-MM-dd-HH-mm-ss
-									console.log(
-										"Saving checkpoint: ",
-										checkpoint.name,
-									);
-
-									var res =
-										await postApiV1StepWiseControllerV1SaveCheckpoint(
-											{
-												query: {
-													checkpointName:
-														checkpoint.name,
-													workflow: workflow?.name,
-												},
-												body: completedRunSteps,
-											} as PostApiV1StepWiseControllerV1SaveCheckpointData,
-										);
-
-									if (res.error) {
-										throw new Error(
-											"Failed to save checkpoint: " +
-												res.error,
-										);
-									}
-								}}
-								onCheckpointSelect={async (checkpoint) => {
-									console.log(
-										"Selecting checkpoint: ",
-										checkpoint,
-									);
-									if (workflow === undefined) return;
-									var response =
-										await getApiV1StepWiseControllerV1LoadCheckpoint(
-											{
-												query: {
-													checkpointName:
-														checkpoint.name,
-													workflow: workflow?.name,
-												},
-											},
-										);
-
-									if (response.error) {
-										console.error(
-											"Failed to load checkpoint: ",
-											response.error,
-										);
-										return;
-									}
-
-									if (response.data === undefined) {
-										console.error(
-											"No data returned from loading checkpoint",
-										);
-										return;
-									}
-
-									setWorkflow({
-										...workflow,
-										stepRuns: response.data,
-										selectedCheckpoint: checkpoint.name,
-									});
 								}}
 							/>
 						</div>
@@ -691,7 +600,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							fitView
 						>
 							<Controls />
-							{/* <Background color="#aaa" gap={16} variant={BackgroundVariant.Lines} /> */}
 							<MiniMap
 								style={{
 									background:

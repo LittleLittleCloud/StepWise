@@ -33,6 +33,9 @@ export default function App({ Component, pageProps }: AppProps) {
 			}}
 			authorizationParams={{
 				redirect_uri: redirect_uri ?? "http://localhost:3000",
+				audience:
+					stepwiseConfiguration.auth0Audience ??
+					"https://localhost:5123",
 			}}
 		>
 			<SidebarProvider>

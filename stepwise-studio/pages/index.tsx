@@ -8,7 +8,6 @@ import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
 import { getLayoutedElements } from "@/lib/utils";
 
-import { useWorkflowStore } from "@/hooks/useWorkflow";
 import { withAuthenticationRequired } from "@auth0/auth0-react";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -37,15 +36,7 @@ if (process.env.NODE_ENV === "development") {
 export default function Home() {
 	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
 	const router = useRouter();
-	const fetchWorkflows = useWorkflowStore((state) => state.fetchWorkflows);
 	const configuration = useStepwiseServerConfiguration();
-
-	useEffect(() => {
-		// Only fetch workflows if authenticated
-		if (isAuthenticated || !configuration?.enableAuth0Authentication) {
-			fetchWorkflows();
-		}
-	}, [isAuthenticated, fetchWorkflows, configuration]);
 
 	useEffect(() => {
 		// Check authentication after loading completes
@@ -66,7 +57,6 @@ export default function Home() {
 		router.asPath,
 	]);
 
-	// Only render main content if authenticated
 	return isAuthenticated || !configuration?.enableAuth0Authentication ? (
 		<div
 			className={`w-full flex bg-accent gap-5 min-h-screen ${geistSans} ${geistMono}`}

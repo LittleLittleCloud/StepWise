@@ -17,35 +17,6 @@
         }
       }
     },
-    "/api/v1/StepWiseControllerV1/Version": {
-      "get": {
-        "tags": [
-          "StepWiseControllerV1"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/StepWiseControllerV1/GetStep": {
       "get": {
         "tags": [
@@ -210,6 +181,14 @@
             }
           },
           {
+            "name": "sessionID",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "step",
             "in": "query",
             "schema": {
@@ -301,6 +280,36 @@
           "StepWiseControllerV1"
         ],
         "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/blob/{userID}/{path}": {
+      "get": {
+        "tags": [
+          "StepWiseControllerV1"
+        ],
+        "parameters": [
+          {
+            "name": "userID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "path",
             "in": "path",
@@ -524,6 +533,16 @@
         "tags": [
           "StepWiseControllerV1"
         ],
+        "parameters": [
+          {
+            "name": "sessionID",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -727,6 +746,14 @@
             "nullable": true
           },
           "auth0ClientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "auth0Audience": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
             "type": "string",
             "nullable": true
           }

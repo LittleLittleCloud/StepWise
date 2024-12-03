@@ -9,8 +9,6 @@ import {
 import type {
 	GetApiV1StepWiseControllerV1GetError,
 	GetApiV1StepWiseControllerV1GetResponse,
-	GetApiV1StepWiseControllerV1VersionError,
-	GetApiV1StepWiseControllerV1VersionResponse,
 	GetApiV1StepWiseControllerV1GetStepData,
 	GetApiV1StepWiseControllerV1GetStepError,
 	GetApiV1StepWiseControllerV1GetStepResponse,
@@ -27,6 +25,9 @@ import type {
 	GetBlobByPathData,
 	GetBlobByPathError,
 	GetBlobByPathResponse,
+	GetBlobByUserIdByPathData,
+	GetBlobByUserIdByPathError,
+	GetBlobByUserIdByPathResponse,
 	PostApiV1StepWiseControllerV1SaveCheckpointData,
 	PostApiV1StepWiseControllerV1SaveCheckpointError,
 	PostApiV1StepWiseControllerV1SaveCheckpointResponse,
@@ -39,6 +40,7 @@ import type {
 	GetApiV1StepWiseControllerV1ListCheckpointsData,
 	GetApiV1StepWiseControllerV1ListCheckpointsError,
 	GetApiV1StepWiseControllerV1ListCheckpointsResponse,
+	GetApiV1StepWiseControllerV1ExecuteStepSseData,
 	GetApiV1StepWiseControllerV1ExecuteStepSseError,
 	GetApiV1StepWiseControllerV1ExecuteStepSseResponse,
 	PostApiV1StepWiseControllerV1UploadImageData,
@@ -60,21 +62,6 @@ export const getApiV1StepWiseControllerV1Get = <
 	>({
 		...options,
 		url: "/api/v1/StepWiseControllerV1/Get",
-	});
-};
-
-export const getApiV1StepWiseControllerV1Version = <
-	ThrowOnError extends boolean = false,
->(
-	options?: Options<unknown, ThrowOnError>,
-) => {
-	return (options?.client ?? client).get<
-		GetApiV1StepWiseControllerV1VersionResponse,
-		GetApiV1StepWiseControllerV1VersionError,
-		ThrowOnError
-	>({
-		...options,
-		url: "/api/v1/StepWiseControllerV1/Version",
 	});
 };
 
@@ -172,6 +159,19 @@ export const getBlobByPath = <ThrowOnError extends boolean = false>(
 	});
 };
 
+export const getBlobByUserIdByPath = <ThrowOnError extends boolean = false>(
+	options: Options<GetBlobByUserIdByPathData, ThrowOnError>,
+) => {
+	return (options?.client ?? client).get<
+		GetBlobByUserIdByPathResponse,
+		GetBlobByUserIdByPathError,
+		ThrowOnError
+	>({
+		...options,
+		url: "/blob/{userID}/{path}",
+	});
+};
+
 export const postApiV1StepWiseControllerV1SaveCheckpoint = <
 	ThrowOnError extends boolean = false,
 >(
@@ -247,7 +247,10 @@ export const getApiV1StepWiseControllerV1ListCheckpoints = <
 export const getApiV1StepWiseControllerV1ExecuteStepSse = <
 	ThrowOnError extends boolean = false,
 >(
-	options?: Options<unknown, ThrowOnError>,
+	options?: Options<
+		GetApiV1StepWiseControllerV1ExecuteStepSseData,
+		ThrowOnError
+	>,
 ) => {
 	return (options?.client ?? client).get<
 		GetApiV1StepWiseControllerV1ExecuteStepSseResponse,
@@ -275,6 +278,7 @@ export const postApiV1StepWiseControllerV1UploadImage = <
 		...options,
 		...formDataBodySerializer,
 		headers: {
+			...options?.headers,
 			"Content-Type": null,
 		},
 		url: "/api/v1/StepWiseControllerV1/UploadImage",

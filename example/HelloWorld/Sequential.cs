@@ -8,6 +8,9 @@ namespace StepWise.Gallery;
 public class Sequential
 {
     [Step(description: """
+        This is a sequential workflow example. 
+        - source code: [Sequential.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/Sequential.cs).
+        
         To Start the workflow, click the start button(▶) in the tool bar.
 
         TIPS:

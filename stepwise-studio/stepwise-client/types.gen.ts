@@ -39,6 +39,8 @@ export type StepWiseServiceConfiguration = {
 	enableAuth0Authentication?: boolean;
 	auth0Domain?: string | null;
 	auth0ClientId?: string | null;
+	auth0Audience?: string | null;
+	version?: string | null;
 };
 
 export type VariableDTO = {
@@ -58,10 +60,6 @@ export type WorkflowDTO = {
 export type GetApiV1StepWiseControllerV1GetResponse = unknown;
 
 export type GetApiV1StepWiseControllerV1GetError = unknown;
-
-export type GetApiV1StepWiseControllerV1VersionResponse = string;
-
-export type GetApiV1StepWiseControllerV1VersionError = unknown;
 
 export type GetApiV1StepWiseControllerV1GetStepData = {
 	query?: {
@@ -99,6 +97,7 @@ export type PostApiV1StepWiseControllerV1ExecuteStepData = {
 	query?: {
 		maxParallel?: number;
 		maxSteps?: number;
+		sessionID?: string;
 		step?: string;
 		workflow?: string;
 	};
@@ -118,6 +117,17 @@ export type GetBlobByPathData = {
 export type GetBlobByPathResponse = unknown;
 
 export type GetBlobByPathError = unknown;
+
+export type GetBlobByUserIdByPathData = {
+	path: {
+		path: string;
+		userID: string;
+	};
+};
+
+export type GetBlobByUserIdByPathResponse = unknown;
+
+export type GetBlobByUserIdByPathError = unknown;
 
 export type PostApiV1StepWiseControllerV1SaveCheckpointData = {
 	body?: Array<StepRunDTO>;
@@ -163,6 +173,12 @@ export type GetApiV1StepWiseControllerV1ListCheckpointsData = {
 export type GetApiV1StepWiseControllerV1ListCheckpointsResponse = Array<string>;
 
 export type GetApiV1StepWiseControllerV1ListCheckpointsError = unknown;
+
+export type GetApiV1StepWiseControllerV1ExecuteStepSseData = {
+	query?: {
+		sessionID?: string;
+	};
+};
 
 export type GetApiV1StepWiseControllerV1ExecuteStepSseResponse = unknown;
 

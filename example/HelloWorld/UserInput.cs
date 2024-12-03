@@ -7,6 +7,16 @@ using StepWise.Core;
 
 public class UserInput
 {
+    [Step(description: """
+        This example demonstrates how to use the text, number, switch, and image input in the workflow.
+        You can find the source code in [UserInput.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/UserInput.cs).
+        """)]
+    public async Task<string> Start()
+    {
+        await Task.Delay(1000);
+        return "Start";
+    }
+
     [StepWiseUITextInput(description: "Please enter the city name")]
     public async Task<string?> GetCity()
     {
