@@ -15,6 +15,9 @@ import { WorkflowDTO } from "@/stepwise-client";
 import Workflow, { WorkflowData } from "./workflow";
 import ThemeSwitch from "./theme-switch";
 import {
+	ArrowLeftSquare,
+	ArrowLeftToLineIcon,
+	ArrowRightToLineIcon,
 	Bug,
 	FileTextIcon,
 	Github,
@@ -22,6 +25,7 @@ import {
 	LucideGithub,
 	Moon,
 	Sun,
+	ToggleRightIcon,
 } from "lucide-react";
 import { buttonVariants } from "./ui/button";
 import { CircleUserRound } from "lucide-react";
@@ -42,9 +46,11 @@ import {
 	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuAction,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarSeparator,
+	useSidebar,
 } from "./ui/sidebar";
 import SidebarAccountMenu from "./account";
 
@@ -56,6 +62,15 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const [mounted, setMounted] = useState(false);
 	const { workflows, setSelectedWorkflow } = useWorkflow();
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
+	const {
+		state,
+		open,
+		setOpen,
+		openMobile,
+		setOpenMobile,
+		isMobile,
+		toggleSidebar,
+	  } = useSidebar()
 
 	// useEffect only runs on the client, so now we can safely show the UI
 	useEffect(() => {
@@ -100,7 +115,33 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 								</span>
 							</Link>
 						</SidebarMenuButton>
+						{state === "expanded" && (
+						<SidebarMenuAction>
+							<button
+								onClick={toggleSidebar}
+								className={cn(
+									"p-2 rounded-lg hover:bg-accent/50",
+									buttonVariants
+								)}
+							>
+								<ArrowLeftToLineIcon size={iconSize} />
+							</button>
+						</SidebarMenuAction>
+					)}
 					</SidebarMenuItem>
+					{state === "collapsed" && (
+						<SidebarMenuItem>
+							<SidebarMenuButton
+								onClick={toggleSidebar}
+								className={cn(
+									"p-2 rounded-lg hover:bg-accent/50",
+									buttonVariants
+								)}
+							>
+								<ArrowRightToLineIcon size={iconSize} />
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					)}
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarSeparator />

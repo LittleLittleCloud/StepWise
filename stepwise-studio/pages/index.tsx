@@ -8,7 +8,6 @@ import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
 import { getLayoutedElements } from "@/lib/utils";
 
-import { useWorkflowStore } from "@/hooks/useWorkflow";
 import { withAuthenticationRequired } from "@auth0/auth0-react";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
 import { useAuth0 } from "@auth0/auth0-react";

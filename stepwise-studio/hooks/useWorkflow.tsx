@@ -21,7 +21,7 @@ interface WorkflowState {
 	fetchWorkflows: (token: string | undefined) => Promise<void>;
 }
 
-const useWorkflowStore = create<WorkflowState>((set) => ({
+const useWorkflowStore = create<WorkflowState>((set, get) => ({
 	workflows: [],
 	selectedWorkflow: undefined,
 	setWorkflows: (workflows) => set({ workflows }),

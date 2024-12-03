@@ -278,7 +278,7 @@ export const postApiV1StepWiseControllerV1UploadImage = <
 		...options,
 		...formDataBodySerializer,
 		headers: {
-            ...options?.headers,
+			...options?.headers,
 			"Content-Type": null,
 		},
 		url: "/api/v1/StepWiseControllerV1/UploadImage",

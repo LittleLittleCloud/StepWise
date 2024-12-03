@@ -48,3 +48,17 @@ export const useStepwiseServerConfiguration = () => {
 
 	return configuration;
 };
+
+export interface RunSettingsState {
+	maxParallel: number;
+	maxSteps: number;
+	setMaxParallel: (maxParallel: number) => void;
+	setMaxSteps: (maxSteps: number) => void;
+}
+
+export const useRunSettingsStore = create<RunSettingsState>((set) => ({
+	maxParallel: 5,
+	maxSteps: 10,
+	setMaxParallel: (maxParallel: number) => set({ maxParallel }),
+	setMaxSteps: (maxSteps: number) => set({ maxSteps }),
+}));
