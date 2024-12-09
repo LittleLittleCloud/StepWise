@@ -512,22 +512,20 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		window.requestAnimationFrame(() => {
 			fitView();
 		});
-
-		setSelectedWorkflow((prev) => {
-			if (!prev) throw new Error("No workflow selected");
-			return {
-				...prev,
-				stepPositions: layoutedNodes.reduce(
-					(acc, node) => {
-						acc[node.id] = {
-							x: node.position.x,
-							y: node.position.y,
-						};
-						return acc;
-					},
-					{} as { [key: string]: { x: number; y: number } },
-				),
-			};
+		var stepPositions = layoutedNodes.reduce(
+			(acc, node) => {
+				acc[node.id] = {
+					x: node.position.x,
+					y: node.position.y,
+				};
+				return acc;
+			},
+			{} as { [key: string]: { x: number; y: number } },
+		);
+		if (!selectedWorkflow) return;
+		setSelectedWorkflow({
+			...selectedWorkflow,
+			stepPositions: stepPositions,
 		});
 	}, [nodes, edges, setNodes, setEdges, fitView]);
 
