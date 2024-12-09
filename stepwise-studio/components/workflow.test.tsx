@@ -1,4 +1,4 @@
-import { createLatestStepRunSnapShotFromWorkflow } from "./workflow";
+import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 import {
 	StepDTO,
 	StepRunDTO,
@@ -52,10 +52,12 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
 			},
 		];
 
-		const snapshot = createLatestStepRunSnapShotFromWorkflow(
-			workflow,
-			completedStepRuns,
-		);
+		const snapshot = useStepRunHistoryStore
+			.getState()
+			.createLatestStepRunSnapShotFromRunHistory(
+				workflow,
+				completedStepRuns,
+			);
 
 		expect(snapshot).toEqual(expectedSnapshot);
 	});
@@ -103,10 +105,12 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
 			},
 		];
 
-		const snapshot = createLatestStepRunSnapShotFromWorkflow(
-			workflow,
-			completedStepRuns,
-		);
+		const snapshot = useStepRunHistoryStore
+			.getState()
+			.createLatestStepRunSnapShotFromRunHistory(
+				workflow,
+				completedStepRuns,
+			);
 
 		expect(snapshot).toEqual(expectedSnapshot);
 	});
@@ -156,10 +160,12 @@ describe("createLatestStepRunSnapShotFromWorkflow", () => {
 			},
 		];
 
-		const snapshot = createLatestStepRunSnapShotFromWorkflow(
-			workflow,
-			completedStepRuns,
-		);
+		const snapshot = useStepRunHistoryStore
+			.getState()
+			.createLatestStepRunSnapShotFromRunHistory(
+				workflow,
+				completedStepRuns,
+			);
 
 		expect(snapshot).toEqual(expectedSnapshot);
 	});
