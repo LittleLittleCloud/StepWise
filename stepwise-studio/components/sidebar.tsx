@@ -53,6 +53,7 @@ import {
 	useSidebar,
 } from "./ui/sidebar";
 import SidebarAccountMenu from "./account";
+import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 
 interface SidebarProps {}
 
@@ -61,6 +62,11 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
 	const { workflows, setSelectedWorkflow, selectedWorkflow } = useWorkflow();
+	const {
+		setSelectedStepRunHistory,
+		selectedStepRunHistory,
+		stepRunHistories,
+	} = useStepRunHistoryStore();
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
 	const {
 		state,
@@ -160,9 +166,20 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 												? "bg-accent/50"
 												: ""
 										}
-										onClick={() =>
-											setSelectedWorkflow(workflow)
-										}
+										onClick={() => {
+											setSelectedWorkflow(workflow);
+											if (
+												stepRunHistories[workflow.name]
+											) {
+												setSelectedStepRunHistory(
+													stepRunHistories[
+														workflow.name
+													],
+												);
+											} else {
+												setSelectedStepRunHistory([]);
+											}
+										}}
 									>
 										<Network size={iconSize} />
 										<span className="text-sm">

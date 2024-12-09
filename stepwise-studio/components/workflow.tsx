@@ -48,6 +48,7 @@ import { useWorkflow } from "@/hooks/useWorkflow";
 import { useAccessToken } from "@/hooks/useAccessToken";
 import { v4 as uuidv4 } from "uuid";
 import { useRunSettingsStore } from "@/hooks/useVersion";
+import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
@@ -58,161 +59,23 @@ export type WorkflowData = WorkflowDTO & WorkflowLayout & StepRunSidebarProps;
 
 export interface WorkflowProps {}
 
-export function createLatestStepRunSnapShotFromWorkflow(
-	workflow: WorkflowDTO,
-	completedStepRuns: StepRunDTO[],
-): StepRunDTO[] {
-	var stepRuns = completedStepRuns ?? [];
-	var variables = stepRuns
-		.filter((run) => run.result)
-		.map((run) => run.result!);
-	var stepRun = stepRuns.filter((run) => run.status !== "Variable");
-	// create latest variables, which only keeps the most recent version for variable in variables which have the same name
-	var latestVariables = variables.reduce(
-		(acc, variable) => {
-			acc[variable.name] = variable;
-			return acc;
-		},
-		{} as { [key: string]: VariableDTO },
-	);
-
-	var latestRunSteps = stepRun.reduce(
-		(acc, run) => {
-			acc[run.step?.name ?? ""] = run;
-			return acc;
-		},
-		{} as { [key: string]: StepRunDTO },
-	);
-
-	var steps = workflow.steps;
-
-	var stepRuns = steps?.map((step) => {
-		var stepRun: StepRunDTO =
-			latestRunSteps[step.name] ??
-			({ status: "NotReady", step: step, generation: 0 } as StepRunDTO);
-
-		// if status is not ready, update variables with the latest variables
-		if (stepRun.status === "NotReady") {
-			stepRun.variables = step.parameters
-				?.map((param) => {
-					var variable = latestVariables[param.variable_name];
-					return variable;
-				})
-				.filter((variable) => variable !== undefined) as VariableDTO[];
-		}
-
-		if (stepRun.status === "Completed") {
-			var result = latestVariables[step.name] ?? undefined;
-			stepRun.result = result;
-		} else {
-			stepRun.result = undefined;
-		}
-
-		return stepRun;
-	});
-
-	return stepRuns;
-}
-
-export function isStepRunCompleted(stepRun: StepRunDTO): boolean {
-	return stepRun.status === "Completed" || stepRun.status === "Failed";
-}
-
-export function clearStepRunResult(
-	workflow: WorkflowData,
-	step: StepDTO,
-	completedRunSteps: StepRunDTO[],
-): StepRunDTO[] {
-	var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
-		workflow,
-		completedRunSteps,
-	);
-
-	// if in the latest snapshot, the step is not completed, then return the latest snapshot
-	if (
-		!latestSnapshot.find(
-			(run) => run.step?.name === step.name && isStepRunCompleted(run),
-		)
-	) {
-		return completedRunSteps;
-	}
-
-	// otherwise, mark the step and all its dependent steps as not ready
-	// dependent steps are the steps that directly takes the result of the step as input
-	var dependentSteps = workflow.steps?.filter(
-		(s) =>
-			s.parameters?.find((param) => param.variable_name === step.name) !==
-			undefined,
-	);
-	var stepsToMarkAsNotReady = [step, ...(dependentSteps ?? [])];
-	completedRunSteps = completedRunSteps.filter(
-		(run) => run.result?.name !== step.name,
-	);
-	var updatedRunSteps = completedRunSteps.map((run) => {
-		if (
-			stepsToMarkAsNotReady.find((step) => step.name === run.step?.name)
-		) {
-			var param = run.step?.parameters?.find(
-				(param) => param.variable_name === step.name,
-			)!;
-			return {
-				...run,
-				status: "NotReady",
-				result: undefined,
-				exception: undefined,
-				variables: {
-					...run.variables,
-					[param?.name]: undefined,
-				},
-			} as StepRunDTO;
-		}
-		return run;
-	});
-
-	console.log("Updated run steps: ", updatedRunSteps);
-	return updatedRunSteps;
-}
-
 const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [nodes, setNodes, onNodesChange] = useNodesState<StepNodeProps>([]);
 	const [edges, setEdges, _] = useEdgesState([]);
-	const { selectedWorkflow, updateWorkflow } = useWorkflow();
+	const { selectedWorkflow, updateWorkflow, setSelectedWorkflow } =
+		useWorkflow();
 	const accessToken = useAccessToken();
 	const { fitView, getViewport, setViewport } = useReactFlow();
 	const { maxSteps, maxParallel } = useRunSettingsStore();
-	useOnViewportChange({
-		onEnd: (viewport) => {
-			setWorkflow((prev) => {
-				if (!prev) return prev;
-				return {
-					...prev,
-					transform: [viewport.x, viewport.y],
-					zoom: viewport.zoom,
-				};
-			});
-		},
-	});
 	const { theme } = useTheme();
-	const [workflow, setWorkflow] = useState<WorkflowData | undefined>(
-		undefined,
-	);
-	const [completedRunSteps, setCompletedRunSteps] = useState<StepRunDTO[]>(
-		() => selectedWorkflow?.stepRuns ?? [],
-	);
+	const {
+		selectedStepRunHistory,
+		setSelectedStepRunHistory,
+		updateStepRunHistory,
+		createLatestStepRunSnapShotFromRunHistory,
+		resetStepRunResult,
+	} = useStepRunHistoryStore();
 	const [isRunning, setIsRunning] = useState<boolean>(false);
-
-	useEffect(() => {
-		if (!selectedWorkflow) return;
-		var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
-			selectedWorkflow,
-			selectedWorkflow.stepRuns ?? [],
-		);
-		setWorkflow({ ...selectedWorkflow, stepRuns: latestSnapshot });
-		if (selectedWorkflow.viewPort) {
-			setViewport(selectedWorkflow.viewPort);
-		}
-		setIsRunning(false);
-	}, [selectedWorkflow]);
 
 	const nodeTypes = useMemo(
 		() => ({
@@ -223,10 +86,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 	const createGraphFromWorkflow = (
 		workflow: WorkflowData,
+		stepRunHistory: StepRunDTO[],
 		isWorkflowRunning: boolean,
 	) => {
-		var completedRunSteps = workflow.stepRuns ?? [];
-		completedRunSteps = createLatestStepRunSnapShotFromWorkflow(
+		var completedRunSteps = stepRunHistory ?? [];
+		completedRunSteps = createLatestStepRunSnapShotFromRunHistory(
 			workflow,
 			completedRunSteps,
 		);
@@ -252,87 +116,50 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					...stepRun,
 					isWorkflowRunning: isWorkflowRunning,
 					onClearClick: (step: StepDTO) => {
-						setWorkflow((prev) => {
-							if (!prev) return prev;
-							var updatedRunSteps = clearStepRunResult(
-								prev,
-								step,
-								completedRunSteps,
-							);
-
-							return { ...prev, stepRuns: updatedRunSteps };
-						});
-					},
-					onRerunClick: (step: StepDTO) => {
-						var stepRuns = clearStepRunResult(
-							workflow,
+						if (!selectedWorkflow) return;
+						var updatedRunSteps = resetStepRunResult(
+							selectedWorkflow,
 							step,
 							completedRunSteps,
 						);
-						var updatedWorkflow = {
-							...workflow,
-							stepRuns: stepRuns,
-						} as WorkflowData;
-						onStepNodeRunClick(
-							updatedWorkflow,
-							step,
-							maxParallel,
-							maxSteps,
-						);
+
+						setSelectedStepRunHistory(updatedRunSteps);
+					},
+					onRerunClick: (step: StepDTO) => {
+						throw new Error("Not implemented yet");
 					},
 					onSubmitOutput: (output: VariableDTO) => {
-						setWorkflow((prev) => {
-							if (!prev) return prev;
+						var completedStepRun = {
+							...stepRun,
+							status: "Completed",
+						} as StepRunDTO;
+						var variable = {
+							status: "Variable",
+							result: output,
+							generation: output.generation,
+						} as StepRunDTO;
+						var completedRun = [
+							...completedRunSteps,
+							completedStepRun,
+							variable,
+						];
 
-							var completedStepRun = {
-								...stepRun,
-								status: "Completed",
-							} as StepRunDTO;
-							var variable = {
-								status: "Variable",
-								result: output,
-								generation: output.generation,
-							} as StepRunDTO;
-							var completedRun = [
-								...completedRunSteps,
-								completedStepRun,
-								variable,
-							];
-
-							return { ...prev, stepRuns: completedRun };
-						});
+						setSelectedStepRunHistory(completedRun);
 					},
 					onCancelInput: () => {
-						var stepRuns = workflow.stepRuns.map((run) => {
-							if (run.step?.name === step.name) {
-								return {
-									...run,
-									status: "NotReady",
-									result: undefined,
-								} as StepRunDTO;
-							}
-							return run;
-						});
-						var updatedWorkflow = {
-							...workflow,
-							stepRuns: stepRuns,
-						} as WorkflowData;
-						console.log("Updated workflow: ", updatedWorkflow);
-						setWorkflow(updatedWorkflow);
+						console.log("Cancel input");
 					},
 					onResize: (height, width) => {
-						setWorkflow((prev) => {
-							if (!prev) return prev;
-							return {
-								...prev,
-								stepSizes: {
-									...prev.stepSizes,
-									[step.name]:
-										height && width
-											? { height, width }
-											: undefined,
-								},
-							};
+						if (!selectedWorkflow) return selectedWorkflow;
+						setSelectedWorkflow({
+							...selectedWorkflow,
+							stepSizes: {
+								...selectedWorkflow.stepSizes,
+								[step.name]:
+									height && width
+										? { height, width }
+										: undefined,
+							},
 						});
 					},
 				},
@@ -369,37 +196,43 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	useOnViewportChange({
 		onChange: (viewport) => {
 			console.log("Viewport changed: ", viewport);
-			setWorkflow((prev) => {
-				if (!prev) return prev;
-				return {
-					...prev,
-					viewPort: viewport,
-				};
-			});
-		},
-		onEnd: (viewport) => {
-			console.log("Viewport changed: ", viewport);
-			setWorkflow((prev) => {
-				if (!prev) return prev;
-				return {
-					...prev,
-					viewPort: viewport,
-				};
+			if (selectedWorkflow === undefined) return;
+
+			// compare the current viewport with the stored viewport
+			// if they are the same, do not update the workflow
+			var storedViewport = selectedWorkflow.viewPort;
+			if (
+				storedViewport?.zoom === viewport.zoom &&
+				storedViewport?.x === viewport.x &&
+				storedViewport?.y === viewport.y
+			)
+				return;
+
+			setSelectedWorkflow({
+				...selectedWorkflow,
+				viewPort: viewport,
 			});
 		},
 	});
 
 	useEffect(() => {
-		if (!workflow) return;
-		setCompletedRunSteps(workflow.stepRuns ?? []);
-		var graph = createGraphFromWorkflow(workflow, isRunning);
+		if (!selectedWorkflow) return;
+		var graph = createGraphFromWorkflow(
+			selectedWorkflow,
+			selectedStepRunHistory,
+			isRunning,
+		);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
-		updateWorkflow(workflow);
-	}, [workflow, fitView, isRunning]);
+
+		if (selectedWorkflow.viewPort) {
+			setViewport(selectedWorkflow.viewPort);
+		}
+	}, [selectedWorkflow, isRunning, fitView, selectedStepRunHistory]);
 
 	const onStepNodeRunClick = async (
 		workflow: WorkflowData,
+		stepRunHistory: StepRunDTO[],
 		step?: StepDTO,
 		maxParallelRun?: number,
 		maxSteps?: number,
@@ -412,21 +245,18 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			});
 			// create a random uuid as session id
 			const sessionID = uuidv4();
-			var existingRunSteps = [...workflow.stepRuns];
+			var existingRunSteps = [...stepRunHistory];
 			var es = new EventSource(
 				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse?sessionID=${sessionID}`,
 			);
 			es.addEventListener("StepRunDTO", async (event) => {
 				var data = JSON.parse(event.data) as StepRunDTO;
 				existingRunSteps.push(data);
-				var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
+				var latestSnapshot = createLatestStepRunSnapShotFromRunHistory(
 					workflow,
 					existingRunSteps,
 				);
-				setWorkflow((prev) => {
-					if (!prev) return prev;
-					return { ...prev, stepRuns: latestSnapshot };
-				});
+				setSelectedStepRunHistory(latestSnapshot);
 
 				toast.info("Step run completed", {
 					description: `Step run for ${data.step?.name} completed
@@ -442,7 +272,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				console.log("Error", event);
 			};
 
-			var graph = createGraphFromWorkflow(workflow, false);
+			var graph = createGraphFromWorkflow(
+				workflow,
+				stepRunHistory,
+				false,
+			);
 			var variables = graph.nodes
 				.filter((node) => node.data.result !== undefined)
 				.map((node) => node.data.result!);
@@ -480,16 +314,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			return;
 		}
 
-		var updateStepRuns = [...workflow.stepRuns, ...res.data];
-		var latestSnapshot = createLatestStepRunSnapShotFromWorkflow(
+		var updateStepRuns = [...stepRunHistory, ...res.data];
+		var latestSnapshot = createLatestStepRunSnapShotFromRunHistory(
 			workflow,
 			updateStepRuns,
 		);
-		setWorkflow((prev) => {
-			if (!prev) return prev;
-			return { ...prev, stepRuns: latestSnapshot };
-		});
 
+		setSelectedStepRunHistory(latestSnapshot);
 		toast("Workflow run completed", {
 			description: "Workflow run completed successfully",
 		});
@@ -512,15 +343,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					if (node) {
 						const newPosition = change.position;
 						const stepName = node.data.step?.name;
-						if (stepName && workflow) {
+						if (stepName && selectedWorkflow) {
 							var updatedWorkflow = {
-								...workflow,
+								...selectedWorkflow,
 								stepPositions: {
-									...workflow.stepPositions,
+									...selectedWorkflow.stepPositions,
 									[stepName]: newPosition,
 								},
 							} as WorkflowData;
-							setWorkflow(updatedWorkflow);
+							setSelectedWorkflow(updatedWorkflow);
 						}
 					}
 				}
@@ -528,7 +359,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 			onNodesChange(allowedChanges);
 		},
-		[onNodesChange, nodes, isRunning, workflow],
+		[onNodesChange, nodes, isRunning, selectedWorkflow],
 	);
 
 	const onLayout = useCallback(() => {
@@ -539,24 +370,22 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		window.requestAnimationFrame(() => {
 			fitView();
 		});
-
-		setWorkflow((prev) => {
-			if (!prev) return prev;
-			return {
-				...prev,
-				stepPositions: layoutedNodes.reduce(
-					(acc, node) => {
-						acc[node.id] = {
-							x: node.position.x,
-							y: node.position.y,
-						};
-						return acc;
-					},
-					{} as { [key: string]: { x: number; y: number } },
-				),
-			};
+		var stepPositions = layoutedNodes.reduce(
+			(acc, node) => {
+				acc[node.id] = {
+					x: node.position.x,
+					y: node.position.y,
+				};
+				return acc;
+			},
+			{} as { [key: string]: { x: number; y: number } },
+		);
+		if (!selectedWorkflow) return;
+		setSelectedWorkflow({
+			...selectedWorkflow,
+			stepPositions: stepPositions,
 		});
-	}, [nodes, edges, setNodes, setEdges, fitView, getViewport]);
+	}, [nodes, edges, setNodes, setEdges, fitView]);
 
 	return (
 		<div className="w-full h-full bg-accent/10 items-center justify-center flex">
@@ -570,12 +399,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							<ControlBar
 								isRunning={isRunning}
 								onResetStepRunResultClick={() => {
-									setCompletedRunSteps([]);
-									var updatedWorkflow = {
-										...workflow,
-										stepRuns: [],
-									} as WorkflowData;
-									setWorkflow(updatedWorkflow);
+									setSelectedStepRunHistory([]);
 									toast("Reset workflow", {
 										description:
 											"All step runs have been reset",
@@ -584,7 +408,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 								onAutoLayoutClick={onLayout}
 								onRunClick={() => {
 									onStepNodeRunClick(
-										workflow!,
+										selectedWorkflow!,
+										selectedStepRunHistory,
 										undefined,
 										maxParallel,
 										maxSteps,
@@ -613,7 +438,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 				</ResizablePanel>
 				<ResizableHandle withHandle={true} />
 				<ResizablePanel defaultSize={20} minSize={20}>
-					<StepRunSidebar stepRuns={completedRunSteps} />
+					<StepRunSidebar />
 				</ResizablePanel>
 			</ResizablePanelGroup>
 		</div>

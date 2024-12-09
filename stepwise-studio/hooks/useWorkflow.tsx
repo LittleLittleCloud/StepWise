@@ -17,15 +17,28 @@ interface WorkflowState {
 	selectedWorkflow: WorkflowData | undefined;
 	updateWorkflow: (workflow: WorkflowData) => void;
 	setWorkflows: (workflows: WorkflowData[]) => void;
-	setSelectedWorkflow: (workflow: WorkflowData) => void;
+	setSelectedWorkflow: (
+		workflow:
+			| WorkflowData
+			| ((prev: WorkflowData | undefined) => WorkflowData),
+	) => void;
 	fetchWorkflows: (token: string | undefined) => Promise<void>;
 }
 
-const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 	workflows: [],
 	selectedWorkflow: undefined,
 	setWorkflows: (workflows) => set({ workflows }),
-	setSelectedWorkflow: (workflow) => set({ selectedWorkflow: workflow }),
+	setSelectedWorkflow: (workflow) =>
+		set((state) => {
+			var selectedWorkflow =
+				typeof workflow === "function"
+					? workflow(get().selectedWorkflow)
+					: workflow;
+
+			state.updateWorkflow(selectedWorkflow);
+			return { selectedWorkflow };
+		}),
 	updateWorkflow: (workflow) => {
 		set((state) => {
 			const workflows = state.workflows.map((w) => {
@@ -99,7 +112,6 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
 							},
 							{} as { [key: string]: { x: number; y: number } },
 						),
-						stepRuns: [] as StepRunDTO[],
 					} as WorkflowData);
 				}
 				var maps = new Map<string, StepRunDTO[]>();

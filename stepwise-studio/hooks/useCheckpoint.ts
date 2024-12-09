@@ -12,6 +12,7 @@ import { Checkpoint } from "@/components/checkpoint-selector";
 import { useStepwiseServerConfiguration } from "./useVersion";
 import { useWorkflow } from "./useWorkflow";
 import { useAccessToken } from "./useAccessToken";
+import { useStepRunHistoryStore } from "./useStepRunHistory";
 
 export interface CheckpointStore {}
 
@@ -19,6 +20,11 @@ export function useCheckpoints() {
 	const { selectedWorkflow, setSelectedWorkflow, updateWorkflow, workflows } =
 		useWorkflow();
 	const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+	const {
+		setSelectedStepRunHistory,
+		updateStepRunHistory,
+		selectedStepRunHistory,
+	} = useStepRunHistoryStore();
 	const [selectedCheckpoint, setSelectedCheckpoint] = useState<
 		Checkpoint | undefined
 	>(undefined);
@@ -28,7 +34,6 @@ export function useCheckpoints() {
 
 	const loadCheckpoint = async (checkpoint: Checkpoint) => {
 		try {
-			var token = undefined;
 			const response = await getApiV1StepWiseControllerV1LoadCheckpoint({
 				query: {
 					workflow: selectedWorkflow?.name,
@@ -44,8 +49,8 @@ export function useCheckpoints() {
 				setSelectedCheckpoint(checkpoint);
 				setSelectedWorkflow({
 					...selectedWorkflow!,
-					stepRuns: response.data,
 				});
+				setSelectedStepRunHistory(response.data);
 			}
 		} catch (error) {
 			const message =
@@ -101,7 +106,7 @@ export function useCheckpoints() {
 					workflow: latestWorkflow!.name,
 					checkpointName: checkpoint.name,
 				},
-				body: latestWorkflow?.stepRuns ?? [],
+				body: selectedStepRunHistory,
 				headers: {
 					Authorization: accessToken
 						? `Bearer ${accessToken}`
