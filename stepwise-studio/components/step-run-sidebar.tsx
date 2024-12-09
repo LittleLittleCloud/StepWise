@@ -12,10 +12,9 @@ import Divider from "./divider";
 import { Badge } from "./ui/badge";
 import { Markdown } from "./markdown";
 import { VariableCard } from "./variable-card";
+import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 
-export interface StepRunSidebarProps {
-	stepRuns: StepRunDTO[];
-}
+export interface StepRunSidebarProps {}
 
 export interface StepRunProps {
 	stepRun: StepRunDTO;
@@ -69,10 +68,7 @@ const StepRunCard: React.FC<StepRunProps> = (props) => {
 };
 
 const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
-	const [stepRuns, setStepRuns] = useState<StepRunDTO[]>([]);
-	useEffect(() => {
-		setStepRuns(props.stepRuns ?? []);
-	}, [props.stepRuns]);
+	const { selectedStepRunHistory } = useStepRunHistoryStore();
 
 	return (
 		<div className="flex flex-col h-screen h-max-screen p-4 shadow-xl bg-background rounded-lg overflow-y-auto">
@@ -82,7 +78,7 @@ const StepRunSidebar: React.FC<StepRunSidebarProps> = (props) => {
 			<div className="flex flex-col grow mb-4 gap-2">
 				<Divider />
 
-				{stepRuns.map((stepRun, index) => (
+				{selectedStepRunHistory.map((stepRun, index) => (
 					<StepRunCard key={index} stepRun={stepRun} />
 				))}
 			</div>
