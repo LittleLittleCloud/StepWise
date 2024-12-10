@@ -130,7 +130,9 @@ export const useStepRunHistoryStore = create<StepRunHistoryState>(
 				...completedStepRun,
 				status: "NotReady",
 				step: step,
-				generation: completedStepRun?.generation ? completedStepRun.generation + 1 : 0,
+				generation: completedStepRun?.generation
+					? completedStepRun.generation + 1
+					: 0,
 			};
 
 			return [...completedRunSteps, notReadyStepRun];
