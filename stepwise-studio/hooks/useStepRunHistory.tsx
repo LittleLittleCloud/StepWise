@@ -122,43 +122,56 @@ export const useStepRunHistoryStore = create<StepRunHistoryState>(
 				return completedRunSteps;
 			}
 
+			// create a new NotReady step run for the step
+			var completedStepRun = completedRunSteps.findLast(
+				(run) => run.step?.name === step.name,
+			);
+			let notReadyStepRun: StepRunDTO = {
+				...completedStepRun,
+				status: "NotReady",
+				step: step,
+				generation: completedStepRun?.generation
+					? completedStepRun.generation + 1
+					: 0,
+			};
+
+			return [...completedRunSteps, notReadyStepRun];
 			// otherwise, mark the step and all its dependent steps as not ready
 			// dependent steps are the steps that directly takes the result of the step as input
-			var dependentSteps = workflow.steps?.filter(
-				(s) =>
-					s.parameters?.find(
-						(param) => param.variable_name === step.name,
-					) !== undefined,
-			);
-			var stepsToMarkAsNotReady = [step, ...(dependentSteps ?? [])];
-			completedRunSteps = completedRunSteps.filter(
-				(run) => run.result?.name !== step.name,
-			);
-			var updatedRunSteps = completedRunSteps.map((run) => {
-				if (
-					stepsToMarkAsNotReady.find(
-						(step) => step.name === run.step?.name,
-					)
-				) {
-					var param = run.step?.parameters?.find(
-						(param) => param.variable_name === step.name,
-					)!;
-					return {
-						...run,
-						status: "NotReady",
-						result: undefined,
-						exception: undefined,
-						variables: {
-							...run.variables,
-							[param?.name]: undefined,
-						},
-					} as StepRunDTO;
-				}
-				return run;
-			});
+			// var dependentSteps = workflow.steps?.filter(
+			// 	(s) =>
+			// 		s.parameters?.find(
+			// 			(param) => param.variable_name === step.name,
+			// 		) !== undefined,
+			// );
+			// var stepsToMarkAsNotReady = [step, ...(dependentSteps ?? [])];
+			// completedRunSteps = completedRunSteps.filter(
+			// 	(run) => run.result?.name !== step.name,
+			// );
+			// var updatedRunSteps = completedRunSteps.map((run) => {
+			// 	if (
+			// 		stepsToMarkAsNotReady.find(
+			// 			(step) => step.name === run.step?.name,
+			// 		)
+			// 	) {
+			// 		var param = run.step?.parameters?.find(
+			// 			(param) => param.variable_name === step.name,
+			// 		)!;
+			// 		return {
+			// 			...run,
+			// 			status: "NotReady",
+			// 			result: undefined,
+			// 			exception: undefined,
+			// 			variables: {
+			// 				...run.variables,
+			// 				[param?.name]: undefined,
+			// 			},
+			// 		} as StepRunDTO;
+			// 	}
+			// 	return run;
+			// });
 
-			console.log("Updated run steps: ", updatedRunSteps);
-			return updatedRunSteps;
+			// return updatedRunSteps;
 		},
 	}),
 );

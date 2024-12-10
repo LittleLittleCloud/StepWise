@@ -71,7 +71,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const {
 		selectedStepRunHistory,
 		setSelectedStepRunHistory,
-		updateStepRunHistory,
 		createLatestStepRunSnapShotFromRunHistory,
 		resetStepRunResult,
 	} = useStepRunHistoryStore();
@@ -89,10 +88,9 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		stepRunHistory: StepRunDTO[],
 		isWorkflowRunning: boolean,
 	) => {
-		var completedRunSteps = stepRunHistory ?? [];
-		completedRunSteps = createLatestStepRunSnapShotFromRunHistory(
+		var completedRunSteps = createLatestStepRunSnapShotFromRunHistory(
 			workflow,
-			completedRunSteps,
+			stepRunHistory,
 		);
 		var nodes = completedRunSteps?.map((stepRun) => {
 			if (!stepRun.step) {
@@ -120,9 +118,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						var updatedRunSteps = resetStepRunResult(
 							selectedWorkflow,
 							step,
-							completedRunSteps,
+							stepRunHistory,
 						);
-
 						setSelectedStepRunHistory(updatedRunSteps);
 					},
 					onRerunClick: (step: StepDTO) => {
@@ -139,7 +136,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							generation: output.generation,
 						} as StepRunDTO;
 						var completedRun = [
-							...completedRunSteps,
+							...stepRunHistory,
 							completedStepRun,
 							variable,
 						];
@@ -222,6 +219,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			selectedStepRunHistory,
 			isRunning,
 		);
+		console.log("Setting nodes and edges", graph);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
 
@@ -252,11 +250,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			es.addEventListener("StepRunDTO", async (event) => {
 				var data = JSON.parse(event.data) as StepRunDTO;
 				existingRunSteps.push(data);
-				var latestSnapshot = createLatestStepRunSnapShotFromRunHistory(
-					workflow,
-					existingRunSteps,
-				);
-				setSelectedStepRunHistory(latestSnapshot);
+				setSelectedStepRunHistory([...existingRunSteps]);
 
 				toast.info("Step run completed", {
 					description: `Step run for ${data.step?.name} completed
@@ -315,12 +309,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		}
 
 		var updateStepRuns = [...stepRunHistory, ...res.data];
-		var latestSnapshot = createLatestStepRunSnapShotFromRunHistory(
-			workflow,
-			updateStepRuns,
-		);
 
-		setSelectedStepRunHistory(latestSnapshot);
+		setSelectedStepRunHistory(updateStepRuns);
 		toast("Workflow run completed", {
 			description: "Workflow run completed successfully",
 		});
