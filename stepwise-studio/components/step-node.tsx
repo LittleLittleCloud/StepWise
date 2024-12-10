@@ -53,28 +53,7 @@ import { ResizableDiv } from "./ui/resizableDiv";
 import { on } from "events";
 import { Switch } from "./ui/switch";
 import ImageUpload from "./image-upload";
-
-export type StepNodeStatus =
-	| "Running"
-	| "Failed"
-	| "Queue"
-	| "Completed"
-	| "NotReady";
-
-const ToStepNodeStatus = (status: string): StepNodeStatus => {
-	switch (status) {
-		case "Running":
-			return "Running";
-		case "Failed":
-			return "Failed";
-		case "Queue":
-			return "Queue";
-		case "Completed":
-			return "Completed";
-		default:
-			return "NotReady";
-	}
-};
+import { StepNodeStatus, ToStepNodeStatus } from "@/lib/stepRunUtils";
 
 export interface StepNodeProps extends StepRunDTO {
 	onRerunClick: (step: StepDTO) => void;
