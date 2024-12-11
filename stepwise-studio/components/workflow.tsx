@@ -49,6 +49,7 @@ import { useAccessToken } from "@/hooks/useAccessToken";
 import { v4 as uuidv4 } from "uuid";
 import { useRunSettingsStore } from "@/hooks/useVersion";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
+import { Toaster } from "./ui/sonner";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
@@ -427,7 +428,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					</div>
 				</ResizablePanel>
 				<ResizableHandle withHandle={true} />
-				<ResizablePanel defaultSize={20} minSize={20}>
+				<ResizablePanel defaultSize={30} minSize={30}>
 					<StepRunSidebar />
 				</ResizablePanel>
 			</ResizablePanelGroup>
