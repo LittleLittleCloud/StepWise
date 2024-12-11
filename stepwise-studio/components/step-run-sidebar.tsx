@@ -23,6 +23,10 @@ import { Markdown } from "./markdown";
 import { VariableCard } from "./variable-card";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 import { StepNodeStatus, ToStepNodeStatus } from "@/lib/stepRunUtils";
+import { Textarea } from "./ui/textarea";
+import { ChatControlBar } from "./chat-controlbar";
+import { ChatBox } from "./chatbox";
+import { ChatHistory } from "./chat-history";
 
 export interface StepRunSidebarProps {}
 
@@ -143,16 +147,16 @@ const StepRunSidebar: React.FC<StepRunSidebarProps> = () => {
 	const { selectedStepRunHistory } = useStepRunHistoryStore();
 
 	return (
-		<div className="flex flex-col h-screen h-max-screen p-4 shadow-xl bg-background rounded-lg overflow-y-auto">
-			{/* top bar */}
-			<span className="text-x font-bold text-nowrap">Run History</span>
-			{/* stepRuns */}
-			<div className="flex flex-col grow">
-				<Divider />
+		<div className="flex flex-col h-screen h-max-screen p-4 shadow-xl bg-sidebar rounded-lg">
+			<div className="flex flex-col grow  overflow-y-auto mb-8">
 				{selectedStepRunHistory.map((stepRun, index) => (
 					<StepRunCard key={index} stepRun={stepRun} />
 				))}
+				<ChatHistory />
 			</div>
+			{/* add a chat input to the bottom */}
+			<ChatBox />
+			<ChatControlBar />
 		</div>
 	);
 };
