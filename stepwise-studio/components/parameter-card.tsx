@@ -40,27 +40,26 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 		<div
 			style={{ userSelect: "text" }}
 			className={cn(
-				"w-full flex flex-col gap-1 rounded cursor-default px-1 py-0.5 nodrag nopan ",
+				"w-full flex flex-col gap-1 rounded cursor-default px-1 py-1 nodrag nopan ",
 			)}
 		>
 			<div
 				className="flex flex-wrap gap-x-5 justify-between hover:cursor-pointer"
 				onClick={() => setCollapsed(!collapsed)}
 			>
-				<div className="flex gap-2 items-center">
-					<div className="text-xs">{name}</div>
+				<div className="flex flex-wrap gap-2 items-center">
+					<p>{name}</p>
 					{parameterType != "" && (
-						<div
+						<p
 							className={cn(
 								badgeVariants({
 									variant: "green",
-									size: "tiny",
 								}),
-								"text-xs px-1 border-none truncate",
+								"px-3 py-0 h-4 justify-center text-sm truncate flex items-center",
 							)}
 						>
 							{getDisplayType(parameterType)}
-						</div>
+						</p>
 					)}
 				</div>
 
@@ -69,12 +68,16 @@ export const ParameterCard: React.FC<ParameterCardProps> = (props) => {
 					variable &&
 					showAsMarkdown(getDisplayType(parameterType)) &&
 					variable.displayValue && (
-						<span className="text-xs truncate bg-background/50 rounded px-1 max-w-[10rem]">
+						<span className="truncate bg-background rounded px-1 max-w-[10rem]">
 							{variable.displayValue}
 						</span>
 					)}
 			</div>
-			{!collapsed && variable && <VariableCard variable={variable} />}
+			{!collapsed && variable && (
+				<div className="flex flex-col gap-1 bg-background">
+					<VariableCard variable={variable} />
+				</div>
+			)}
 		</div>
 	);
 };

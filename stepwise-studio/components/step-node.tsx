@@ -31,6 +31,7 @@ import {
 	CheckCircle2,
 	CircleUserRound,
 	Clock,
+	FileText,
 	FormInputIcon,
 	Loader2,
 	LoaderCircle,
@@ -51,35 +52,15 @@ import "react-resizable/css/styles.css";
 import { ResizableDiv } from "./ui/resizableDiv";
 import { on } from "events";
 import { Switch } from "./ui/switch";
-
-export type StepNodeStatus =
-	| "Running"
-	| "Failed"
-	| "Queue"
-	| "Completed"
-	| "NotReady";
-
-const ToStepNodeStatus = (status: string): StepNodeStatus => {
-	switch (status) {
-		case "Running":
-			return "Running";
-		case "Failed":
-			return "Failed";
-		case "Queue":
-			return "Queue";
-		case "Completed":
-			return "Completed";
-		default:
-			return "NotReady";
-	}
-};
+import ImageUpload from "./image-upload";
+import { StepNodeStatus, ToStepNodeStatus } from "@/lib/stepRunUtils";
 
 export interface StepNodeProps extends StepRunDTO {
 	onRerunClick: (step: StepDTO) => void;
 	onClearClick: (step: StepDTO) => void;
 	onSubmitOutput: (output: VariableDTO) => void;
 	onCancelInput: () => void;
-	onResize: (height: number, width: number) => void;
+	onResize: (height?: number, width?: number) => void;
 	isWorkflowRunning: boolean;
 	width?: number;
 	height?: number;
@@ -99,7 +80,7 @@ const StepNodeStatusIndicator: React.FC<{
 		setIsRunning(isWorkflowRunning);
 	}, [status, isWorkflowRunning, stepType]);
 
-	const size = 12;
+	const size = 16;
 
 	const getStatusInfo = (status: StepNodeStatus) => {
 		switch (status) {
@@ -172,7 +153,7 @@ const StepNodeStatusIndicator: React.FC<{
 					variant: "outline",
 					size: "tinyIcon",
 				}),
-				"w-4 h-4",
+				"flex h-full items-center justify-center",
 			)}
 		>
 			<Icon
@@ -215,6 +196,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const [inputNumber, setInputNumber] = useState<number | undefined>(
 		undefined,
 	);
+	const [description, setDescription] = useState<string | undefined>(
+		prop.data.step?.description ?? undefined,
+	);
 	const [inputSwitch, setInputSwitch] = useState<boolean>(false);
 
 	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
@@ -222,6 +206,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	);
 	const [width, setWidth] = useState<number | undefined>(prop.data.width);
 	const [height, setHeight] = useState<number | undefined>(prop.data.height);
+	const [collapseDescription, setCollapseDescription] =
+		useState<boolean>(true);
 
 	const [exceptionDTO, setExceptionDTO] = useState<ExceptionDTO | undefined>(
 		prop.data.exception,
@@ -232,6 +218,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	) => {
 		return status === "Queue" && stepType !== "Ordinary";
 	};
+
+	const iconSize = 16;
 
 	useEffect(() => {
 		if (!stepNodeRef.current) return;
@@ -272,6 +260,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	useEffect(() => {
 		setOutput(prop.data.result ?? undefined);
 	}, [prop.data.result]);
+
+	useEffect(() => {
+		setDescription(prop.data.step?.description ?? undefined);
+	}, [prop.data.step?.description]);
 
 	useEffect(() => {
 		setIsSelected(prop.selected ?? false);
@@ -319,7 +311,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	var resizeCallback = useCallback(() => {
 		const offsets = Array.from(parameterRefMap.current.values()).map(
-			(el) => el.offsetTop + 11,
+			(el) => el.offsetTop + 16,
 		);
 		var newOffsetMap = new Map<string, number>();
 		offsets.forEach((offset, index) => {
@@ -340,6 +332,24 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	useEffect(() => {
 		if (stepNodeRef.current) {
+			// this usually means that the content of this node has changed
+			// so we want to automatically adjust the weight to present the content in a nicer way
+			// by setting the width to undefined, the prop.data.onResize will be invoked
+			// and the new width will be re-calculated when the node is re-rendered
+			// if (
+			// 	height !== stepNodeRef.current.offsetHeight &&
+			// 	width === stepNodeRef.current.offsetWidth &&
+			// 	width !== undefined
+			// ) {
+			// 	console.log("Setting width to undefined");
+			// 	prop.data.onResize(
+			// 		undefined,
+			// 		undefined,
+			// 	);
+
+			// 	return;
+			// }
+
 			if (
 				height !== stepNodeRef.current.offsetHeight ||
 				width !== stepNodeRef.current.offsetWidth
@@ -348,6 +358,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					stepNodeRef.current.offsetHeight ?? height,
 					width ?? stepNodeRef.current.offsetWidth,
 				);
+
+				return;
 			}
 		}
 	}, [
@@ -361,13 +373,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	return (
 		<div
 			className={cn(
-				"border-2 rounded-md shadow-md p-1 bg-background/50 group",
+				"border-2 rounded-md shadow-md p-2 bg-background/50 group",
 				// set weight and height
 				isSelected ? "border-primary/40" : "border-transparent",
-				width ?? "max-w-48",
-				shouldWaitForInput(status, stepType)
-					? "border-primary p-2"
-					: "",
+				width ?? "max-w-80",
+				shouldWaitForInput(status, stepType) ? "border-primary" : "",
 			)}
 			ref={stepNodeRef}
 		>
@@ -379,11 +389,11 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						border: "none",
 					}}
 					onResize={(event, param) => {
-						setWidth(param.width);
-						setHeight(param.height);
+						if (Math.abs(param.width - width) > 10) {
+							setWidth(param.width);
+						}
 					}}
 					onResizeEnd={(event, param) => {
-						setHeight(stepNodeRef.current!.offsetHeight);
 						setWidth(stepNodeRef.current!.offsetWidth);
 					}}
 					minWidth={128}
@@ -402,20 +412,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			)}
 			{/* settings bar */}
 			{/* appear when hover */}
-			<div className="invisible flex group-hover:visible absolute -top-5 right-0 bg-background/50 rounded gap-1 m-0 p-1">
-				{/* <Button
-					variant={"outline"}
-					size={"xxsIcon"}
-					className="m-0 p-0"
-					onClick={() => {
-						prop.data.onRerunClick(step);
-					}}
-				>
-					<Play />
-				</Button> */}
+			<div className="invisible flex group-hover:visible absolute -top-7 right-0 bg-background/50 rounded gap-1 m-0 p-1">
 				<Button
 					variant={"outline"}
-					size={"xxsIcon"}
+					size={"tinyIcon"}
 					className="m-0 p-0"
 					onClick={() => prop.data.onClearClick(step)}
 				>
@@ -426,16 +426,16 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			{step.name && (
 				<div className="flex flex-col">
 					<div className="flex gap-1 items-center">
-						<div ref={titleRef}>
+						<div ref={titleRef} className="items-center">
 							<StepNodeStatusIndicator
 								status={status}
 								isWorkflowRunning={isWorkflowRunning}
 								stepType={stepType ?? "Ordinary"}
 							/>
 						</div>
-						<h2 className="text-xs font-semibold text-nowrap pr-5 truncate">
+						<h1 className="font-semibold text-nowrap pr-5 truncate">
 							{step.name}
-						</h2>
+						</h1>
 						<Handle
 							type="source"
 							position={Position.Right}
@@ -445,10 +445,45 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							style={{ top: sourceHandleTopOffset, right: 5 }}
 						/>
 					</div>
-					{step.description && (
-						<h6 className="text-xs text-primary/80">
-							{step.description}
-						</h6>
+					{description && (
+						<div className="w-full py-1 bg-accent rounded-md hover:bg-accent/50">
+							<div
+								className="flex flex-wrap gap-x-5 gap-y-1 items-center cursor-pointer"
+								onClick={() =>
+									setCollapseDescription(!collapseDescription)
+								}
+							>
+								<div className="flex gap-1 flex-grow items-center">
+									<Button
+										variant={"outline"}
+										size={"tinyIcon"}
+										className="m-0 p-0"
+									>
+										<FileText size={iconSize} />
+									</Button>
+									<h1 className="font-semibold">
+										Description
+									</h1>
+								</div>
+								{!collapseDescription && (
+									<span className="bg-background max-w-[10rem] rounded-md truncate px-2">
+										{description}
+									</span>
+								)}
+							</div>
+							{collapseDescription && (
+								<div
+									className={cn(
+										"flex rounded-md m-1 bg-background items-center nodrag nopan cursor-text",
+									)}
+									style={{ userSelect: "text" }}
+								>
+									<Markdown className="w-full overflow-x-auto">
+										{description}
+									</Markdown>
+								</div>
+							)}
+						</div>
 					)}
 				</div>
 			)}
@@ -459,12 +494,12 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<Brackets size={12} />
+							<Brackets size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold">Parameter</h3>
+						<h1 className="font-semibold">Parameter</h1>
 					</div>
 					<div className="flex flex-col gap-1">
 						{parameters.map((param, index) => (
@@ -496,7 +531,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 										top: targetHandleTopOffsets.get(
 											param.variable_name!,
 										),
-										left: 10,
+										left: 13,
 									}}
 								/>
 							</div>
@@ -526,7 +561,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						variable_name="error"
 						variable={{
 							name: "error",
-							type: "",
+							type: "error",
 							displayValue:
 								exceptionDTO.message +
 								"\n" +
@@ -544,16 +579,16 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<FormInputIcon size={12} />
+							<FormInputIcon size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold">Input</h3>
+						<p className="font-semibold">Input</p>
 					</div>
 					<textarea
 						onDrag={(e) => e.stopPropagation()}
-						className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
+						className="border border-gray-300 rounded p-1 focus:border-accent/50 nodrag"
 						placeholder="Enter text"
 						value={inputText}
 						onChange={(e) => setInputText(e.target.value)}
@@ -562,7 +597,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"outline"}
 							size={"tiny"}
-							className="bg-accent hover:bg-accent/50"
+							className="bg-accent hover:bg-accent/50 text-base"
 							onClick={() => {
 								if (output?.displayValue === inputText) return;
 								var variable = {
@@ -581,6 +616,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"destructive"}
 							size={"tiny"}
+							className="text-base"
 							onClick={() => {
 								prop.data.onCancelInput();
 							}}
@@ -597,17 +633,17 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<FormInputIcon size={12} />
+							<FormInputIcon size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold">Input</h3>
+						<h3 className="font-semibold">Input</h3>
 					</div>
 
 					<input
 						type="number"
-						className="border border-gray-300 rounded p-1 text-xs focus:border-accent/50 nodrag"
+						className="border border-gray-300 rounded p-1 focus:border-accent/50 nodrag"
 						placeholder="Enter number"
 						value={inputNumber ?? ""}
 						onChange={(e) => setInputNumber(Number(e.target.value))}
@@ -617,7 +653,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"outline"}
 							size={"tiny"}
-							className="bg-accent hover:bg-accent/50"
+							className="bg-accent hover:bg-accent/50 text-base"
 							onClick={() => {
 								if (
 									output?.displayValue ===
@@ -640,6 +676,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"destructive"}
 							size={"tiny"}
+							className="text-base"
 							onClick={() => {
 								prop.data.onCancelInput();
 							}}
@@ -656,12 +693,12 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex gap-1 items-center">
 						<Button
 							variant={"outline"}
-							size={"xxsIcon"}
-							className="w-4 h-4 m-0 p-0"
+							size={"tinyIcon"}
+							className="m-0 p-0"
 						>
-							<FormInputIcon size={12} />
+							<FormInputIcon size={iconSize} />
 						</Button>
-						<h3 className="text-xs font-semibold grow">Input</h3>
+						<h3 className="font-semibold grow">Input</h3>
 
 						<Switch
 							checked={inputSwitch}
@@ -674,7 +711,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"outline"}
 							size={"tiny"}
-							className="bg-accent hover:bg-accent/50"
+							className="bg-accent hover:bg-accent/50 text-base"
 							onClick={() => {
 								if (
 									output?.displayValue ===
@@ -699,6 +736,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						<Button
 							variant={"destructive"}
 							size={"tiny"}
+							className="text-base"
 							onClick={() => {
 								prop.data.onCancelInput();
 							}}
@@ -707,6 +745,27 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						</Button>
 					</div>
 				</div>
+			)}
+
+			{/* Process Image Input */}
+			{stepType === "StepWiseUIImageInput" && status === "Queue" && (
+				<ImageUpload
+					onCanceled={() => {
+						prop.data.onCancelInput();
+					}}
+					onUpload={async (file) => {
+						var variable = {
+							name: step.name,
+							type: "StepWiseImage",
+							displayValue: file.name,
+							value: file,
+							generation: prop.data.generation,
+						} as VariableDTO;
+
+						prop.data.onClearClick(step);
+						prop.data.onSubmitOutput(variable);
+					}}
+				/>
 			)}
 		</div>
 	);

@@ -1,35 +1,21 @@
 import Image from "next/image";
 import localFont from "next/font/local";
-import Sidebar from "@/components/sidebar";
-import {
-	client,
-	getApiV1StepWiseControllerV1ListWorkflow,
-	getApiV1StepWiseControllerV1Version,
-	postApiV1StepWiseControllerV1ExecuteStep,
-	StepDTO,
-	StepRunDTO,
-	WorkflowDTO,
-} from "@/stepwise-client";
-import ReactFlow, {
-	Background,
-	Controls,
-	Edge,
-	Connection,
-	Node,
-	useNodesState,
-	useEdgesState,
-} from "reactflow";
+import StepWiseSidebar from "@/components/sidebar";
+import { client } from "@/stepwise-client";
 import "reactflow/dist/style.css";
 import Workflow, { WorkflowData } from "@/components/workflow";
 import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
-import { getLayoutedElements } from "@/lib/utils";
-
+import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useRouter } from "next/router";
+import { create } from "zustand";
 import {
 	ResizableHandle,
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { LLMConfiguration } from "@/components/llm-configuration";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -51,139 +37,56 @@ if (process.env.NODE_ENV === "development") {
 	});
 }
 
+export type Page = "workflow" | "llm-configuration";
+
+export interface PageState {
+	currentPage: Page;
+	selectPage: (page: Page) => void;
+}
+
+export const usePageStore = create<PageState>((set) => ({
+	currentPage: "workflow",
+	selectPage: (page) => set({ currentPage: page }),
+}));
+
 export default function Home() {
-	const [selectedWorkflow, setSelectedWorkflow] = useState<
-		WorkflowData | undefined
-	>(undefined);
-	const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
-	const [version, setVersion] = useState<string | null>(null);
+	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+	const router = useRouter();
+	const configuration = useStepwiseServerConfiguration();
+	const currentPage = usePageStore((state) => state.currentPage);
 
 	useEffect(() => {
-		getApiV1StepWiseControllerV1ListWorkflow()
-			.then((res) => {
-				var workflows: WorkflowData[] = [];
-
-				for (const workflow of res.data ?? []) {
-					var nodes = workflow.steps?.map((step: StepDTO) => ({
-						id: step.name,
-						width: 200,
-						height: 200,
-						position: { x: 0, y: 0 },
-					})) as Node[];
-
-					var edges =
-						workflow.steps?.reduce((edges, step) => {
-							return edges.concat(
-								step.dependencies?.map((dep) => {
-									return {
-										id: `${step.name}-${dep}`,
-										source: dep,
-										target: step.name,
-										sourceHandle: dep,
-										targetHandle: step.name + "-" + dep,
-										style: { stroke: "#555" },
-										animated: true,
-									} as Edge;
-								}) ?? [],
-							);
-						}, [] as Edge[]) ?? [];
-					var layout = getLayoutedElements(nodes, edges);
-
-					workflows.push({
-						...workflow,
-						stepSizes: layout.nodes.reduce(
-							(acc, node) => {
-								acc[node.id] = undefined;
-								return acc;
-							},
-							{} as {
-								[key: string]:
-									| {
-											width: number;
-											height: number;
-									  }
-									| undefined;
-							},
-						),
-						stepPositions: layout.nodes.reduce(
-							(acc, node) => {
-								acc[node.id] = {
-									x: node.position.x,
-									y: node.position.y,
-								};
-								return acc;
-							},
-							{} as { [key: string]: { x: number; y: number } },
-						),
-						stepRuns: [] as StepRunDTO[],
-					} as WorkflowData);
-				}
-				setWorkflows(workflows);
-				var maps = new Map<string, StepRunDTO[]>();
-				res.data?.forEach((workflow) => {
-					if (workflow.name === null || workflow.name === undefined) {
-						return;
-					}
-					maps.set(workflow.name, []);
-				});
-
-				setSelectedWorkflow(workflows[0] ?? undefined);
-			})
-			.catch((err) => {
-				console.error("Error getting workflows: ", err);
+		// Check authentication after loading completes
+		if (
+			!isLoading &&
+			!isAuthenticated &&
+			configuration?.enableAuth0Authentication
+		) {
+			loginWithRedirect({
+				appState: { returnTo: router.asPath },
 			});
-		getApiV1StepWiseControllerV1Version().then((res) => {
-			setVersion(res.data ?? "Unknown");
-		});
-	}, []);
+		}
+	}, [
+		isLoading,
+		isAuthenticated,
+		configuration,
+		loginWithRedirect,
+		router.asPath,
+	]);
 
-	useEffect(() => {
-		console.log("Selected workflow: ", selectedWorkflow);
-		// update workflow
-		setWorkflows((prev) => {
-			const newWorkflows = [...prev];
-			const index = newWorkflows.findIndex(
-				(workflow) => workflow.name === selectedWorkflow?.name,
-			);
-			if (index !== -1) {
-				newWorkflows[index] = selectedWorkflow!;
-			}
-			return newWorkflows;
-		});
-	}, [selectedWorkflow]);
-
-	const selectedWorkflowHandler = (workflow: WorkflowData) => {
-		setSelectedWorkflow((prev) => {
-			return workflows.find((w) => w.name === workflow.name);
-		});
-	};
-
-	return (
-		<div
-			className={`w-full flex bg-accent gap-5 min-h-screen ${geistSans} ${geistMono}`}
+	return isAuthenticated || !configuration?.enableAuth0Authentication ? (
+		<ResizablePanelGroup
+			direction="horizontal"
+			className="w-full h-screen flex"
 		>
-			<Sidebar
-				user="Test"
-				version={version ?? "Unknown"}
-				workflows={workflows}
-				selectedWorkflow={selectedWorkflow}
-				onWorkflowSelect={selectedWorkflowHandler}
-			/>
-			<Workflow
-				dto={selectedWorkflow}
-				onWorkflowChange={(workflowData) =>
-					setWorkflows((prev) => {
-						const newWorkflows = [...prev];
-						const index = newWorkflows.findIndex(
-							(workflow) => workflow.name === workflowData.name,
-						);
-						if (index !== -1) {
-							newWorkflows[index] = workflowData;
-						}
-						return newWorkflows;
-					})
-				}
-			/>
-		</div>
-	);
+			<ResizablePanel className="overflow-y-auto">
+				{currentPage === "workflow" && <Workflow />}
+				{currentPage === "llm-configuration" && <LLMConfiguration />}
+			</ResizablePanel>
+			<ResizableHandle withHandle={true} />
+			<ResizablePanel defaultSize={30} minSize={30}>
+				<StepRunSidebar />
+			</ResizablePanel>
+		</ResizablePanelGroup>
+	) : null;
 }

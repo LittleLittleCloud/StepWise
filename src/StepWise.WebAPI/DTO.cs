@@ -49,6 +49,7 @@ public record VariableDTO(
     {
         var json = variableDTO.Value?.RootElement.GetRawText() ?? throw new ArgumentNullException(nameof(variableDTO.Value));
         var value = JsonSerializer.Deserialize(json, variableType, _jsonSerializerOptions) ?? throw new ArgumentNullException(nameof(json));
+
         return StepVariable.Create(variableDTO.Name, value, variableDTO.Generation);
     }
 }
@@ -129,7 +130,7 @@ public record StepRunDTO(
     [property:JsonPropertyName("step")]
     StepDTO? Step,
     [property:JsonPropertyName("variables")]
-    VariableDTO[] Variables,
+    VariableDTO[]? Variables,
     [property:JsonPropertyName("result")]
     VariableDTO? Result,
     [property:JsonPropertyName("exception")]

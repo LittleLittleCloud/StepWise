@@ -28,6 +28,21 @@ export type StepRunDTO = {
 	status: string;
 };
 
+export type StepWiseImage = {
+	url?: string | null;
+	name?: string | null;
+	content_type?: string | null;
+	readonly blob_type?: string | null;
+};
+
+export type StepWiseServiceConfiguration = {
+	enableAuth0Authentication?: boolean;
+	auth0Domain?: string | null;
+	auth0ClientId?: string | null;
+	auth0Audience?: string | null;
+	version?: string | null;
+};
+
 export type VariableDTO = {
 	value?: unknown;
 	displayValue?: string | null;
@@ -45,10 +60,6 @@ export type WorkflowDTO = {
 export type GetApiV1StepWiseControllerV1GetResponse = unknown;
 
 export type GetApiV1StepWiseControllerV1GetError = unknown;
-
-export type GetApiV1StepWiseControllerV1VersionResponse = string;
-
-export type GetApiV1StepWiseControllerV1VersionError = unknown;
 
 export type GetApiV1StepWiseControllerV1GetStepData = {
 	query?: {
@@ -76,11 +87,17 @@ export type GetApiV1StepWiseControllerV1ListWorkflowResponse =
 
 export type GetApiV1StepWiseControllerV1ListWorkflowError = unknown;
 
+export type GetApiV1StepWiseControllerV1GetConfigurationResponse =
+	StepWiseServiceConfiguration;
+
+export type GetApiV1StepWiseControllerV1GetConfigurationError = unknown;
+
 export type PostApiV1StepWiseControllerV1ExecuteStepData = {
 	body?: Array<VariableDTO>;
 	query?: {
 		maxParallel?: number;
 		maxSteps?: number;
+		sessionID?: string;
 		step?: string;
 		workflow?: string;
 	};
@@ -91,6 +108,88 @@ export type PostApiV1StepWiseControllerV1ExecuteStepResponse =
 
 export type PostApiV1StepWiseControllerV1ExecuteStepError = unknown;
 
+export type GetBlobByPathData = {
+	path: {
+		path: string;
+	};
+};
+
+export type GetBlobByPathResponse = unknown;
+
+export type GetBlobByPathError = unknown;
+
+export type GetBlobByUserIdByPathData = {
+	path: {
+		path: string;
+		userID: string;
+	};
+};
+
+export type GetBlobByUserIdByPathResponse = unknown;
+
+export type GetBlobByUserIdByPathError = unknown;
+
+export type PostApiV1StepWiseControllerV1SaveCheckpointData = {
+	body?: Array<StepRunDTO>;
+	query?: {
+		checkpointName?: string;
+		workflow?: string;
+	};
+};
+
+export type PostApiV1StepWiseControllerV1SaveCheckpointResponse = string;
+
+export type PostApiV1StepWiseControllerV1SaveCheckpointError = unknown;
+
+export type GetApiV1StepWiseControllerV1LoadCheckpointData = {
+	query?: {
+		checkpointName?: string;
+		workflow?: string;
+	};
+};
+
+export type GetApiV1StepWiseControllerV1LoadCheckpointResponse =
+	Array<StepRunDTO>;
+
+export type GetApiV1StepWiseControllerV1LoadCheckpointError = unknown;
+
+export type DeleteApiV1StepWiseControllerV1DeleteCheckpointData = {
+	query?: {
+		checkpointName?: string;
+		workflow?: string;
+	};
+};
+
+export type DeleteApiV1StepWiseControllerV1DeleteCheckpointResponse = unknown;
+
+export type DeleteApiV1StepWiseControllerV1DeleteCheckpointError = unknown;
+
+export type GetApiV1StepWiseControllerV1ListCheckpointsData = {
+	query?: {
+		workflow?: string;
+	};
+};
+
+export type GetApiV1StepWiseControllerV1ListCheckpointsResponse = Array<string>;
+
+export type GetApiV1StepWiseControllerV1ListCheckpointsError = unknown;
+
+export type GetApiV1StepWiseControllerV1ExecuteStepSseData = {
+	query?: {
+		sessionID?: string;
+	};
+};
+
 export type GetApiV1StepWiseControllerV1ExecuteStepSseResponse = unknown;
 
 export type GetApiV1StepWiseControllerV1ExecuteStepSseError = unknown;
+
+export type PostApiV1StepWiseControllerV1UploadImageData = {
+	body?: {
+		image?: Blob | File;
+	};
+};
+
+export type PostApiV1StepWiseControllerV1UploadImageResponse = StepWiseImage;
+
+export type PostApiV1StepWiseControllerV1UploadImageError = unknown;

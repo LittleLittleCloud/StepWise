@@ -2,3 +2,6 @@ bin
 obj
 .vs
 .git
+*.log
+*.nupkg
+*.snupkg

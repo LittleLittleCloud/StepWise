@@ -19,6 +19,29 @@ const config = {
 			},
 		},
 		extend: {
+			typography: ({ theme }: { theme: (path: string) => string }) => ({
+				default: {
+					css: {
+						"--tw-prose-body": "hsl(var(--foreground) / 0.9)",
+						"--tw-prose-headings": "hsl(var(--foreground))",
+						"--tw-prose-lead": "hsl(var(--foreground) / 0.8)",
+						"--tw-prose-links": "hsl(var(--foreground))",
+						"--tw-prose-bold": "hsl(var(--foreground))",
+						"--tw-prose-counters": "hsl(var(--foreground) / 0.7)",
+						"--tw-prose-bullets": "hsl(var(--foreground) / 0.6)",
+						"--tw-prose-hr": "hsl(var(--foreground) / 0.3)",
+						"--tw-prose-quotes": "hsl(var(--foreground) / 0.9)",
+						"--tw-prose-quote-borders":
+							"hsl(var(--foreground) / 0.3)",
+						"--tw-prose-captions": "hsl(var(--foreground) / 0.7)",
+						"--tw-prose-code": "hsl(var(--foreground))",
+						"--tw-prose-pre-code": "hsl(var(--foreground))",
+						"--tw-prose-pre-bg": "hsl(var(--background))",
+						"--tw-prose-th-borders": "hsl(var(--foreground) / 0.3)",
+						"--tw-prose-td-borders": "hsl(var(--foreground) / 0.2)",
+					},
+				},
+			}),
 			colors: {
 				border: "hsl(var(--border))",
 				input: "hsl(var(--input))",
@@ -57,6 +80,18 @@ const config = {
 					DEFAULT: "hsl(var(--paper))",
 					foreground: "hsl(var(--paper-foreground))",
 				},
+				sidebar: {
+					DEFAULT: "hsl(var(--sidebar-background))",
+					foreground: "hsl(var(--sidebar-foreground))",
+					primary: "hsl(var(--sidebar-primary))",
+					"primary-foreground":
+						"hsl(var(--sidebar-primary-foreground))",
+					accent: "hsl(var(--sidebar-accent))",
+					"accent-foreground":
+						"hsl(var(--sidebar-accent-foreground))",
+					border: "hsl(var(--sidebar-border))",
+					ring: "hsl(var(--sidebar-ring))",
+				},
 			},
 			borderRadius: {
 				lg: "var(--radius)",
@@ -65,12 +100,20 @@ const config = {
 			},
 			keyframes: {
 				"accordion-down": {
-					from: { height: "0" },
-					to: { height: "var(--radix-accordion-content-height)" },
+					from: {
+						height: "0",
+					},
+					to: {
+						height: "var(--radix-accordion-content-height)",
+					},
 				},
 				"accordion-up": {
-					from: { height: "var(--radix-accordion-content-height)" },
-					to: { height: "0" },
+					from: {
+						height: "var(--radix-accordion-content-height)",
+					},
+					to: {
+						height: "0",
+					},
 				},
 			},
 			animation: {
@@ -78,7 +121,6 @@ const config = {
 				"accordion-up": "accordion-up 0.2s ease-out",
 			},
 		},
-
 		fontSize: {
 			xxs: "0.625rem",
 			xs: "0.75rem",
@@ -96,7 +138,10 @@ const config = {
 			"9xl": "8rem",
 		},
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		require("@tailwindcss/typography"),
+	],
 } satisfies Config;
 
 export default config;

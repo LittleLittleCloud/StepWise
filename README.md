@@ -7,14 +7,15 @@
 
 # StepWise
 
-[![NuGet version](https://badge.fury.io/nu/LittleLittleCloud.StepWise.svg)](https://badge.fury.io/nu/LittleLittleCloud.StepWise)
+[![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=stepwise&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fstepwisegallery20241128154731.azurewebsites.net%2F&up_message=demo&label=stepwise)](https://stepwisegallery20241128154731.azurewebsites.net/)
 [![Website](https://img.shields.io/badge/Website-StepWise-blue)](https://littlelittlecloud.github.io/StepWise/)
 </div>
 
 StepWise is a workflow engine build with C# and typescript. In StepWise, you define a workflow in C#, then visualize and execute it in StepWise UI.
 
 ## Demo
-[demo](https://github.com/user-attachments/assets/c2cb7d68-ccc9-4457-87c1-7aeecbf9df3c)
+[TextToImage](https://github.com/user-attachments/assets/9867b073-314a-4080-8b47-539af4cb25bd)
 
 ## Quick Start
 

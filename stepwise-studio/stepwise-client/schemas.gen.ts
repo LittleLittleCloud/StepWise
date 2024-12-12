@@ -102,6 +102,56 @@ export const StepRunDTOSchema = {
 	additionalProperties: false,
 } as const;
 
+export const StepWiseImageSchema = {
+	type: "object",
+	properties: {
+		url: {
+			type: "string",
+			nullable: true,
+		},
+		name: {
+			type: "string",
+			nullable: true,
+		},
+		content_type: {
+			type: "string",
+			nullable: true,
+		},
+		blob_type: {
+			type: "string",
+			nullable: true,
+			readOnly: true,
+		},
+	},
+	additionalProperties: false,
+} as const;
+
+export const StepWiseServiceConfigurationSchema = {
+	type: "object",
+	properties: {
+		enableAuth0Authentication: {
+			type: "boolean",
+		},
+		auth0Domain: {
+			type: "string",
+			nullable: true,
+		},
+		auth0ClientId: {
+			type: "string",
+			nullable: true,
+		},
+		auth0Audience: {
+			type: "string",
+			nullable: true,
+		},
+		version: {
+			type: "string",
+			nullable: true,
+		},
+	},
+	additionalProperties: false,
+} as const;
+
 export const VariableDTOSchema = {
 	required: ["generation", "name", "type"],
 	type: "object",

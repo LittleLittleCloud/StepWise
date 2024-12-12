@@ -5,155 +5,90 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Logging;
 using StepWise.Core;
-using StepWise.Core.Extension;
 
 namespace StepWise.WebAPI;
 
-public class StepWiseClient
+public class StepWiseServiceConfiguration
 {
-    private readonly ILogger<StepWiseClient>? _logger;
-    private readonly List<Workflow> _workflows = new();
-    public StepWiseClient(ILogger<StepWiseClient>? logger = null)
-    {
-        _logger = logger;
-    }
+    public const string DefaultWorkspace = "stepwise-workspace";
 
-    public event EventHandler<StepRunDTO>? StepRunEvent;
+    public const string BlobFolderName = "blob";
 
-    // get workflow
-    public Workflow? GetWorkflow(string workflowName)
-    {
-        return _workflows.Find(w => w.Name == workflowName);
-    }
+    public const string LogFolderName = "logs";
 
-    // add workflow
-    public void AddWorkflow(Workflow workflow)
-    {
-        // throw if workflow already exists
-        if (_workflows.Find(w => w.Name == workflow.Name) is not null)
-        {
-            throw new ArgumentException($"Workflow {workflow.Name} already exists");
-        }
+    public const string CheckpointFolderName = "checkpoints";
 
-        _workflows.Add(workflow);
-    }
+    [JsonIgnore]
+    public int BlobRetentionDays { get; set; } = 30;
 
-    public void RemoveWorkflow(string workflowName)
-    {
-        _workflows.RemoveAll(w => w.Name == workflowName);
-    }
+    [JsonIgnore]
+    public DirectoryInfo Workspace { get; set; } = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, DefaultWorkspace));
 
-    // list workflows
-    public IEnumerable<Workflow> ListWorkflow()
-    {
-        return _workflows;
-    }
+    public bool EnableAuth0Authentication { get; set; } = false;
 
-    // get step
-    public Step? GetStep(string workflowName, string stepName)
-    {
-        if (_workflows.Find(w => w.Name == workflowName) is Workflow workflow)
-        {
-            if (workflow.Steps.TryGetValue(stepName, out var step))
-            {
-                return step;
-            }
-        }
+    public string? Auth0Domain { get; set; } = "";
 
-        return null;
-    }
+    public string? Auth0ClientId { get; set; } = "";
 
-    // execute step
-    public async IAsyncEnumerable<StepRun> ExecuteStep(
-        string workflowName,
-        string? stepName = null,
-        int? maxSteps = null,
-        int maxParallel = 1,
-        StepVariable[]? input = null)
-    {
-        if (_workflows.Find(w => w.Name == workflowName) is not Workflow workflow)
-        {
-            yield break;
-        }
+    public string? Auth0Audience { get; set; } = "";
 
-        var engine = new StepWiseEngine(workflow, logger: _logger);
-        input ??= Array.Empty<StepVariable>();
-
-        var stopStragety = new StopStrategyPipeline();
-
-        if (stepName is not null && workflow.Steps.TryGetValue(stepName, out var step))
-        {
-            var earlyStopStrategy = new EarlyStopStrategy(stepName);
-            stopStragety.AddStrategy(earlyStopStrategy);
-
-            this._logger?.LogInformation($"Early stop strategy added for step {stepName}");
-        }
-
-        if (maxSteps is not null)
-        {
-            var maxStepsStopStrategy = new MaxStepsStopStrategy(maxSteps.Value);
-            stopStragety.AddStrategy(maxStepsStopStrategy);
-
-            this._logger?.LogInformation($"Max steps stop strategy added for {maxSteps} steps");
-        }
-
-
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, inputs: input, maxConcurrency: maxParallel, stopStrategy: stopStragety))
-        {
-            yield return stepRunAndResult;
-            StepRunEvent?.Invoke(this, StepRunDTO.FromStepRun(stepRunAndResult));
-        }
-    }
-
-    // list steps
-    public IEnumerable<Step> ListSteps(string workflowName)
-    {
-        if (_workflows.Find(w => w.Name == workflowName) is Workflow workflow)
-        {
-            return workflow.Steps.Values;
-        }
-
-        return Array.Empty<Step>();
-    }
+    public string? Version { get; set; }
 }
 
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]/[action]")]
 internal class StepWiseControllerV1 : ControllerBase
 {
     private readonly ILogger<StepWiseControllerV1>? _logger = null;
     private readonly StepWiseClient _client;
+    private readonly IWebHostEnvironment _environment;
+    private readonly StepWiseServiceConfiguration _stepWiseServiceConfiguration;
+    private static readonly ConcurrentDictionary<string, DateTime> _fileExpirations = new ConcurrentDictionary<string, DateTime>();
 
-    public StepWiseControllerV1(StepWiseClient client, ILogger<StepWiseControllerV1>? logger = null)
+    public StepWiseControllerV1(
+        StepWiseClient client,
+        IWebHostEnvironment environment,
+        StepWiseServiceConfiguration configuration,
+        ILogger<StepWiseControllerV1>? logger = null)
     {
         _client = client;
         _logger = logger;
+        _environment = environment;
+        _stepWiseServiceConfiguration = configuration;
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        // create the workspace directory if it does not exist
+        if (!_stepWiseServiceConfiguration.Workspace.Exists)
+        {
+            _stepWiseServiceConfiguration.Workspace.Create();
+        }
+
+        if (_stepWiseServiceConfiguration.Version is null)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var version = assembly.GetName().Version;
+            var versionString = $"{version!.Major}.{version.Minor}.{version.Build}";
+
+            _stepWiseServiceConfiguration.Version = versionString;
+        }
     }
 
     [HttpGet]
     public IActionResult Get()
     {
         return Ok("Hello, StepWise!");
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<string>> Version()
-    {
-        _logger?.LogInformation("Getting version");
-
-        var assembly = Assembly.GetExecutingAssembly();
-        var version = assembly.GetName().Version;
-
-        // return major.minor.patch
-
-        var versionString = $"{version!.Major}.{version.Minor}.{version.Build}";
-
-        return new OkObjectResult(versionString);
     }
 
     [HttpGet]
@@ -191,14 +126,23 @@ internal class StepWiseControllerV1 : ControllerBase
         return Ok(workflows.Select(WorkflowDTO.FromWorkflow).ToArray());
     }
 
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<ActionResult<StepWiseServiceConfiguration>> GetConfiguration()
+    {
+        return Ok(_stepWiseServiceConfiguration);
+    }
+
     [HttpPost]
     public async IAsyncEnumerable<StepRunDTO> ExecuteStep(
         string workflow,
+        Guid sessionID,
         string? step = null,
         int? maxSteps = null,
         int maxParallel = 1,
         VariableDTO[]? variables = null)
     {
+        var blobFolder = this.GetOrCreateBlobFolder();
         variables = variables ?? [];
         if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
         {
@@ -225,11 +169,38 @@ internal class StepWiseControllerV1 : ControllerBase
         foreach (var variable in variables)
         {
             var stepVariable = VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name]);
+
+            if (stepVariable.Value is StepWiseBlob blob && blob.Url?.Contains("/blob/") == true)
+            {
+                var mediaType = blob switch
+                {
+                    StepWiseImage image => image.ContentType,
+                    _ => null,
+                };
+
+                // load the blob from the file system
+                var filePath = Path.Combine(blobFolder, blob.Url.Split("/").Last()); // the file name will be the last part of the URL
+                if (System.IO.File.Exists(filePath))
+                {
+                    var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                    blob.Blob = BinaryData.FromBytes(fileBytes, mediaType: mediaType);
+                }
+            }
+
             inputs.Add(stepVariable);
         }
 
-        await foreach (var stepRun in _client.ExecuteStep(workflow, step, maxSteps, maxParallel, [.. inputs]))
+        await foreach (var stepRun in _client.ExecuteStep(workflow, sessionID, step, maxSteps, maxParallel, [.. inputs]))
         {
+            if (stepRun.Variable?.Value is StepWiseBlob blob && blob.Blob is not null && blob.Url is null)
+            {
+                // save the blob to the file system
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + blob.Name;
+                var filePath = Path.Combine(blobFolder, uniqueFileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, blob.Blob.ToArray());
+                blob.Url = User.Identity?.Name is string userName ? $"/blob/{SanitizeStringToFileName(userName)}/{uniqueFileName}" : $"/blob/{uniqueFileName}";
+            }
+
             var dto = StepRunDTO.FromStepRun(stepRun);
 
             yield return dto;
@@ -241,24 +212,162 @@ internal class StepWiseControllerV1 : ControllerBase
         }
     }
 
+    [AllowAnonymous]
+    [HttpGet("/blob/{path}")]
+    public IActionResult GetUploads(string path)
+    {
+        var filePath = Path.Combine(GetOrCreateBlobFolder(), path);
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound();
+        }
+        return PhysicalFile(filePath, "application/octet-stream");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("/blob/{userID}/{path}")]
+    public IActionResult GetUploads(string userID, string path)
+    {
+        var filePath = Path.Combine(GetOrCreateUserWorkspace(), userID, StepWiseServiceConfiguration.BlobFolderName, path);
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound();
+        }
+        return PhysicalFile(filePath, "application/octet-stream");
+    }
+
+    // save checkpoint
+    [HttpPost]
+    public async Task<ActionResult<string>> SaveCheckpointAsync(
+        string workflow,
+        string checkpointName,
+        StepRunDTO[] steps)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+
+        var workspace = this.GetOrCreateUserWorkspace();
+
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            Directory.CreateDirectory(checkpointFolder);
+        }
+
+        var checkpointPath = Path.Combine(checkpointFolder, checkpointName);
+        // check if the checkpoint exists in the workspace
+        if (Directory.Exists(checkpointPath))
+        {
+            return Conflict($"Checkpoint {checkpointName} already exists for workflow {workflow}");
+        }
+
+        var json = JsonSerializer.Serialize(steps);
+        await System.IO.File.WriteAllTextAsync(checkpointPath, json);
+
+        return Ok(checkpointName);
+    }
+
+    // load checkpoint
     [HttpGet]
-    public async Task ExecuteStepSse()
+    public async Task<ActionResult<StepRunDTO[]>> LoadCheckpointAsync(
+        string workflow,
+        string checkpointName)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+        var workspace = this.GetOrCreateUserWorkspace();
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            return NotFound($"Checkpoint folder for workflow {workflow} not found");
+        }
+        var checkpointPath = Path.Combine(checkpointFolder, checkpointName);
+        if (!System.IO.File.Exists(checkpointPath))
+        {
+            return NotFound($"Checkpoint {checkpointName} not found for workflow {workflow}");
+        }
+        var json = await System.IO.File.ReadAllTextAsync(checkpointPath);
+        var variables = JsonSerializer.Deserialize<StepRunDTO[]>(json);
+        return Ok(variables);
+    }
+
+    // delete checkpoint
+    [HttpDelete]
+    public async Task<ActionResult> DeleteCheckpointAsync(
+        string workflow,
+        string checkpointName)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+
+        var workspace = this.GetOrCreateUserWorkspace();
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            return NotFound($"Checkpoint folder for workflow {workflow} not found");
+        }
+        var checkpointPath = Path.Combine(checkpointFolder, checkpointName);
+        if (!System.IO.File.Exists(checkpointPath))
+        {
+            return NotFound($"Checkpoint {checkpointName} not found for workflow {workflow}");
+        }
+        System.IO.File.Delete(checkpointPath);
+        return Ok();
+    }
+
+    // list checkpoints
+    [HttpGet]
+    public async Task<ActionResult<string[]>> ListCheckpointsAsync(string workflow)
+    {
+        // check if the workflow exists
+        if (_client.GetWorkflow(workflow) is not Workflow workflowObject)
+        {
+            return NotFound($"Workflow {workflow} not found");
+        }
+        var workspace = this.GetOrCreateUserWorkspace();
+        var checkpointFolder = Path.Combine(workspace, StepWiseServiceConfiguration.CheckpointFolderName, workflow);
+        if (!Directory.Exists(checkpointFolder))
+        {
+            return Ok(Array.Empty<string>());
+        }
+        var checkpoints = Directory.GetFiles(checkpointFolder).Select(Path.GetFileName).ToArray();
+        return Ok(checkpoints);
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task ExecuteStepSse(Guid sessionID)
     {
         _logger?.LogInformation("ExecuteStepSse");
         Response.Headers.Append("Content-Type", "text/event-stream");
         Response.Headers.Append("Content-Type", "text/event-stream");
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
+        _logger?.LogInformation($"SessionID: {sessionID}");
 
-        EventHandler<StepRunDTO> eventHandler = (sender, stepRun) =>
+        EventHandler<(StepRunDTO, Guid)> eventHandler = (sender, stepRun) =>
         {
-            _logger?.LogInformation($"StepRunEvent: {stepRun}");
+            _logger?.LogInformation($"StepRunEvent: {stepRun.Item1}");
+            _logger?.LogInformation($"ssID: {stepRun.Item2}");
+            if (stepRun.Item2 != sessionID)
+            {
+                return;
+            }
             var sseEvent = new SSEEvent
             {
                 Id = DateTime.Now.Ticks.ToString(),
                 Retry = 10,
                 Event = nameof(StepRunDTO),
-                Data = JsonSerializer.Serialize(stepRun),
+                Data = JsonSerializer.Serialize(stepRun.Item1),
             };
 
             var sseData = Encoding.UTF8.GetBytes(sseEvent.ToString());
@@ -276,6 +385,96 @@ internal class StepWiseControllerV1 : ControllerBase
         }
 
         _client.StepRunEvent -= eventHandler;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<StepWiseImage>> UploadImage(IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest("No image file provided.");
+        }
+
+        var blobFolder = this.GetOrCreateBlobFolder();
+
+        try
+        {
+            if (!Directory.Exists(blobFolder))
+            {
+                Directory.CreateDirectory(blobFolder);
+            }
+
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + image.FileName;
+            string filePath = Path.Combine(blobFolder, uniqueFileName);
+
+            // Read the incoming byte array
+            byte[] fileBytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                await image.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
+
+            // Log the first 100 bytes
+            _logger?.LogInformation($"First 100 bytes: {BitConverter.ToString(fileBytes.Take(100).ToArray())}");
+
+            // Save the original file
+            await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
+
+            // Set expiration time
+            int retentionDays = _stepWiseServiceConfiguration.BlobRetentionDays;
+            DateTime expirationDate = DateTime.UtcNow.AddDays(retentionDays);
+            _fileExpirations[uniqueFileName] = expirationDate;
+            var result = new StepWiseImage
+            {
+                Url = User.Identity?.Name is string userName ? $"/blob/{SanitizeStringToFileName(userName)}/{uniqueFileName}" : $"/blob/{uniqueFileName}",
+                Name = image.FileName,
+                ContentType = image.ContentType,
+            };
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    private string GetOrCreateUserWorkspace()
+    {
+        var workspace = User.Identity?.Name switch
+        {
+            null => _stepWiseServiceConfiguration.Workspace.FullName,
+            string userName => Path.Combine(_stepWiseServiceConfiguration.Workspace.FullName, SanitizeStringToFileName(userName)),
+        };
+
+        if (!Directory.Exists(workspace))
+        {
+            Directory.CreateDirectory(workspace);
+        }
+
+        return workspace;
+    }
+
+    private string SanitizeStringToFileName(string userID)
+    {
+        // remove invalid characters
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var sanitized = new string(userID.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
+        return sanitized;
+    }
+
+    private string GetOrCreateBlobFolder()
+    {
+        var workspace = this.GetOrCreateUserWorkspace();
+        var blobFolder = Path.Combine(workspace, StepWiseServiceConfiguration.BlobFolderName);
+        if (!Directory.Exists(blobFolder))
+        {
+            Directory.CreateDirectory(blobFolder);
+        }
+
+        return blobFolder;
+
     }
 }
 

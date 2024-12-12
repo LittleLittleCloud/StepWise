@@ -83,22 +83,24 @@ export function getDisplayType(type: string) {
 }
 
 export function showAsMarkdown(
-	type: "str" | "number" | "bool" | "object" | string,
+	type: "str" | "number" | "bool" | "object" | "error" | string,
 ) {
-	return ["object"].indexOf(type) < 0;
+	return ["str", "number", "bool", "object", "error"].includes(type);
 }
 
 export type StepType =
 	| "Ordinary"
 	| "StepWiseUITextInput"
 	| "StepWiseUINumberInput"
-	| "StepWiseUISwitchInput";
+	| "StepWiseUISwitchInput"
+	| "StepWiseUIImageInput";
 
 const stepTypeMap: Record<string, StepType> = {
 	Ordinary: "Ordinary",
 	StepWiseUITextInput: "StepWiseUITextInput",
 	StepWiseUINumberInput: "StepWiseUINumberInput",
 	StepWiseUISwitchInput: "StepWiseUISwitchInput",
+	StepWiseUIImageInput: "StepWiseUIImageInput",
 };
 
 export const ConvertStringToStepType = (type: string): StepType => {
