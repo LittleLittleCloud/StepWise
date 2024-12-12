@@ -2,11 +2,12 @@ import { create } from "zustand";
 import { Markdown } from "./markdown";
 import { X } from "lucide-react";
 import { Button } from "./ui/button";
+import React from "react";
 
 export interface ChatMessage {
 	message: string;
 	sender?: string;
-	avatar?: string; // must be a url
+	avatar?: string | React.ReactNode;
 }
 
 export interface ChatHistoryState {
@@ -45,13 +46,14 @@ export const ChatMessageCard: React.FC<ChatMessage & { index: number }> = ({
 		<div className="flex flex-col w-full gap-1 group">
 			<div className="flex items-center w-full relative ">
 				<div className="flex items-center gap-2">
-					{avatar && (
+					{avatar && typeof avatar === "string" && (
 						<img
 							src={avatar}
 							alt="avatar"
 							className="w-10 h-10 rounded-full"
 						/>
 					)}
+					{avatar && typeof avatar !== "string" && avatar}
 					{sender && <span className="font-bold">{sender}</span>}
 				</div>
 				{/* add x button */}

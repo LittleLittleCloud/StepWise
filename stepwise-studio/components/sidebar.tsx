@@ -24,6 +24,7 @@ import {
 	Icon,
 	LucideGithub,
 	Moon,
+	Settings,
 	Sun,
 	ToggleRightIcon,
 } from "lucide-react";
@@ -36,7 +37,7 @@ import StepWiseIcon from "@/public/stepwise-logo.svg";
 import Image from "next/image";
 import Link from "next/link";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
-import { useWorkflow } from "@/hooks/useWorkflow";
+import { useWorkflow, useWorkflowStore } from "@/hooks/useWorkflow";
 import {
 	Sidebar,
 	SidebarContent,
@@ -54,6 +55,7 @@ import {
 } from "./ui/sidebar";
 import SidebarAccountMenu from "./account";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
+import { usePageStore } from "@/pages";
 
 interface SidebarProps {}
 
@@ -62,6 +64,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 	const { theme, setTheme, systemTheme } = useTheme();
 	const [mounted, setMounted] = useState(false);
 	const { workflows, setSelectedWorkflow, selectedWorkflow } = useWorkflow();
+	const selectPage = usePageStore((state) => state.selectPage);
 	const {
 		setSelectedStepRunHistory,
 		selectedStepRunHistory,
@@ -167,6 +170,7 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 												: ""
 										}
 										onClick={() => {
+											selectPage("workflow");
 											setSelectedWorkflow(workflow);
 											if (
 												stepRunHistories[workflow.name]
@@ -195,6 +199,16 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 			<SidebarSeparator />
 			<SidebarFooter>
 				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							onClick={() => {
+								selectPage("llm-configuration");
+							}}
+						>
+							<Settings size={iconSize} />
+							<span className="text-sm">Configure LLMs</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
 					<SidebarMenuItem>
 						<SidebarMenuButton>
 							<Bug size={iconSize} />

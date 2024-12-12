@@ -6,12 +6,16 @@ import "reactflow/dist/style.css";
 import Workflow, { WorkflowData } from "@/components/workflow";
 import StepRunSidebar from "@/components/step-run-sidebar";
 import { use, useEffect, useState } from "react";
-import { getLayoutedElements } from "@/lib/utils";
-
-import { withAuthenticationRequired } from "@auth0/auth0-react";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useRouter } from "next/router";
+import { create } from "zustand";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { LLMConfiguration } from "@/components/llm-configuration";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -33,10 +37,23 @@ if (process.env.NODE_ENV === "development") {
 	});
 }
 
+export type Page = "workflow" | "llm-configuration";
+
+export interface PageState {
+	currentPage: Page;
+	selectPage: (page: Page) => void;
+}
+
+export const usePageStore = create<PageState>((set) => ({
+	currentPage: "workflow",
+	selectPage: (page) => set({ currentPage: page }),
+}));
+
 export default function Home() {
 	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
 	const router = useRouter();
 	const configuration = useStepwiseServerConfiguration();
+	const currentPage = usePageStore((state) => state.currentPage);
 
 	useEffect(() => {
 		// Check authentication after loading completes
@@ -58,10 +75,18 @@ export default function Home() {
 	]);
 
 	return isAuthenticated || !configuration?.enableAuth0Authentication ? (
-		<div
-			className={`w-full flex bg-accent gap-5 min-h-screen ${geistSans} ${geistMono}`}
+		<ResizablePanelGroup
+			direction="horizontal"
+			className="w-full h-screen flex"
 		>
-			<Workflow />
-		</div>
+			<ResizablePanel>
+				{currentPage === "workflow" && <Workflow />}
+				{currentPage === "llm-configuration" && <LLMConfiguration />}
+			</ResizablePanel>
+			<ResizableHandle withHandle={true} />
+			<ResizablePanel defaultSize={30} minSize={30}>
+				<StepRunSidebar />
+			</ResizablePanel>
+		</ResizablePanelGroup>
 	) : null;
 }

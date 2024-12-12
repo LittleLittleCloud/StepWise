@@ -12,14 +12,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
 import Router from "next/router";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
+import { useOpenAIConfiguration } from "@/components/openai-configure-card";
 
 export default function App({ Component, pageProps }: AppProps) {
 	const [redirect_uri, setRedirectUri] = useState<string | null>(null);
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
+	const { readApiKeyFromStorage } = useOpenAIConfiguration();
 
 	useEffect(() => {
 		setRedirectUri(window.location.origin);
-		console.log("Redirect URI: ", window.location.origin);
+		readApiKeyFromStorage();
 	}, []);
 
 	return stepwiseConfiguration?.enableAuth0Authentication &&

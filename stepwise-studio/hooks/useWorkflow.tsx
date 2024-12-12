@@ -122,7 +122,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 					maps.set(workflow.name, []);
 				});
 				set({
-					selectedWorkflow: workflows[0] ?? undefined,
+					selectedWorkflow: get().selectedWorkflow ?? workflows[0],
 					workflows: workflows,
 				});
 			})
