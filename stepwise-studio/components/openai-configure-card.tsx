@@ -18,6 +18,7 @@ export interface OpenAIConfigurationState {
 	setApiKey: (apiKey: string) => void;
 	readApiKeyFromStorage: () => void;
 	saveApiKeyToStorage: () => void;
+	clearApiKey: () => void;
 }
 
 export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
@@ -35,22 +36,30 @@ export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
 				localStorage.setItem("stepwise-openai-api-key", get().apiKey!);
 			}
 		},
+		clearApiKey: () => {
+			set({ apiKey: undefined });
+			localStorage.removeItem("stepwise-openai-api-key");
+		},
 	}),
 );
 
 export const OpenAIConfigCard: React.FC = () => {
-	const { apiKey, setApiKey, saveApiKeyToStorage } = useOpenAIConfiguration();
+	const { apiKey, setApiKey, saveApiKeyToStorage, clearApiKey } =
+		useOpenAIConfiguration();
 
 	const [showKey, setShowKey] = useState(false);
 
 	const handleSave = async () => {
 		if (!apiKey) {
+			// clear the API key
+			toast.info("OpenAI API key cleared");
+			clearApiKey();
 			return;
+		} else {
+			// Save the API key to local storage
+			saveApiKeyToStorage();
+			toast.success("OpenAI API key saved successfully");
 		}
-
-		// Save the API key to local storage
-		saveApiKeyToStorage();
-		toast.success("OpenAI API key saved successfully");
 	};
 
 	return (

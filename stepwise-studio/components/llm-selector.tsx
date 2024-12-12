@@ -17,6 +17,7 @@ export interface LLMState {
 	selectedLLM?: LLMType;
 	selectLLM: (llm: LLMType) => void;
 	addLLM: (llm: LLMType) => void;
+	clearSelectedLLM: () => void;
 }
 
 export const useLLMSelectorStore = create<LLMState>((set) => ({
@@ -26,6 +27,7 @@ export const useLLMSelectorStore = create<LLMState>((set) => ({
 	addLLM: (llm) =>
 		set((state) => ({ availableLLMs: state.availableLLMs.add(llm) })),
 	loadLLMs: () => {},
+	clearSelectedLLM: () => set(() => ({ selectedLLM: undefined })),
 }));
 
 export const LLMSelector: React.FC = () => {
@@ -33,17 +35,29 @@ export const LLMSelector: React.FC = () => {
 	const openaiApi = useOpenAIConfiguration((state) => state.apiKey);
 	const selectLLM = useLLMSelectorStore((state) => state.selectLLM);
 	const selectedLLM = useLLMSelectorStore((state) => state.selectedLLM);
+	const clearSelectedLLM = useLLMSelectorStore(
+		(state) => state.clearSelectedLLM,
+	);
 
 	useEffect(() => {
+		const openaiLLM: LLMType[] = ["gpt-4o", "gpt-3.5-turbo", "gpt-4"];
 		if (openaiApi) {
-			const llmToAdd: LLMType[] = ["gpt-4o", "gpt-3.5-turbo", "gpt-4"];
-			llmToAdd.forEach((llm) => {
+			openaiLLM.forEach((llm) => {
 				useLLMSelectorStore.getState().addLLM(llm);
 			});
-		}
 
-		if (selectedLLM === undefined) {
-			selectLLM("gpt-4o");
+			if (selectedLLM === undefined) {
+				selectLLM("gpt-4o");
+			}
+		} else {
+			// clear openai LLMs
+			openaiLLM.forEach((llm) => {
+				useLLMSelectorStore.getState().availableLLMs.delete(llm);
+			});
+
+			if (openaiLLM.find((llm) => llm === selectedLLM)) {
+				clearSelectedLLM();
+			}
 		}
 	}, [openaiApi, selectedLLM]);
 	return availableLLMs.size === 0 ? (
