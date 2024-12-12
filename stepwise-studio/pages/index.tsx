@@ -79,8 +79,7 @@ export default function Home() {
 			direction="horizontal"
 			className="w-full h-screen flex"
 		>
-			<ResizablePanel
-				className="overflow-y-auto">
+			<ResizablePanel className="overflow-y-auto">
 				{currentPage === "workflow" && <Workflow />}
 				{currentPage === "llm-configuration" && <LLMConfiguration />}
 			</ResizablePanel>

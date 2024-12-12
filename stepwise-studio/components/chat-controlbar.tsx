@@ -12,7 +12,11 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useClaudeConfiguration } from "./claude-configure-card";
 import Anthropic from "@anthropic-ai/sdk";
-import { MessageParam, Model, TextBlock } from "@anthropic-ai/sdk/resources/messages.mjs";
+import {
+	MessageParam,
+	Model,
+	TextBlock,
+} from "@anthropic-ai/sdk/resources/messages.mjs";
 import OpenAIIcon from "@/public/openai-logo.png";
 import StepWiseIcon from "@/public/stepwise-logo.svg";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
@@ -30,9 +34,15 @@ export const ChatControlBar: React.FC = () => {
 	const [busy, setBusy] = React.useState(false);
 	const { user } = useAuth0();
 	const llmName = "Geeno";
-	const selectedStepRunHistory = useStepRunHistoryStore((state) => state.selectedStepRunHistory);
-	const createSnapshotFromSelectedStepRunHistory = useStepRunHistoryStore((state) => state.createLatestStepRunSnapShotFromRunHistory);
-	const selectedWorkflow = useWorkflowStore((state) => state.selectedWorkflow);
+	const selectedStepRunHistory = useStepRunHistoryStore(
+		(state) => state.selectedStepRunHistory,
+	);
+	const createSnapshotFromSelectedStepRunHistory = useStepRunHistoryStore(
+		(state) => state.createLatestStepRunSnapShotFromRunHistory,
+	);
+	const selectedWorkflow = useWorkflowStore(
+		(state) => state.selectedWorkflow,
+	);
 	const sendMessage = async () => {
 		let userMessage: ChatMessage;
 		if (configuration?.enableAuth0Authentication) {
@@ -48,15 +58,18 @@ export const ChatControlBar: React.FC = () => {
 				fromUser: true,
 			};
 		}
-		var snapShot = createSnapshotFromSelectedStepRunHistory(selectedWorkflow!, selectedStepRunHistory);
+		var snapShot = createSnapshotFromSelectedStepRunHistory(
+			selectedWorkflow!,
+			selectedStepRunHistory,
+		);
 		console.log(snapShot);
-		var variables = snapShot.filter((s) => s.result !== undefined );
+		var variables = snapShot.filter((s) => s.result !== undefined);
 		const systemMessagePrompt = `
 		You are a helpful assistant. Your name is ${llmName}.
 
 		Here are the context variables. You can refer to them in your responses.
 		${variables.map((v) => `${v.result?.name}: ${v.result?.displayValue}`).join("\n")}
-		`
+		`;
 
 		console.log(systemMessagePrompt);
 		addMessage(userMessage);
@@ -72,18 +85,25 @@ export const ChatControlBar: React.FC = () => {
 				dangerouslyAllowBrowser: true,
 			});
 
-			const openAIChatHistory = [...chatHistory, userMessage].map((msg) => {
-				if (msg.fromUser) {
-					return { role: "user", content: msg.message } as ChatCompletionMessageParam;
-				}
-				else {
-					return { role: "assistant", content: msg.message } as ChatCompletionMessageParam;
-				}
-			});
+			const openAIChatHistory = [...chatHistory, userMessage].map(
+				(msg) => {
+					if (msg.fromUser) {
+						return {
+							role: "user",
+							content: msg.message,
+						} as ChatCompletionMessageParam;
+					} else {
+						return {
+							role: "assistant",
+							content: msg.message,
+						} as ChatCompletionMessageParam;
+					}
+				},
+			);
 
 			const systemMessage: ChatCompletionMessageParam = {
-				"role" : "system",
-				"content" : systemMessagePrompt
+				role: "system",
+				content: systemMessagePrompt,
 			};
 			try {
 				setBusy(true);
@@ -114,20 +134,27 @@ export const ChatControlBar: React.FC = () => {
 		if (
 			selectedLLM === "claude-3-5-haiku-latest" ||
 			selectedLLM === "claude-3-5-sonnet-latest" ||
-			selectedLLM === "claude-3-opus-latest" &&
-			claudeApiKey
+			(selectedLLM === "claude-3-opus-latest" && claudeApiKey)
 		) {
 			const claudeClient = new Anthropic({
 				apiKey: claudeApiKey,
 				dangerouslyAllowBrowser: true,
 			});
 
-			const claudeChatHistory: MessageParam[] = [...chatHistory, userMessage].map((msg) => {
+			const claudeChatHistory: MessageParam[] = [
+				...chatHistory,
+				userMessage,
+			].map((msg) => {
 				if (msg.fromUser) {
-					return { role: "user", content: msg.message } as MessageParam;
-				}
-				else {
-					return { role: "assistant", content: msg.message } as MessageParam;
+					return {
+						role: "user",
+						content: msg.message,
+					} as MessageParam;
+				} else {
+					return {
+						role: "assistant",
+						content: msg.message,
+					} as MessageParam;
 				}
 			});
 

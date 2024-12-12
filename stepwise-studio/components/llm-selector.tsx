@@ -10,11 +10,7 @@ import {
 import { useOpenAIConfiguration } from "./openai-configure-card";
 import { useClaudeConfiguration } from "./claude-configure-card";
 import { Model } from "@anthropic-ai/sdk/resources/messages.mjs";
-export type LLMType =
-	| "gpt-4o"
-	| "gpt-3.5-turbo"
-	| "gpt-4"
-	| Model;
+export type LLMType = "gpt-4o" | "gpt-3.5-turbo" | "gpt-4" | Model;
 
 export interface LLMState {
 	availableLLMs: Set<LLMType>;
