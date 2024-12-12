@@ -379,59 +379,44 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	}, [nodes, edges, setNodes, setEdges, fitView]);
 
 	return (
-		<div className="w-full h-full bg-accent/10 items-center justify-center flex">
-			<ResizablePanelGroup
-				direction="horizontal"
-				className="w-full h-screen flex"
+		<div className="flex flex-col items-center h-screen">
+			<div className="flex items-center m-2 gap-5">
+				<ControlBar
+					isRunning={isRunning}
+					onResetStepRunResultClick={() => {
+						setSelectedStepRunHistory([]);
+						toast("Reset workflow", {
+							description: "All step runs have been reset",
+						});
+					}}
+					onAutoLayoutClick={onLayout}
+					onRunClick={() => {
+						onStepNodeRunClick(
+							selectedWorkflow!,
+							selectedStepRunHistory,
+							undefined,
+							maxParallel,
+							maxSteps,
+						);
+					}}
+				/>
+			</div>
+			<ReactFlow
+				nodes={nodes}
+				edges={edges}
+				onNodesChange={onNodesChangeRestricted}
+				nodeTypes={nodeTypes}
+				fitView
 			>
-				<ResizablePanel>
-					<div className="flex flex-col items-center h-screen">
-						<div className="flex items-center m-2 gap-5">
-							<ControlBar
-								isRunning={isRunning}
-								onResetStepRunResultClick={() => {
-									setSelectedStepRunHistory([]);
-									toast("Reset workflow", {
-										description:
-											"All step runs have been reset",
-									});
-								}}
-								onAutoLayoutClick={onLayout}
-								onRunClick={() => {
-									onStepNodeRunClick(
-										selectedWorkflow!,
-										selectedStepRunHistory,
-										undefined,
-										maxParallel,
-										maxSteps,
-									);
-								}}
-							/>
-						</div>
-						<ReactFlow
-							nodes={nodes}
-							edges={edges}
-							onNodesChange={onNodesChangeRestricted}
-							nodeTypes={nodeTypes}
-							fitView
-						>
-							<Controls />
-							<MiniMap
-								style={{
-									background:
-										theme === "dark" ? "#333" : "#fff",
-								}}
-								zoomable
-								pannable
-							/>
-						</ReactFlow>
-					</div>
-				</ResizablePanel>
-				<ResizableHandle withHandle={true} />
-				<ResizablePanel defaultSize={30} minSize={30}>
-					<StepRunSidebar />
-				</ResizablePanel>
-			</ResizablePanelGroup>
+				<Controls />
+				<MiniMap
+					style={{
+						background: theme === "dark" ? "#333" : "#fff",
+					}}
+					zoomable
+					pannable
+				/>
+			</ReactFlow>
 		</div>
 	);
 };
