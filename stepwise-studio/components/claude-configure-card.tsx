@@ -13,7 +13,7 @@ import { Input } from "./ui/input";
 import { create } from "zustand";
 import { toast } from "sonner";
 
-export interface OpenAIConfigurationState {
+export interface ClaudeConfigurationState {
 	apiKey?: string;
 	setApiKey: (apiKey: string) => void;
 	readApiKeyFromStorage: () => void;
@@ -21,44 +21,44 @@ export interface OpenAIConfigurationState {
 	clearApiKey: () => void;
 }
 
-export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
+export const useClaudeConfiguration = create<ClaudeConfigurationState>(
 	(set, get) => ({
 		apiKey: undefined,
 		setApiKey: (apiKey: string) => set({ apiKey }),
 		readApiKeyFromStorage: () => {
-			const apiKey = localStorage.getItem("stepwise-openai-api-key");
+			const apiKey = localStorage.getItem("stepwise-claude-api-key");
 			if (apiKey) {
 				set({ apiKey });
 			}
 		},
 		saveApiKeyToStorage: () => {
 			if (get().apiKey) {
-				localStorage.setItem("stepwise-openai-api-key", get().apiKey!);
+				localStorage.setItem("stepwise-claude-api-key", get().apiKey!);
 			}
 		},
 		clearApiKey: () => {
 			set({ apiKey: undefined });
-			localStorage.removeItem("stepwise-openai-api-key");
+			localStorage.removeItem("stepwise-claude-api-key");
 		},
 	}),
 );
 
-export const OpenAIConfigCard: React.FC = () => {
+export const ClaudeConfigCard: React.FC = () => {
 	const { apiKey, setApiKey, saveApiKeyToStorage, clearApiKey } =
-		useOpenAIConfiguration();
+		useClaudeConfiguration();
 
 	const [showKey, setShowKey] = useState(false);
 
 	const handleSave = async () => {
 		if (!apiKey) {
 			// clear the API key
-			toast.info("OpenAI API key cleared");
+			toast.info("Claude API key cleared");
 			clearApiKey();
 			return;
 		} else {
 			// Save the API key to local storage
 			saveApiKeyToStorage();
-			toast.success("OpenAI API key saved successfully");
+			toast.success("Claude API key saved successfully");
 		}
 	};
 
@@ -67,10 +67,10 @@ export const OpenAIConfigCard: React.FC = () => {
 			<Card className="max-w-80">
 				<CardHeader>
 					<CardTitle className="text-2xl">
-						OpenAI Configuration
+						Claude Configuration
 					</CardTitle>
 					<CardDescription>
-						Enter your OpenAI API key to enable AI features. Your
+						Enter your Claude API key to enable AI features. Your
 						API key is encrypted and stored securely.
 					</CardDescription>
 				</CardHeader>
@@ -80,7 +80,7 @@ export const OpenAIConfigCard: React.FC = () => {
 							type={showKey ? "text" : "password"}
 							value={apiKey}
 							onChange={(e) => setApiKey(e.target.value)}
-							placeholder="Enter your OpenAI API key"
+							placeholder="Enter your Claude API key"
 							className="pr-10"
 						/>
 						<Button
@@ -93,7 +93,7 @@ export const OpenAIConfigCard: React.FC = () => {
 
 					<div className="text-sm text-gray-500 flex items-center gap-2">
 						<Key size={14} />
-						<span>Find your API key in the OpenAI dashboard</span>
+						<span>Find your API key in the Claude dashboard</span>
 					</div>
 				</CardContent>
 				<CardFooter className="flex justify-end gap-3">
