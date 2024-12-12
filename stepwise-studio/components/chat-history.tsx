@@ -8,6 +8,7 @@ export interface ChatMessage {
 	message: string;
 	sender?: string;
 	avatar?: string | React.ReactNode;
+	fromUser: boolean;
 }
 
 export interface ChatHistoryState {

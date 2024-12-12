@@ -7,11 +7,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./ui/select";
-import { Button } from "./ui/button";
-import { Settings } from "lucide-react";
 import { useOpenAIConfiguration } from "./openai-configure-card";
+import { useClaudeConfiguration } from "./claude-configure-card";
+import { Model } from "@anthropic-ai/sdk/resources/messages.mjs";
+export type LLMType = "gpt-4o" | "gpt-3.5-turbo" | "gpt-4" | Model;
 
-export type LLMType = "gpt-4o" | "gpt-3.5-turbo" | "gpt-4";
 export interface LLMState {
 	availableLLMs: Set<LLMType>;
 	selectedLLM?: LLMType;
@@ -33,6 +33,7 @@ export const useLLMSelectorStore = create<LLMState>((set) => ({
 export const LLMSelector: React.FC = () => {
 	const availableLLMs = useLLMSelectorStore((state) => state.availableLLMs);
 	const openaiApi = useOpenAIConfiguration((state) => state.apiKey);
+	const claudeApi = useClaudeConfiguration((state) => state.apiKey);
 	const selectLLM = useLLMSelectorStore((state) => state.selectLLM);
 	const selectedLLM = useLLMSelectorStore((state) => state.selectedLLM);
 	const clearSelectedLLM = useLLMSelectorStore(
@@ -60,6 +61,33 @@ export const LLMSelector: React.FC = () => {
 			}
 		}
 	}, [openaiApi, selectedLLM]);
+
+	useEffect(() => {
+		const claudeLLM: LLMType[] = [
+			"claude-3-5-haiku-latest",
+			"claude-3-5-sonnet-latest",
+			"claude-3-opus-latest",
+		];
+		if (claudeApi) {
+			claudeLLM.forEach((llm) => {
+				useLLMSelectorStore.getState().addLLM(llm);
+			});
+
+			if (selectedLLM === undefined) {
+				selectLLM("claude-3.5-sonnet");
+			}
+		} else {
+			// clear claude LLMs
+			claudeLLM.forEach((llm) => {
+				useLLMSelectorStore.getState().availableLLMs.delete(llm);
+			});
+
+			if (claudeLLM.find((llm) => llm === selectedLLM)) {
+				clearSelectedLLM();
+			}
+		}
+	}, [claudeApi, selectedLLM]);
+
 	return availableLLMs.size === 0 ? (
 		<div className="flex flex-col items-center gap-1">
 			<p>No LLMs available</p>
