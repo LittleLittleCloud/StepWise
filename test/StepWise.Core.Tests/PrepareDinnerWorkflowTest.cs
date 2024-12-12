@@ -101,4 +101,15 @@ public class PrepareDinnerWorkflowTest
         var steps = engine.Workflow.TopologicalSort().ToList();
         steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(BoilWater), nameof(ChopVegetables), nameof(CookPasta), nameof(CookSauce), nameof(ServeDinner)]);
     }
+
+    [Fact]
+    public void RequiredStepTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this);
+        var requiredStepsForPrepareDinner = engine.Workflow.GetAllRequiredSteps(nameof(ServeDinner)).ToList();
+        requiredStepsForPrepareDinner.Select(s => s.Name).Should().BeEquivalentTo([nameof(BoilWater), nameof(ChopVegetables), nameof(CookPasta), nameof(CookSauce)]);
+
+        var requiredStepsForBoilWater = engine.Workflow.GetAllRequiredSteps(nameof(BoilWater)).ToList();
+        requiredStepsForBoilWater.Should().BeEmpty();
+    }
 }

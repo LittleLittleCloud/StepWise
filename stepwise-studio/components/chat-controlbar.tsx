@@ -17,15 +17,21 @@ import {
 	Model,
 	TextBlock,
 } from "@anthropic-ai/sdk/resources/messages.mjs";
-import OpenAIIcon from "@/public/openai-logo.png";
 import StepWiseIcon from "@/public/stepwise-logo.svg";
-import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import {
+	Chat,
+	ChatCompletionMessageParam,
+	ChatCompletionTool,
+	ChatModel,
+} from "openai/resources/index.mjs";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
 export const ChatControlBar: React.FC = () => {
 	const message = useChatBoxStore((state) => state.message);
 	const chatHistory = useChatHistoryStore((state) => state.messages);
 	const selectedLLM = useLLMSelectorStore((state) => state.selectedLLM);
+	const claudeLLMs = useClaudeConfiguration((state) => state.LLMTypes);
+	const openaiLLMs = useOpenAIConfiguration((state) => state.LLMTypes);
 	const openAIApiKey = useOpenAIConfiguration((state) => state.apiKey);
 	const claudeApiKey = useClaudeConfiguration((state) => state.apiKey);
 	const setMessage = useChatBoxStore((state) => state.setMessage);
@@ -37,6 +43,7 @@ export const ChatControlBar: React.FC = () => {
 	const selectedStepRunHistory = useStepRunHistoryStore(
 		(state) => state.selectedStepRunHistory,
 	);
+	const workflow = useWorkflowStore((state) => state.selectedWorkflow)!;
 	const createSnapshotFromSelectedStepRunHistory = useStepRunHistoryStore(
 		(state) => state.createLatestStepRunSnapShotFromRunHistory,
 	);
@@ -62,7 +69,6 @@ export const ChatControlBar: React.FC = () => {
 			selectedWorkflow!,
 			selectedStepRunHistory,
 		);
-		console.log(snapShot);
 		var variables = snapShot.filter((s) => s.result !== undefined);
 		const systemMessagePrompt = `
 		You are a helpful assistant. Your name is ${llmName}.
@@ -74,12 +80,9 @@ export const ChatControlBar: React.FC = () => {
 		console.log(systemMessagePrompt);
 		addMessage(userMessage);
 		setMessage("");
-
-		if (
-			selectedLLM === "gpt-4o" ||
-			selectedLLM === "gpt-3.5-turbo" ||
-			(selectedLLM === "gpt-4" && openAIApiKey)
-		) {
+		const steps = workflow.steps;
+		console.log(steps);
+		if (openaiLLMs.find((f) => f === selectedLLM) && openAIApiKey) {
 			const openAIClient = new OpenAI({
 				apiKey: openAIApiKey,
 				dangerouslyAllowBrowser: true,
@@ -105,13 +108,58 @@ export const ChatControlBar: React.FC = () => {
 				role: "system",
 				content: systemMessagePrompt,
 			};
+
+			const tools: ChatCompletionTool[] = steps.map((step) => ({
+				function: {
+					name: step.name,
+					description: step.description,
+					parameters: {
+						type: "object",
+						properties: step.parameters!.reduce((acc: { [key: string]: any }, param) => {
+							const allowedTypes = ["String", "Number", "Boolean", "String[]", "Integer", "Float", "Double"];
+							const jsonTypeMap: { [key: string]: string } = {
+								String: "string",
+								Number: "number",
+								Boolean: "boolean",
+								"String[]": "array",
+								Integer: "integer",
+								Float: "number",
+								Double: "number",
+							};
+							const itemTypeMap: { [key: string]: string | undefined } = {
+								String: undefined,
+								Number: undefined,
+								Boolean: undefined,
+								"String[]": "string",
+								Integer: undefined,
+								Float: undefined,
+								Double: undefined,
+							};
+							if (!allowedTypes.includes(param.parameter_type)) {
+								return acc;
+							}
+							acc[param.variable_name] = {
+								type: jsonTypeMap[param.parameter_type],
+								items: itemTypeMap[param.parameter_type] ? { type: itemTypeMap[param.parameter_type] } : undefined,
+							};
+							return acc;
+						}, {}),
+					},
+				},
+				type: "function",
+			} as ChatCompletionTool));
+
+			console.log(tools);
 			try {
 				setBusy(true);
 				const chatCompletion =
 					await openAIClient.chat.completions.create({
 						messages: [systemMessage, ...openAIChatHistory],
-						model: selectedLLM,
+						model: selectedLLM as ChatModel,
+						tool_choice: 'auto',
+						tools: tools,
 					});
+				console.log(chatCompletion);
 				addMessage({
 					message: chatCompletion.choices[0].message.content!,
 					sender: llmName,
@@ -131,11 +179,7 @@ export const ChatControlBar: React.FC = () => {
 			}
 		}
 
-		if (
-			selectedLLM === "claude-3-5-haiku-latest" ||
-			selectedLLM === "claude-3-5-sonnet-latest" ||
-			(selectedLLM === "claude-3-opus-latest" && claudeApiKey)
-		) {
+		if (claudeLLMs.find((f) => f === selectedLLM) && claudeApiKey) {
 			const claudeClient = new Anthropic({
 				apiKey: claudeApiKey,
 				dangerouslyAllowBrowser: true,

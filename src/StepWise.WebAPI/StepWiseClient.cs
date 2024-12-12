@@ -97,11 +97,21 @@ public class StepWiseClient
             this._logger?.LogInformation($"Max steps stop strategy added for {maxSteps} steps");
         }
 
-
-        await foreach (var stepRunAndResult in engine.ExecuteAsync(stepName, inputs: input, maxConcurrency: maxParallel, stopStrategy: stopStragety))
+        if (stepName is not null)
         {
-            yield return stepRunAndResult;
-            StepRunEvent?.Invoke(this, (StepRunDTO.FromStepRun(stepRunAndResult), sessionID));
+            await foreach (var stepRun in engine.ExecuteStepAsync(stepName, input, maxParallel))
+            {
+                yield return stepRun;
+                StepRunEvent?.Invoke(this, (StepRunDTO.FromStepRun(stepRun), sessionID));
+            }
+        }
+        else
+        {
+            await foreach (var stepRunAndResult in engine.ExecuteAsync(inputs: input, maxConcurrency: maxParallel, stopStrategy: stopStragety))
+            {
+                yield return stepRunAndResult;
+                StepRunEvent?.Invoke(this, (StepRunDTO.FromStepRun(stepRunAndResult), sessionID));
+            }
         }
     }
 

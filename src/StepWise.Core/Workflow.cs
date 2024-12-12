@@ -102,16 +102,6 @@ public class Workflow
     }
 
     /// <summary>
-    /// Get the steps that are prerequisites for the given step.
-    /// </summary>
-    /// <param name="step"></param>
-    /// <returns></returns>
-    public Step[] GetDirectPrerequisiteSteps(Step step)
-    {
-        return step.Dependencies.Select(d => _steps[d]).ToArray();
-    }
-
-    /// <summary>
     /// Get all steps that depend on the given step.
     /// </summary>
     public IEnumerable<Step> GetAllDependSteps(Step step)
@@ -143,60 +133,38 @@ public class Workflow
         return dependSteps.Where(s => s != step);
     }
 
-    public List<Step> ResolveDependencies(string targetStepName)
+    /// <summary>
+    /// Get all steps that are required to execute the given step.
+    /// </summary>
+    /// <param name="stepName"></param>
+    /// <returns></returns>
+    public IEnumerable<Step> GetAllRequiredSteps(string stepName)
     {
-        var executionPlan = new List<Step>();
         var visited = new HashSet<string>();
-        var visiting = new HashSet<string>();
+        var requiredSteps = new List<string>();
 
-        void DFS(Step step)
+        void BFS(string name)
         {
-            if (visited.Contains(step.Name))
+            if (visited.Contains(name))
             {
                 return;
             }
 
-            if (visiting.Contains(step.Name))
+            visited.Add(name);
+            requiredSteps.Add(name);
+
+            var toSteps = _adajcentMap.Where(x => x.Item2.Name == name).Select(x => x.Item1);
+
+            foreach (var next in toSteps)
             {
-                throw new Exception($"Circular dependency detected in step '{step.Name}'.");
-            }
-
-            visiting.Add(step.Name);
-
-            foreach (var dependency in step.Dependencies)
-            {
-                var dependencyStep = this.Steps[dependency] ?? throw new Exception($"Dependency '{dependency}' not found in the workflow.");
-                DFS(dependencyStep);
-            }
-
-            visiting.Remove(step.Name);
-            visited.Add(step.Name);
-            executionPlan.Add(step);
-        }
-
-        var targetStep = this.Steps[targetStepName] ?? throw new Exception($"Step '{targetStepName}' not found in the workflow.");
-
-        DFS(targetStep);
-
-        return executionPlan;
-    }
-
-    /// <summary>
-    /// Get the steps that directly depend on the given step.
-    /// </summary>
-    /// <param name="step"></param>
-    /// <returns></returns>
-    public Step[] GetDirectDependSteps(Step step)
-    {
-        var dependSteps = new List<Step>();
-        foreach (var s in _steps.Values)
-        {
-            if (s.Dependencies.Contains(step.Name))
-            {
-                dependSteps.Add(s);
+                BFS(next.Name);
             }
         }
 
-        return dependSteps.ToArray();
+        BFS(stepName);
+
+        return requiredSteps
+            .Where(s => s != stepName)
+            .Select(s => _steps[s]);
     }
 }

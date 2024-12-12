@@ -81,7 +81,7 @@ public class ReviewCodeWorkflowTest
 
         // phase 1
         // write code
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
+        await foreach (var stepRun in engine.ExecuteAsync(inputs: variables))
         {
             if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)
             {
@@ -96,7 +96,7 @@ public class ReviewCodeWorkflowTest
         // review code
         _logger.LogInformation("Review code");
         variables.Add(StepVariable.Create(nameof(ReviewCode), "improve", 2));
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(WriteCode), inputs: variables, stopStrategy: null))
+        await foreach (var stepRun in engine.ExecuteAsync(inputs: variables))
         {
             if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)
             {
@@ -111,7 +111,7 @@ public class ReviewCodeWorkflowTest
         // approve code
         variables.Add(StepVariable.Create(nameof(ReviewCode), "approve", 5));
 
-        await foreach (var stepRun in engine.ExecuteAsync(nameof(Done), inputs: variables, stopStrategy: null))
+        await foreach (var stepRun in engine.ExecuteAsync(inputs: variables))
         {
             if (stepRun.StepRunType == StepRunType.Variable && stepRun.Variable is not null)
             {
