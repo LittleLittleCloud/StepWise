@@ -405,6 +405,28 @@ ${
 		// 	}
 		// }
 	};
+
+	const handleKeyDown = (event: KeyboardEvent) => {
+		if (event.ctrlKey && event.key === "Enter") {
+			event.preventDefault();
+			if (!busy && message.trim() !== "") {
+				sendMessage(
+					message,
+					selectedWorkflow!,
+					selectedStepRunHistory,
+					chatHistory,
+				);
+			}
+		}
+	};
+
+	useEffect(() => {
+		window.addEventListener("keydown", handleKeyDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [busy, message, selectedWorkflow, selectedStepRunHistory, chatHistory]);
+
 	return (
 		<div className="flex items-center justify-end w-full">
 			<div className="flex grow">
@@ -423,6 +445,7 @@ ${
 					)
 				}
 				disabled={busy || message === ""}
+				tooltip="Send message (Ctrl + Enter)"
 			>
 				<SendHorizonal />
 			</Button>

@@ -16,6 +16,8 @@ import { useWorkflowStore } from "@/hooks/useWorkflow";
 import { stat } from "fs";
 import { VariableDTO } from "@/stepwise-client";
 import { VariableCard } from "./variable-card";
+import { CopyToClipboardIcon } from "./copy-to-clipboard-icon";
+import { cn } from "@/lib/utils";
 
 export type ChatMessageType = "text" | "tool";
 
@@ -85,12 +87,13 @@ export const ChatMessageCard: React.FC<ChatMessage & { index: number }> = ({
 	sender,
 	avatar,
 	index,
+	fromUser,
 }) => {
 	const deleteMessageAfter = useChatHistoryStore(
 		(state) => state.deleteMessageAfter,
 	);
 	return (
-		<div className="flex flex-col w-full gap-1 group">
+		<div className={cn("flex flex-col w-full gap-1 group")}>
 			<div className="flex items-center w-full relative ">
 				<div className="flex items-center gap-2">
 					{avatar && typeof avatar === "string" && (
@@ -103,14 +106,27 @@ export const ChatMessageCard: React.FC<ChatMessage & { index: number }> = ({
 					{avatar && typeof avatar !== "string" && avatar}
 					{sender && <span className="font-bold">{sender}</span>}
 				</div>
-				{/* add x button */}
-				<Button
-					size="tinyIcon"
-					onClick={() => deleteMessageAfter(index)}
-					className="absolute right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-				>
-					<X />
-				</Button>
+				{/* if fromUser is false, add copy button */}
+				<div className="flex items-center grow opacity-0 group-hover:opacity-100 transition-opacity justify-end gap-2">
+					{fromUser === false && (
+						<CopyToClipboardIcon
+							buttonVariants={{
+								variant: "ghost",
+								size: "tinyIcon",
+							}}
+							textValue={message}
+							showCopiedText={false}
+						/>
+					)}
+					{/* add x button */}
+					<Button
+						variant="ghost"
+						size="tinyIcon"
+						onClick={() => deleteMessageAfter(index)}
+					>
+						<X />
+					</Button>
+				</div>
 			</div>
 			<Markdown className="p-0">{message}</Markdown>
 		</div>
@@ -186,7 +202,7 @@ export const ChatHistory: React.FC = () => {
 	}, [messages]);
 
 	return (
-		<div className="gap-2 border-b-2 flex flex-col h-full overflow-y-auto">
+		<div className="gap-2 flex flex-col h-full overflow-y-auto">
 			{messages.length > 0 &&
 				messages.map((message, index) => (
 					<div key={index}>

@@ -1,16 +1,20 @@
 import { ClipboardCheck, Clipboard } from "lucide-react";
 import { FC, useEffect, useState } from "react";
+import { Button, buttonVariants } from "./ui/button";
+import { VariantProps } from "class-variance-authority";
 
 interface CopyToClipboardIconProps {
 	textValue: string;
 	size?: number;
 	showCopiedText?: boolean;
+	buttonVariants?: VariantProps<typeof buttonVariants>;
 }
 
 export const CopyToClipboardIcon: FC<CopyToClipboardIconProps> = ({
 	textValue,
 	size = 18,
 	showCopiedText = true,
+	buttonVariants,
 }) => {
 	const [isCopied, setIsCopied] = useState<Boolean>(false);
 	const [valueToCopy, setValueToCopy] = useState<string>("");
@@ -34,16 +38,15 @@ export const CopyToClipboardIcon: FC<CopyToClipboardIconProps> = ({
 	};
 
 	return (
-		<button
-			className="flex items-center rounded py-0.5 text-xs focus:outline-none"
+		<Button
+			variant={buttonVariants ? buttonVariants.variant : "ghost"}
+			size={buttonVariants ? buttonVariants.size : "tinyIcon"}
+			tooltip="Copy to clipboard"
+			className="flex items-center rounded py-0.5 gap-1 text-xs focus:outline-none"
 			onClick={copyToClipboard}
 		>
-			{isCopied ? (
-				<ClipboardCheck size={size} className="mr-1.5" />
-			) : (
-				<Clipboard size={size} className="mr-1.5" />
-			)}
+			{isCopied ? <ClipboardCheck /> : <Clipboard />}
 			{showCopiedText && <span>{isCopied ? "Copied!" : "Copy"}</span>}
-		</button>
+		</Button>
 	);
 };
