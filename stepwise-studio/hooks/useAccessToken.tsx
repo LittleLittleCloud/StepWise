@@ -28,7 +28,6 @@ export const useAccessToken = () => {
 			}
 
 			setAccessToken(token);
-
 		};
 
 		fetchData();

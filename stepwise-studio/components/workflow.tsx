@@ -219,7 +219,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			selectedStepRunHistory,
 			isRunning,
 		);
-		console.log("Setting nodes and edges", graph);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
 

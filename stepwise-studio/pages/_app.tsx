@@ -19,7 +19,8 @@ export default function App({ Component, pageProps }: AppProps) {
 	const [redirect_uri, setRedirectUri] = useState<string | null>(null);
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
 	const { readApiKeyFromStorage } = useOpenAIConfiguration();
-	const { readApiKeyFromStorage: readClaudeApiKeyFromStorage } = useClaudeConfiguration();
+	const { readApiKeyFromStorage: readClaudeApiKeyFromStorage } =
+		useClaudeConfiguration();
 
 	useEffect(() => {
 		setRedirectUri(window.location.origin);

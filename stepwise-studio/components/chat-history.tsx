@@ -1,25 +1,68 @@
 import { create } from "zustand";
 import { Markdown } from "./markdown";
-import { X } from "lucide-react";
+import { ChevronDown, ChevronUp, SquareFunction, X } from "lucide-react";
 import { Button } from "./ui/button";
 import React from "react";
+import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { stat } from "fs";
+import { VariableDTO } from "@/stepwise-client";
+import { VariableCard } from "./variable-card";
+
+export type ChatMessageType = "text" | "tool";
 
 export interface ChatMessage {
 	message: string;
 	sender?: string;
 	avatar?: string | React.ReactNode;
 	fromUser: boolean;
+	type: "text";
+}
+
+export interface ChatTool {
+	type: "tool";
+	id?: string;
+	name: string;
+	arguments: string;
+	displayValue: string;
+	values?: VariableDTO[];
+}
+
+export type ChatMessageContent = ChatMessage | ChatTool;
+
+export interface ChatHistoriesState {
+	chatHistories: { [key: string]: ChatMessageContent[] };
+	updateChatHistory: (key: string, value: ChatMessageContent[]) => void;
 }
 
 export interface ChatHistoryState {
-	messages: ChatMessage[];
-	addMessage: (message: ChatMessage) => void;
+	messages: ChatMessageContent[];
+	setMessages: (messages: ChatMessageContent[]) => void;
+	addMessage: (message: ChatMessageContent) => void;
 	deleteMessage: (index: number) => void;
 	deleteMessageAfter: (index: number) => void;
 }
 
+export const useChatHistoriesStore = create<ChatHistoriesState>((set, get) => ({
+	chatHistories: {},
+	updateChatHistory: (key, value) =>
+		set({
+			chatHistories: { ...get().chatHistories, [key]: value },
+		}),
+}));
+
 export const useChatHistoryStore = create<ChatHistoryState>((set) => ({
-	messages: [],
+	setMessages: (messages) =>
+		set(() => ({
+			messages,
+		})),
+	messages: [
+		{
+			id: "123",
+			name: "shit",
+			displayValue: "fuck",
+			type: "tool",
+		} as ChatTool,
+	],
 	addMessage: (message) =>
 		set((state) => ({
 			messages: [...state.messages, message],
@@ -71,14 +114,72 @@ export const ChatMessageCard: React.FC<ChatMessage & { index: number }> = ({
 	);
 };
 
+export const ChatToolCard: React.FC<ChatTool> = ({
+	name,
+	displayValue,
+	values,
+}) => {
+	const [collapsed, setCollapsed] = React.useState(true);
+	return (
+		<div className="flex flex-col w-full gap-1">
+			<div
+				className="flex items-center gap-2"
+				onClick={() => setCollapsed(!collapsed)}
+			>
+				<SquareFunction className="h-5 w-5 text-gray-500" />
+				<span className="font-bold grow">{name}</span>
+				{collapsed ? (
+					<ChevronDown className="h-5 w-5 text-gray-500" />
+				) : (
+					<ChevronUp className="h-5 w-5 text-gray-500" />
+				)}
+			</div>
+			{!collapsed && values && (
+				<div className="flex flex-col justify-between bg-accent p-2 rounded-lg overflow-x-auto">
+					{values.map((value, index) => (
+						<VariableCard key={index} variable={value} />
+					))}
+				</div>
+			)}
+		</div>
+	);
+};
 export const ChatHistory: React.FC = () => {
 	const messages = useChatHistoryStore((state) => state.messages);
+	const setMessages = useChatHistoryStore((state) => state.setMessages);
+	const selectedWorkflow = useWorkflowStore(
+		(state) => state.selectedWorkflow,
+	);
+	const chatHistories = useChatHistoriesStore((state) => state.chatHistories);
+	const updateChatHistory = useChatHistoriesStore(
+		(state) => state.updateChatHistory,
+	);
+
+	React.useEffect(() => {
+		if (selectedWorkflow) {
+			if (!chatHistories[selectedWorkflow.name]) {
+				setMessages([]);
+			} else {
+				setMessages(chatHistories[selectedWorkflow.name]);
+			}
+		}
+	}, [selectedWorkflow]);
+
+	React.useEffect(() => {
+		if (selectedWorkflow) {
+			updateChatHistory(selectedWorkflow.name, messages);
+		}
+	}, [messages]);
 
 	return (
 		<div className="flex flex-col gap-2">
 			{messages.map((message, index) => (
 				<div key={index} className="flex gap-2">
-					<ChatMessageCard {...message} index={index} />
+					{message.type === "text" && (
+						<ChatMessageCard {...message} index={index} />
+					)}
+
+					{message.type === "tool" && <ChatToolCard {...message} />}
 				</div>
 			))}
 		</div>

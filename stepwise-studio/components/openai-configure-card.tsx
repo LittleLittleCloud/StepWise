@@ -27,7 +27,7 @@ export interface OpenAIConfigurationState {
 export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
 	(set, get) => ({
 		apiKey: undefined,
-		setApiKey: (apiKey: string) =>  {
+		setApiKey: (apiKey: string) => {
 			get().LLMTypes.forEach((llm) => {
 				useLLMSelectorStore.getState().addLLM(llm);
 			});
@@ -36,7 +36,7 @@ export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
 		readApiKeyFromStorage: () => {
 			const apiKey = localStorage.getItem("stepwise-openai-api-key");
 			if (apiKey) {
-				set({ apiKey });
+				get().setApiKey(apiKey);
 			}
 		},
 		saveApiKeyToStorage: () => {
@@ -45,25 +45,26 @@ export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
 			}
 		},
 		clearApiKey: () => {
-            get().LLMTypes.forEach((llm) => {
+			get().LLMTypes.forEach((llm) => {
 				useLLMSelectorStore.getState().deleteLLM(llm);
 			});
 			set({ apiKey: undefined });
 		},
-        LLMTypes: [
-            "gpt-4o",
-            "gpt-3.5-turbo",
-            "gpt-4",
-        ],
-        removeApiKeyFromStorage: () => {
-            localStorage.removeItem("stepwise-openai-api-key");
-        }
+		LLMTypes: ["gpt-4o", "gpt-3.5-turbo", "gpt-4"],
+		removeApiKeyFromStorage: () => {
+			localStorage.removeItem("stepwise-openai-api-key");
+		},
 	}),
 );
 
 export const OpenAIConfigCard: React.FC = () => {
-	const { apiKey, setApiKey, saveApiKeyToStorage, clearApiKey, removeApiKeyFromStorage } =
-		useOpenAIConfiguration();
+	const {
+		apiKey,
+		setApiKey,
+		saveApiKeyToStorage,
+		clearApiKey,
+		removeApiKeyFromStorage,
+	} = useOpenAIConfiguration();
 
 	const [showKey, setShowKey] = useState(false);
 
@@ -71,13 +72,13 @@ export const OpenAIConfigCard: React.FC = () => {
 		if (!apiKey) {
 			// clear the API key
 			clearApiKey();
-            removeApiKeyFromStorage();
+			removeApiKeyFromStorage();
 			toast.info("OpenAI API key cleared");
 			return;
 		} else {
 			// Save the API key to local storage
 			saveApiKeyToStorage();
-            setApiKey(apiKey);
+			setApiKey(apiKey);
 			toast.success("OpenAI API key saved successfully");
 		}
 	};

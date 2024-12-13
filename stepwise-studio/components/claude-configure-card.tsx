@@ -27,7 +27,7 @@ export interface ClaudeConfigurationState {
 export const useClaudeConfiguration = create<ClaudeConfigurationState>(
 	(set, get) => ({
 		apiKey: undefined,
-		setApiKey: (apiKey: string) =>  {
+		setApiKey: (apiKey: string) => {
 			get().LLMTypes.forEach((llm) => {
 				useLLMSelectorStore.getState().addLLM(llm);
 			});
@@ -62,8 +62,13 @@ export const useClaudeConfiguration = create<ClaudeConfigurationState>(
 );
 
 export const ClaudeConfigCard: React.FC = () => {
-	const { apiKey, setApiKey, saveApiKeyToStorage, clearApiKey, removeApiKeyFromStorage } =
-		useClaudeConfiguration();
+	const {
+		apiKey,
+		setApiKey,
+		saveApiKeyToStorage,
+		clearApiKey,
+		removeApiKeyFromStorage,
+	} = useClaudeConfiguration();
 	const [showKey, setShowKey] = useState(false);
 
 	const handleSave = async () => {
