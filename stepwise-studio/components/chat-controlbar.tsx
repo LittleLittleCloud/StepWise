@@ -1,4 +1,4 @@
-import { Loader2, SendHorizonal, Variable } from "lucide-react";
+import { Bot, Loader2, SendHorizonal, Variable } from "lucide-react";
 import React, { useEffect } from "react";
 import { Button } from "./ui/button";
 import { useChatBoxStore } from "./chatbox";
@@ -47,6 +47,7 @@ export const ChatControlBar: React.FC = () => {
 	const claudeApiKey = useClaudeConfiguration((state) => state.apiKey);
 	const setMessage = useChatBoxStore((state) => state.setMessage);
 	const addMessage = useChatHistoryStore((state) => state.addMessage);
+	const deleteMessage = useChatHistoryStore((state) => state.deleteMessage);
 	const configuration = useStepwiseServerConfiguration();
 	const [busy, setBusy] = React.useState(false);
 	const { user } = useAuth0();
@@ -229,8 +230,6 @@ ${
 					content: systemMessagePrompt,
 				};
 
-				toast.info(systemMessagePrompt);
-
 				setBusy(true);
 				const chatCompletion =
 					await openAIClient.chat.completions.create({
@@ -248,13 +247,7 @@ ${
 						message: chatCompletion.choices[0].message.content!,
 						sender: llmName,
 						fromUser: false,
-						avatar: (
-							<Image
-								src={StepWiseIcon}
-								alt="avatar"
-								className="w-10 h-10 rounded-full"
-							/>
-						),
+						avatar: <Bot className="w-10 h-10 rounded-full" />,
 						type: "text",
 					});
 				} else {
@@ -303,6 +296,17 @@ ${
 								(a) => a.result?.name === v.result?.name,
 							),
 					);
+					// add tool message
+					let toolMessage: ChatTool = {
+						type: "tool",
+						id: tool.id,
+						name: toolName,
+						arguments: argumentJson,
+						displayValue: "",
+						values: [],
+						isExecuting: true,
+					};
+					addMessage(toolMessage);
 					const newStepRunHistory = await executeStep(step, [
 						...contextVariables,
 						...mergedVariables,
@@ -321,27 +325,16 @@ ${
 							)
 							.join("\n");
 
-						const toolMessage: ChatTool = {
-							type: "tool",
-							id: tool.id,
-							name: toolName,
-							arguments: argumentJson,
-							displayValue: values,
-							values: newStepRunHistory
-								.filter(
-									(v) =>
-										v.result !== undefined &&
-										v.status === "Completed",
-								)
-								.map((v) => v.result!),
-						};
+						toolMessage.isExecuting = false;
+						toolMessage.displayValue = values;
+						toolMessage.values = newStepRunHistory
+							.filter(
+								(v) =>
+									v.result !== undefined &&
+									v.status === "Completed",
+							)
+							.map((v) => v.result!);
 
-						console.log(toolMessage);
-
-						toast.info(
-							`Tool ${toolName} invoked with arguments ${argumentJson} and returned values ${values}`,
-						);
-						addMessage(toolMessage);
 						await sendMessage(
 							"",
 							workflow,
