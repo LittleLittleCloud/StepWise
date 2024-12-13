@@ -81,7 +81,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 				<TooltipProvider>
 					<Tooltip delayDuration={tooltipDelayDuration}>
 						<TooltipTrigger asChild>
-							{buttonComponent}
+							<div>{buttonComponent}</div>
 						</TooltipTrigger>
 						<TooltipContent side={tooltipSide}>
 							<p>{tooltip}</p>
