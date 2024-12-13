@@ -149,9 +149,9 @@ const StepRunSidebar: React.FC<StepRunSidebarProps> = () => {
 	return (
 		<div className="flex flex-col h-screen h-max-screen p-4 shadow-xl bg-sidebar rounded-lg">
 			<div className="flex flex-col grow  overflow-y-auto mb-8">
-				{selectedStepRunHistory.map((stepRun, index) => (
+				{/* {selectedStepRunHistory.map((stepRun, index) => (
 					<StepRunCard key={index} stepRun={stepRun} />
-				))}
+				))} */}
 				<ChatHistory />
 			</div>
 			{/* add a chat input to the bottom */}

@@ -1,25 +1,20 @@
 ﻿// Copyright (c) LittleLittleCloud. All rights reserved.
 // StepWiseEngineExtension.cs
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace StepWise.Core.Extension;
 
 public static class StepWiseEngineExtension
 {
     /// <summary>
-    /// Execute the workflow until the stop strategy is satisfied or no further steps can be executed.
+    /// Execute the workflow by publishing a list of inputs to the workflow and trigger the steps that depend on the inputs.
     /// </summary>
     public static async IAsyncEnumerable<StepRun> ExecuteAsync(
         this IStepWiseEngine engine,
-        string? targetStep = null,
         IEnumerable<StepVariable>? inputs = null,
-        int maxConcurrency = 1,
+        int? maxConcurrency = 1,
         IStepWiseEngineStopStrategy? stopStrategy = null,
-        bool echo = false,
         [EnumeratorCancellation]
         CancellationToken ct = default)
     {
@@ -29,15 +24,8 @@ public static class StepWiseEngineExtension
         var steps = engine.Workflow.TopologicalSort();
 
         var stepResults = new List<StepRun>();
-        await foreach (var stepRun in engine.ExecuteStepsAsync(steps, inputs, maxConcurrency, stopStrategy: stopStrategy, ct: ct))
+        await foreach (var stepRun in engine.ExecuteStepsAsync(steps, inputs, maxConcurrency ?? 1, stopStrategy: stopStrategy, ct: ct))
         {
-            if (!echo
-                && stepRun.StepRunType == StepRunType.Variable
-                && inputs.Any(i => i.Name == stepRun.Name && i.Generation == stepRun.Generation))
-            {
-                continue;
-            }
-
             yield return stepRun;
         }
     }
@@ -71,7 +59,7 @@ public static class StepWiseEngineExtension
         var stopStrategy = stopStratgies.Count > 0 ? new StopStrategyPipeline(stopStratgies.ToArray()) : null;
 
         maxSteps ??= int.MaxValue;
-        await foreach (var stepResult in engine.ExecuteAsync(targetStepName, inputs, maxConcurrency, stopStrategy, ct: ct))
+        await foreach (var stepResult in engine.ExecuteAsync(inputs, maxConcurrency, stopStrategy, ct: ct))
         {
             if (stepResult.Variable != null && stepResult.Name == targetStepName)
             {
@@ -113,19 +101,14 @@ public static class StepWiseEngineExtension
 
         maxSteps ??= int.MaxValue;
 
-        await foreach (var stepRun in engine.ExecuteAsync(targetStepName, inputs, maxConcurrency, stopStrategy, ct: ct))
+        await foreach (var stepRun in engine.ExecuteAsync(inputs, maxConcurrency, stopStrategy, ct: ct))
         {
             yield return stepRun;
         }
     }
 
     /// <summary>
-    /// Execute the given step and return the result. This API will not execute any other steps that this step depends on or depends on this step.
-    /// 
-    /// If the step is not found, an exception will be thrown.
-    /// 
-    /// If any required input is missing, the workflow will not be executed and return immediately.
-    /// or exit condition is met.
+    /// Execute the given step and return the result. This API will execute the step and its predecessors steps. However, it will not execute the steps that depend on the target step.
     /// </summary>
     /// <param name="engine"></param>
     /// <param name="targetStepName"></param>
@@ -144,12 +127,12 @@ public static class StepWiseEngineExtension
         if (engine.Workflow.Steps.TryGetValue(targetStepName, out var targetStep))
         {
             var step = targetStep;
+            var requiredSteps = engine.Workflow.GetAllRequiredSteps(step.Name);
             var stepInputs = inputs?.ToList() ?? new List<StepVariable>();
             var stopStrategy = new StopStrategyPipeline();
-            //stopStrategy.AddStrategy(new MaxStepsStopStrategy(1));
             stopStrategy.AddStrategy(new EarlyStopStrategy(targetStepName));
 
-            await foreach (var stepRun in engine.ExecuteStepsAsync([step], stepInputs, maxConcurrency, stopStrategy, ct))
+            await foreach (var stepRun in engine.ExecuteStepsAsync([.. requiredSteps, step], stepInputs, maxConcurrency, stopStrategy, ct))
             {
                 yield return stepRun;
             }

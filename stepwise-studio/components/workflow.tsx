@@ -31,25 +31,17 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { StepNode, StepNodeProps } from "./step-node";
-import dagre from "dagre";
-import { Button } from "./ui/button";
-import { LayoutGrid } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ControlBar } from "./control-bar";
 import { getLayoutedElements } from "@/lib/utils";
 import StepRunSidebar, { StepRunSidebarProps } from "./step-run-sidebar";
-import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
-} from "./ui/resizable";
 import { toast } from "sonner";
 import { useWorkflow } from "@/hooks/useWorkflow";
-import { useAccessToken } from "@/hooks/useAccessToken";
+import { useAccessToken, useAccessTokenStore } from "@/hooks/useAccessToken";
 import { v4 as uuidv4 } from "uuid";
 import { useRunSettingsStore } from "@/hooks/useVersion";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
-import { Toaster } from "./ui/sonner";
+import { useWorkflowEngine } from "@/hooks/useWorkflowEngine";
 
 export type WorkflowLayout = {
 	stepPositions: { [key: string]: { x: number; y: number } };
@@ -65,7 +57,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	const [edges, setEdges, _] = useEdgesState([]);
 	const { selectedWorkflow, updateWorkflow, setSelectedWorkflow } =
 		useWorkflow();
-	const accessToken = useAccessToken();
 	const { fitView, getViewport, setViewport } = useReactFlow();
 	const { maxSteps, maxParallel } = useRunSettingsStore();
 	const { theme } = useTheme();
@@ -75,8 +66,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		createLatestStepRunSnapShotFromRunHistory,
 		resetStepRunResult,
 	} = useStepRunHistoryStore();
-	const [isRunning, setIsRunning] = useState<boolean>(false);
-
+	const isRunning = useWorkflowEngine((state) => state.isRunning);
+	const executeStep = useWorkflowEngine((state) => state.executeStep);
 	const nodeTypes = useMemo(
 		() => ({
 			stepNode: StepNode,
@@ -124,7 +115,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						setSelectedStepRunHistory(updatedRunSteps);
 					},
 					onRerunClick: (step: StepDTO) => {
-						throw new Error("Not implemented yet");
+						if (!selectedWorkflow) return;
+						executeStep(step);
 					},
 					onSubmitOutput: (output: VariableDTO) => {
 						var completedStepRun = {
@@ -145,7 +137,15 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						setSelectedStepRunHistory(completedRun);
 					},
 					onCancelInput: () => {
-						console.log("Cancel input");
+						var notReadyStepRun = {
+							...stepRun,
+							status: "NotReady",
+						} as StepRunDTO;
+
+						setSelectedStepRunHistory([
+							...stepRunHistory,
+							notReadyStepRun,
+						]);
 					},
 					onResize: (height, width) => {
 						if (!selectedWorkflow) return selectedWorkflow;
@@ -193,7 +193,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 	useOnViewportChange({
 		onChange: (viewport) => {
-			console.log("Viewport changed: ", viewport);
 			if (selectedWorkflow === undefined) return;
 
 			// compare the current viewport with the stored viewport
@@ -220,7 +219,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			selectedStepRunHistory,
 			isRunning,
 		);
-		console.log("Setting nodes and edges", graph);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
 
@@ -228,94 +226,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			setViewport(selectedWorkflow.viewPort);
 		}
 	}, [selectedWorkflow, isRunning, fitView, selectedStepRunHistory]);
-
-	const onStepNodeRunClick = async (
-		workflow: WorkflowData,
-		stepRunHistory: StepRunDTO[],
-		step?: StepDTO,
-		maxParallelRun?: number,
-		maxSteps?: number,
-	) => {
-		if (!workflow.name) return;
-		try {
-			setIsRunning(true);
-			toast("Running workflow", {
-				description: "started running workflow",
-			});
-			// create a random uuid as session id
-			const sessionID = uuidv4();
-			var existingRunSteps = [...stepRunHistory];
-			var es = new EventSource(
-				`${client.getConfig().baseUrl}/api/v1/StepWiseControllerV1/ExecuteStepSse?sessionID=${sessionID}`,
-			);
-			es.addEventListener("StepRunDTO", async (event) => {
-				var data = JSON.parse(event.data) as StepRunDTO;
-				existingRunSteps.push(data);
-				setSelectedStepRunHistory([...existingRunSteps]);
-
-				toast.info("Step run completed", {
-					description: `Step run for ${data.step?.name} completed
-					with status ${data.status}`,
-				});
-			});
-
-			es.onopen = (_) => {
-				console.log("Connection opened");
-			};
-
-			es.onerror = (event) => {
-				console.log("Error", event);
-			};
-
-			var graph = createGraphFromWorkflow(
-				workflow,
-				stepRunHistory,
-				false,
-			);
-			var variables = graph.nodes
-				.filter((node) => node.data.result !== undefined)
-				.map((node) => node.data.result!);
-			var res = await postApiV1StepWiseControllerV1ExecuteStep({
-				query: {
-					step: step?.name ?? undefined,
-					workflow: workflow?.name,
-					maxParallel: maxParallelRun,
-					maxSteps: maxSteps,
-					sessionID: sessionID,
-				},
-				body: [...variables],
-				headers: {
-					Authorization: accessToken
-						? `Bearer ${accessToken}`
-						: undefined,
-				},
-			});
-
-			es.close();
-		} catch (err) {
-			console.error("Error executing step: ", err);
-			return;
-		} finally {
-			setIsRunning(false);
-		}
-
-		if (res.error) {
-			console.error("Error executing step: ", res.error);
-			return;
-		}
-
-		if (res.data === undefined) {
-			console.error("No data returned from executing step");
-			return;
-		}
-
-		var updateStepRuns = [...stepRunHistory, ...res.data];
-
-		setSelectedStepRunHistory(updateStepRuns);
-		toast("Workflow run completed", {
-			description: "Workflow run completed successfully",
-		});
-	};
 
 	const onNodesChangeRestricted = useCallback(
 		(changes: NodeChange[]) => {
@@ -391,13 +301,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					}}
 					onAutoLayoutClick={onLayout}
 					onRunClick={() => {
-						onStepNodeRunClick(
-							selectedWorkflow!,
-							selectedStepRunHistory,
-							undefined,
-							maxParallel,
-							maxSteps,
-						);
+						executeStep();
 					}}
 				/>
 			</div>

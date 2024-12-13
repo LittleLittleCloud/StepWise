@@ -5,7 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using ApprovalTests;
+using ApprovalTests.Namers;
+using ApprovalTests.Reporters;
+using AutoGen.OpenAI.Extension;
 using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
@@ -107,7 +112,7 @@ public class CumulativeWorkflowTest
     {
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
         var completedSteps = new List<string>();
-        await foreach (var stepResult in workflowEngine.ExecuteAsync(nameof(E), stopStrategy: null))
+        await foreach (var stepResult in workflowEngine.ExecuteAsync(stopStrategy: null))
         {
             var stepName = stepResult.Name;
             var value = stepResult.Variable;
@@ -129,7 +134,8 @@ public class CumulativeWorkflowTest
     public async Task ItShouldReturnMissingInputWhenRunStepEAsync()
     {
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
-        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(E)).ToBlockingEnumerable().ToList();
+        var e = workflowEngine.Workflow.Steps[nameof(E)];
+        var completedSteps = workflowEngine.ExecuteStepsAsync([e]).ToBlockingEnumerable().ToList();
 
         completedSteps.Count().Should().Be(1);
 
@@ -141,7 +147,6 @@ public class CumulativeWorkflowTest
     [Fact]
     public async Task ItShouldCompleteStepCAsync()
     {
-        // when preparing input parameter for C, the generation of b must be newer than a
         var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
         var inputs = new[]
         {
@@ -160,6 +165,16 @@ public class CumulativeWorkflowTest
         completedSteps[2].StepRunType.Should().Be(StepRunType.Completed);
         completedSteps[3].Name.Should().Be(nameof(C));
         completedSteps[3].StepRunType.Should().Be(StepRunType.Variable);
+    }
+
+    [Fact]
+    public async Task ItShouldExecuteStepCAsync()
+    {
+        var workflowEngine = StepWiseEngine.CreateFromInstance(this, _logger);
+
+        var completedSteps = workflowEngine.ExecuteStepAsync(nameof(C)).ToBlockingEnumerable().ToList();
+
+        completedSteps.Count().Should().Be(15);
     }
 
     [Fact]
@@ -201,5 +216,14 @@ public class CumulativeWorkflowTest
         var engine = StepWiseEngine.CreateFromInstance(this, _logger);
         var steps = engine.Workflow.TopologicalSort().ToList();
         steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(A), nameof(B), nameof(C), nameof(D), nameof(E)]);
+    }
+
+    [Fact]
+    public void RequiredStepTest()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var steps = engine.Workflow.GetAllRequiredSteps(nameof(E)).ToList();
+
+        steps.Select(s => s.Name).Should().BeEquivalentTo([nameof(A), nameof(B), nameof(C), nameof(D)]);
     }
 }

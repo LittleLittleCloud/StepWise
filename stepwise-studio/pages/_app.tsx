@@ -13,15 +13,19 @@ import { useEffect, useState } from "react";
 import Router from "next/router";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
 import { useOpenAIConfiguration } from "@/components/openai-configure-card";
+import { useClaudeConfiguration } from "@/components/claude-configure-card";
 
 export default function App({ Component, pageProps }: AppProps) {
 	const [redirect_uri, setRedirectUri] = useState<string | null>(null);
 	const stepwiseConfiguration = useStepwiseServerConfiguration();
 	const { readApiKeyFromStorage } = useOpenAIConfiguration();
+	const { readApiKeyFromStorage: readClaudeApiKeyFromStorage } =
+		useClaudeConfiguration();
 
 	useEffect(() => {
 		setRedirectUri(window.location.origin);
 		readApiKeyFromStorage();
+		readClaudeApiKeyFromStorage();
 	}, []);
 
 	return stepwiseConfiguration?.enableAuth0Authentication &&

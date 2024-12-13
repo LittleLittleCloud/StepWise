@@ -164,11 +164,18 @@ internal class StepWiseControllerV1 : ControllerBase
             return returnType;
         });
 
+        // for step variable, we record <stepName, variableType>
+        var stepParameterTypes = steps.SelectMany(s => s.InputParameters, (s, p) => (p.Type.Name, p.Type)).Distinct();
+
+        // for parameter variable, we record <parameterTypeName, parameterType>
+        // because the name of parameter might be duplicated in different steps
+        var stepParameterTypeMap = stepParameterTypes.ToDictionary(p => p.Name, p => p.Type);
         var inputs = new List<StepVariable>();
 
         foreach (var variable in variables)
         {
-            var stepVariable = VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name]);
+            var stepVariable = stepVariableTypeMap.ContainsKey(variable.Name) ? VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name])
+                : VariableDTO.FromVariableDTO(variable, stepParameterTypeMap[variable.VariableType]);
 
             if (stepVariable.Value is StepWiseBlob blob && blob.Url?.Contains("/blob/") == true)
             {

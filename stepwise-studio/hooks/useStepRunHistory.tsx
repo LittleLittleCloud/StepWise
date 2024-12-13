@@ -106,72 +106,20 @@ export const useStepRunHistoryStore = create<StepRunHistoryState>(
 			return stepRuns;
 		},
 		resetStepRunResult: (workflow, step, completedRunSteps) => {
-			var latestSnapshot =
-				get().createLatestStepRunSnapShotFromRunHistory(
-					workflow,
-					completedRunSteps,
-				);
-
-			// if in the latest snapshot, the step is not completed, then return the latest snapshot
-			if (
-				!latestSnapshot.find(
-					(run) =>
-						run.step?.name === step.name && isStepRunCompleted(run),
-				)
-			) {
-				return completedRunSteps;
-			}
-
-			// create a new NotReady step run for the step
-			var completedStepRun = completedRunSteps.findLast(
-				(run) => run.step?.name === step.name,
+			completedRunSteps = completedRunSteps.filter(
+				(run) =>
+					run.step?.name !== step.name &&
+					run.result?.name !== step.name,
 			);
+			console.log("completedRunSteps", completedRunSteps);
 			let notReadyStepRun: StepRunDTO = {
-				...completedStepRun,
+				...step,
 				status: "NotReady",
 				step: step,
-				generation: completedStepRun?.generation
-					? completedStepRun.generation + 1
-					: 0,
+				generation: 0,
 			};
 
 			return [...completedRunSteps, notReadyStepRun];
-			// otherwise, mark the step and all its dependent steps as not ready
-			// dependent steps are the steps that directly takes the result of the step as input
-			// var dependentSteps = workflow.steps?.filter(
-			// 	(s) =>
-			// 		s.parameters?.find(
-			// 			(param) => param.variable_name === step.name,
-			// 		) !== undefined,
-			// );
-			// var stepsToMarkAsNotReady = [step, ...(dependentSteps ?? [])];
-			// completedRunSteps = completedRunSteps.filter(
-			// 	(run) => run.result?.name !== step.name,
-			// );
-			// var updatedRunSteps = completedRunSteps.map((run) => {
-			// 	if (
-			// 		stepsToMarkAsNotReady.find(
-			// 			(step) => step.name === run.step?.name,
-			// 		)
-			// 	) {
-			// 		var param = run.step?.parameters?.find(
-			// 			(param) => param.variable_name === step.name,
-			// 		)!;
-			// 		return {
-			// 			...run,
-			// 			status: "NotReady",
-			// 			result: undefined,
-			// 			exception: undefined,
-			// 			variables: {
-			// 				...run.variables,
-			// 				[param?.name]: undefined,
-			// 			},
-			// 		} as StepRunDTO;
-			// 	}
-			// 	return run;
-			// });
-
-			// return updatedRunSteps;
 		},
 	}),
 );

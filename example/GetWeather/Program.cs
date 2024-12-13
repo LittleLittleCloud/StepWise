@@ -5,7 +5,6 @@ using System.Text.Json;
 using AutoGen.Core;
 using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
-using GetWeather;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using StepWise.Core;

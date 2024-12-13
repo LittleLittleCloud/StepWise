@@ -12,24 +12,35 @@ import {
 import { Input } from "./ui/input";
 import { create } from "zustand";
 import { toast } from "sonner";
+import { LLMType, useLLMSelectorStore } from "./llm-selector";
 
 export interface ClaudeConfigurationState {
 	apiKey?: string;
 	setApiKey: (apiKey: string) => void;
 	readApiKeyFromStorage: () => void;
 	saveApiKeyToStorage: () => void;
+	removeApiKeyFromStorage: () => void;
 	clearApiKey: () => void;
+	LLMTypes: LLMType[];
 }
 
 export const useClaudeConfiguration = create<ClaudeConfigurationState>(
 	(set, get) => ({
 		apiKey: undefined,
-		setApiKey: (apiKey: string) => set({ apiKey }),
+		setApiKey: (apiKey: string) => {
+			get().LLMTypes.forEach((llm) => {
+				useLLMSelectorStore.getState().addLLM(llm);
+			});
+			set({ apiKey });
+		},
 		readApiKeyFromStorage: () => {
 			const apiKey = localStorage.getItem("stepwise-claude-api-key");
 			if (apiKey) {
-				set({ apiKey });
+				get().setApiKey(apiKey);
 			}
+		},
+		removeApiKeyFromStorage: () => {
+			localStorage.removeItem("stepwise-claude-api-key");
 		},
 		saveApiKeyToStorage: () => {
 			if (get().apiKey) {
@@ -37,27 +48,39 @@ export const useClaudeConfiguration = create<ClaudeConfigurationState>(
 			}
 		},
 		clearApiKey: () => {
+			get().LLMTypes.forEach((llm) => {
+				useLLMSelectorStore.getState().deleteLLM(llm);
+			});
 			set({ apiKey: undefined });
-			localStorage.removeItem("stepwise-claude-api-key");
 		},
+		LLMTypes: [
+			"claude-3-5-haiku-latest",
+			"claude-3-5-sonnet-latest",
+			"claude-3-opus-latest",
+		],
 	}),
 );
 
 export const ClaudeConfigCard: React.FC = () => {
-	const { apiKey, setApiKey, saveApiKeyToStorage, clearApiKey } =
-		useClaudeConfiguration();
-
+	const {
+		apiKey,
+		setApiKey,
+		saveApiKeyToStorage,
+		clearApiKey,
+		removeApiKeyFromStorage,
+	} = useClaudeConfiguration();
 	const [showKey, setShowKey] = useState(false);
 
 	const handleSave = async () => {
 		if (!apiKey) {
 			// clear the API key
-			toast.info("Claude API key cleared");
 			clearApiKey();
-			return;
+			removeApiKeyFromStorage();
+			toast.info("Claude API key cleared");
 		} else {
 			// Save the API key to local storage
 			saveApiKeyToStorage();
+			setApiKey(apiKey);
 			toast.success("Claude API key saved successfully");
 		}
 	};

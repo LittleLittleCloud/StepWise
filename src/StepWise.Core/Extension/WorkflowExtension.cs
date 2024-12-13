@@ -10,12 +10,11 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using AutoGen.Core;
 using Microsoft.Extensions.Logging;
-using StepWise.Core;
 using StepWise.Core.Extension;
 
-namespace GetWeather;
+namespace StepWise.Core;
 
-internal class StepWiseMiddleware : IMiddleware
+public class StepWiseMiddleware : IMiddleware
 {
     private readonly Workflow _workflow;
     private readonly StepWiseEngine _engine;
@@ -79,7 +78,7 @@ internal class StepWiseMiddleware : IMiddleware
     }
 }
 
-internal static class WorkflowExtension
+public static class WorkflowExtension
 {
     public static IEnumerable<FunctionContract> ToFunctionContracts(this Workflow workflow)
     {
