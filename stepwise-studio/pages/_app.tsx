@@ -25,7 +25,6 @@ export default function App({ Component, pageProps }: AppProps) {
 	useEffect(() => {
 		setRedirectUri(window.location.origin);
 		readApiKeyFromStorage();
-		readClaudeApiKeyFromStorage();
 	}, []);
 
 	return stepwiseConfiguration?.enableAuth0Authentication &&
@@ -48,7 +47,7 @@ export default function App({ Component, pageProps }: AppProps) {
 				<ThemeProvider defaultTheme="dark" attribute="class">
 					<StepWiseSidebar />
 					<Component {...pageProps} />
-					<Toaster />
+					<Toaster position="top-right" />
 				</ThemeProvider>
 			</SidebarProvider>
 		</Auth0Provider>
@@ -57,7 +56,7 @@ export default function App({ Component, pageProps }: AppProps) {
 			<ThemeProvider defaultTheme="dark" attribute="class">
 				<StepWiseSidebar />
 				<Component {...pageProps} />
-				<Toaster />
+				<Toaster position="top-right" />
 			</ThemeProvider>
 		</SidebarProvider>
 	);

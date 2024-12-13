@@ -7,7 +7,7 @@ import {
 	GetApiV1StepWiseControllerV1ListCheckpointsData,
 	WorkflowDTO,
 } from "@/stepwise-client";
-import { buttonVariants } from "./ui/button";
+import { Button, buttonVariants } from "./ui/button";
 import {
 	Select,
 	SelectContent,
@@ -39,103 +39,101 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({}) => {
 	} = useCheckpoints();
 
 	return (
-		<div className={cn("flex items-center gap-2")}>
-			<span>Checkpoint</span>
+		<div className="flex items-center justify-between gap-2">
+			<div className="flex items-center gap-2">
+				<span>Checkpoint</span>
 
-			{loading ? (
-				<Loader2 className="h-5 w-5 animate-spin text-gray-500" />
-			) : (
-				<Select
-					onValueChange={async (value) => {
-						const checkpoint = checkpoints.find(
-							(c) => c.name === value,
-						);
-						if (checkpoint) {
-							await loadCheckpoint(checkpoint);
-							toast.info("Load Checkpoint", {
-								description: `Checkpoint ${checkpoint.name} has been loaded`,
-							});
-						}
-					}}
-					disabled={checkpoints.length === 0}
-				>
-					<SelectTrigger
-						className="w-[180px]"
+				{loading ? (
+					<Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+				) : (
+					<Select
+						onValueChange={async (value) => {
+							const checkpoint = checkpoints.find(
+								(c) => c.name === value,
+							);
+							if (checkpoint) {
+								await loadCheckpoint(checkpoint);
+								toast.info("Load Checkpoint", {
+									description: `Checkpoint ${checkpoint.name} has been loaded`,
+								});
+							}
+						}}
 						disabled={checkpoints.length === 0}
 					>
-						<SelectValue
-							placeholder={
-								checkpoints.length === 0
-									? "No checkpoints"
-									: "Select checkpoint"
-							}
-						/>
-					</SelectTrigger>
-					<SelectContent>
-						{checkpoints.map((checkpoint) => (
-							<div
-								key={checkpoint.name}
-								className="flex items-center justify-between p-1"
-							>
-								<SelectItem value={checkpoint.name}>
-									{checkpoint.name}
-								</SelectItem>
-								{deletingId === checkpoint.name ? (
-									<Loader2 className="pl-2 h-4 w-4 animate-spin" />
-								) : (
-									<button
-										onClick={async (e) => {
-											e.preventDefault(); // Prevent select from closing
-											setDeletingId(checkpoint.name);
-											try {
-												if (
-													!confirm(
-														"Are you sure you want to delete this checkpoint?",
-													)
-												) {
-													return;
-												}
-												await deleteCheckpoint(
-													checkpoint,
-												);
+						<SelectTrigger
+							className="w-[180px]"
+							disabled={checkpoints.length === 0}
+						>
+							<SelectValue
+								placeholder={
+									checkpoints.length === 0
+										? "No checkpoints"
+										: "Select checkpoint"
+								}
+							/>
+						</SelectTrigger>
+						<SelectContent>
+							{checkpoints.map((checkpoint) => (
+								<div
+									key={checkpoint.name}
+									className="flex items-center justify-between p-1"
+								>
+									<SelectItem value={checkpoint.name}>
+										{checkpoint.name}
+									</SelectItem>
+									{deletingId === checkpoint.name ? (
+										<Loader2 className="pl-2 h-4 w-4 animate-spin" />
+									) : (
+										<button
+											onClick={async (e) => {
+												e.preventDefault(); // Prevent select from closing
+												setDeletingId(checkpoint.name);
+												try {
+													if (
+														!confirm(
+															"Are you sure you want to delete this checkpoint?",
+														)
+													) {
+														return;
+													}
+													await deleteCheckpoint(
+														checkpoint,
+													);
 
-												toast.success(
-													"Checkpoint deleted",
-													{
-														description: `Checkpoint ${checkpoint.name} has been deleted successfully`,
-													},
-												);
-											} catch (err) {
-												toast.error("Error", {
-													description:
-														"Failed to delete checkpoint",
-												});
-											} finally {
-												setDeletingId(null);
-											}
-										}}
-										className={cn(
-											buttonVariants({
-												variant: "ghost",
-												size: "tinyIcon",
-											}),
-											"z-10 ml-2",
-										)}
-									>
-										<Trash2 className="h-4 w-4 text-destructive" />
-									</button>
-								)}
-							</div>
-						))}
-					</SelectContent>
-				</Select>
-			)}
-			<button
-				className={cn(
-					buttonVariants({
-						variant: "ghost",
-					}),
+													toast.success(
+														"Checkpoint deleted",
+														{
+															description: `Checkpoint ${checkpoint.name} has been deleted successfully`,
+														},
+													);
+												} catch (err) {
+													toast.error("Error", {
+														description:
+															"Failed to delete checkpoint",
+													});
+												} finally {
+													setDeletingId(null);
+												}
+											}}
+											className={cn(
+												buttonVariants({
+													variant: "ghost",
+													size: "tinyIcon",
+												}),
+												"z-10 ml-2",
+											)}
+										>
+											<Trash2 className="h-4 w-4 text-destructive" />
+										</button>
+									)}
+								</div>
+							))}
+						</SelectContent>
+					</Select>
 				)}
+			</div>
+			<Button
+				variant={"ghost"}
 				disabled={isSaving}
 				onClick={async () => {
 					setIsSaving(true);
@@ -172,7 +170,7 @@ export const CheckpointSelector: FC<CheckpointSelectorProps> = ({}) => {
 				}}
 			>
 				<span>Save</span>
-			</button>
+			</Button>
 			{error && <span className="text-sm text-red-500">{error}</span>}
 		</div>
 	);

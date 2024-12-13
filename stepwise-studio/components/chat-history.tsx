@@ -1,6 +1,15 @@
 import { create } from "zustand";
 import { Markdown } from "./markdown";
-import { ChevronDown, ChevronUp, SquareFunction, X } from "lucide-react";
+import {
+	Bot,
+	CheckCircle2,
+	ChevronDown,
+	ChevronUp,
+	Loader2,
+	RotateCcw,
+	SquareFunction,
+	X,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import React from "react";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
@@ -25,6 +34,7 @@ export interface ChatTool {
 	arguments: string;
 	displayValue: string;
 	values?: VariableDTO[];
+	isExecuting: boolean; // whether the tool is currently executing
 }
 
 export type ChatMessageContent = ChatMessage | ChatTool;
@@ -55,14 +65,7 @@ export const useChatHistoryStore = create<ChatHistoryState>((set) => ({
 		set(() => ({
 			messages,
 		})),
-	messages: [
-		{
-			id: "123",
-			name: "shit",
-			displayValue: "fuck",
-			type: "tool",
-		} as ChatTool,
-	],
+	messages: [],
 	addMessage: (message) =>
 		set((state) => ({
 			messages: [...state.messages, message],
@@ -118,15 +121,26 @@ export const ChatToolCard: React.FC<ChatTool> = ({
 	name,
 	displayValue,
 	values,
+	isExecuting,
 }) => {
 	const [collapsed, setCollapsed] = React.useState(true);
+	const [executing, setExecuting] = React.useState(isExecuting);
+
+	React.useEffect(() => {
+		setExecuting(isExecuting);
+	}, [isExecuting]);
 	return (
 		<div className="flex flex-col w-full gap-1">
 			<div
 				className="flex items-center gap-2"
 				onClick={() => setCollapsed(!collapsed)}
 			>
-				<SquareFunction className="h-5 w-5 text-gray-500" />
+				{executing && (
+					<Loader2 className="h-5 w-5 text-yellow-500 animate-spin" />
+				)}
+				{!executing && (
+					<CheckCircle2 className="h-5 w-5 text-green-500" />
+				)}
 				<span className="font-bold grow">{name}</span>
 				{collapsed ? (
 					<ChevronDown className="h-5 w-5 text-gray-500" />
@@ -172,16 +186,32 @@ export const ChatHistory: React.FC = () => {
 	}, [messages]);
 
 	return (
-		<div className="flex flex-col gap-2">
-			{messages.map((message, index) => (
-				<div key={index} className="flex gap-2">
-					{message.type === "text" && (
-						<ChatMessageCard {...message} index={index} />
-					)}
+		<div className="gap-2 border-b-2 flex flex-col h-full overflow-y-auto">
+			{messages.length > 0 &&
+				messages.map((message, index) => (
+					<div key={index}>
+						{message.type === "text" && (
+							<ChatMessageCard {...message} index={index} />
+						)}
 
-					{message.type === "tool" && <ChatToolCard {...message} />}
+						{message.type === "tool" && (
+							<ChatToolCard {...message} />
+						)}
+					</div>
+				))}
+			{messages.length === 0 && (
+				<div className="flex flex-col grow items-center justify-center text-muted-foreground">
+					<Bot className="h-20 w-20" />
+					<span className="text-4xl font-bold">Ask Geeno</span>
+					<span className="text-lg text-center">
+						Geeno is here to help you with your workflow
+					</span>
+					<span className="text-lg text-center">
+						To get start with Geeno, select LLM from LLM selector
+						and ask a question.
+					</span>
 				</div>
-			))}
+			)}
 		</div>
 	);
 };

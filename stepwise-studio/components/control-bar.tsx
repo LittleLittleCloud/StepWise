@@ -125,7 +125,6 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 					className="w-12 p-1 text-xs bg-background rounded-lg border border-accent"
 				/>
 			</div>
-			<CheckpointSelector />
 		</div>
 	);
 };
