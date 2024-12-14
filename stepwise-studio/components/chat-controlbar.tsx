@@ -1,4 +1,4 @@
-import { Bot, Loader2, SendHorizonal, Variable } from "lucide-react";
+import { Bot, Loader2, SendHorizonal, User, Variable } from "lucide-react";
 import React, { useEffect } from "react";
 import { Button } from "./ui/button";
 import { useChatBoxStore } from "./chatbox";
@@ -73,14 +73,22 @@ export const ChatControlBar: React.FC = () => {
 			if (configuration?.enableAuth0Authentication) {
 				userMessage = {
 					message,
-					sender: user?.name,
+					sender: user?.name ?? "Human",
 					fromUser: true,
-					avatar: user?.picture,
+					avatar: user?.picture ?? (
+						// Bot but flipped horizontally
+						<Bot className="w-10 h-10 rounded-full scale-x-[-1]" />
+					),
+
 					type: "text",
 				};
 			} else {
 				userMessage = {
 					message,
+					sender: "Human",
+					avatar: (
+						<Bot className="w-10 h-10 rounded-full scale-x-[-1]" />
+					),
 					fromUser: true,
 					type: "text",
 				};
