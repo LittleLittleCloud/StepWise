@@ -61,12 +61,16 @@ public static class HostBuilderExtension
 
             webBuilder.ConfigureServices((ctx, services) =>
             {
-                var configuration = ctx.Configuration;
+                var cfg = ctx.Configuration;
                 services
                 .AddControllers()
                 .AddMvcOptions(options =>
                 {
                     options.EnableEndpointRouting = false;
+                    if (!configuration.EnableAuth0Authentication)
+                    {
+                        options.Filters.Add(new AllowAnonymousFilter());
+                    }
                 })
                 .ConfigureApplicationPartManager(manager =>
                 {
