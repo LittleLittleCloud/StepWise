@@ -22,6 +22,7 @@ export interface StepRunHistoryState {
 		workflow: WorkflowData,
 		step: StepDTO,
 		completedRunSteps: StepRunDTO[],
+		clearDependent?: boolean,
 	) => StepRunDTO[];
 }
 
@@ -105,13 +106,32 @@ export const useStepRunHistoryStore = create<StepRunHistoryState>(
 
 			return stepRuns;
 		},
-		resetStepRunResult: (workflow, step, completedRunSteps) => {
+		resetStepRunResult: (
+			workflow,
+			step,
+			completedRunSteps,
+			clearDependent,
+		) => {
+			clearDependent = clearDependent ?? true;
+			// early stop if the step is already cleared
+			const thisRunSteps = completedRunSteps.filter(
+				(run) =>
+					run.step?.name === step.name ||
+					run.result?.name === step.name,
+			);
+
+			if (
+				thisRunSteps.length === 1 &&
+				thisRunSteps[0].status === "NotReady"
+			) {
+				return completedRunSteps;
+			}
+
 			completedRunSteps = completedRunSteps.filter(
 				(run) =>
 					run.step?.name !== step.name &&
 					run.result?.name !== step.name,
 			);
-			console.log("completedRunSteps", completedRunSteps);
 			let notReadyStepRun: StepRunDTO = {
 				...step,
 				status: "NotReady",
@@ -119,7 +139,26 @@ export const useStepRunHistoryStore = create<StepRunHistoryState>(
 				generation: 0,
 			};
 
-			return [...completedRunSteps, notReadyStepRun];
+			let clearedRunSteps = [...completedRunSteps, notReadyStepRun];
+
+			// also clear dependent steps
+			const dependentSteps = workflow.steps?.filter(
+				(s) =>
+					s.dependencies?.some((d) => d === step.name) ||
+					s.parameters?.some((p) => p.variable_name === step.name),
+			);
+
+			// BFS
+			if (dependentSteps && clearDependent) {
+				for (const dependentStep of dependentSteps) {
+					clearedRunSteps = get().resetStepRunResult(
+						workflow,
+						dependentStep,
+						clearedRunSteps,
+					);
+				}
+			}
+			return clearedRunSteps;
 		},
 	}),
 );

@@ -267,6 +267,12 @@ public class StepWiseEngine : IStepWiseEngine
 
                     _stepRunQueue.Add(variable);
                 }
+
+                // TODO
+                // maybe we should support the scenario when the res is null
+                // in this case, we should do the following:
+                // - clear the existing value in the context
+                // - add all the steps that depend on the value to the task queue again
             }
             catch (InvalidOperationException ioe) when (ioe.Message.Contains("The collection has been marked as complete with regards to additions"))
             {

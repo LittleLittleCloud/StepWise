@@ -29,7 +29,7 @@ export const useClaudeConfiguration = create<ClaudeConfigurationState>(
 		apiKey: undefined,
 		setApiKey: (apiKey: string) => {
 			get().LLMTypes.forEach((llm) => {
-				useLLMSelectorStore.getState().addLLM(llm);
+				useLLMSelectorStore.getState().addOrUpdateLLM(llm);
 			});
 			set({ apiKey });
 		},

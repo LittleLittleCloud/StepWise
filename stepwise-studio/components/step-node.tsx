@@ -414,7 +414,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			{/* appear when hover */}
 			<div className="invisible flex group-hover:visible absolute -top-7 right-0 bg-background/50 rounded gap-1 m-0 p-1">
 				<Button
-					tooltip="Run until this step"
+					tooltip="Run this step and all steps before it"
 					variant={"outline"}
 					size={"tinyIcon"}
 					className="m-0 p-0"

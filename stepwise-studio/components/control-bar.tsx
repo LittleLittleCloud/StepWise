@@ -5,7 +5,7 @@
 // | <autolayout> | <run> | <clean> | <max_parallel>: <input> | <max_steps>: <input> |
 
 import { ChangeEvent, FC, useEffect, useState } from "react";
-import { buttonVariants } from "./ui/button";
+import { Button, buttonVariants } from "./ui/button";
 import { cn } from "@/lib/utils";
 import {
 	GithubIcon,
@@ -50,13 +50,10 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 		<div className="flex flex-wrap justify-between items-center gap-2 px-2 p-1 bg-background shadow-xl rounded-md">
 			<div className="flex items-center gap-1">
 				{isMobile && <SidebarTrigger />}
-				<button
-					className={cn(
-						buttonVariants({
-							variant: isRunning ? "disabled" : "ghost",
-							size: "tinyIcon",
-						}),
-					)}
+				<Button
+					variant={isRunning ? "disabled" : "ghost"}
+					size="tinyIcon"
+					tooltip="Run all steps"
 					onClick={() => {
 						if (!isRunning) {
 							props.onRunClick();
@@ -68,41 +65,42 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 					) : (
 						<Play size={iconSize} />
 					)}
-				</button>
-				<button
-					className={cn(
-						buttonVariants({
-							variant: "ghost",
-							size: "tinyIcon",
-						}),
-					)}
+				</Button>
+				<Button
+					variant={isRunning ? "disabled" : "ghost"}
+					size="tinyIcon"
+					tooltip="Reset all step run results"
 					onClick={props.onResetStepRunResultClick}
 				>
 					<RotateCcw size={iconSize} />
-				</button>
-				<button
-					className={cn(
-						buttonVariants({
-							variant: "ghost",
-							size: "tinyIcon",
-						}),
-					)}
+				</Button>
+				<Button
+					variant={isRunning ? "disabled" : "ghost"}
+					size="tinyIcon"
 					onClick={props.onAutoLayoutClick}
+					tooltip="Auto layout"
 				>
 					<LayoutGrid size={iconSize} />
-				</button>
-				<Link
-					href={"https://github.com/LittleLittleCloud/StepWise"}
-					className={cn(
-						buttonVariants({
-							variant: "ghost",
-							size: "tinyIcon",
-						}),
-					)}
-					target="_blank"
+				</Button>
+				<Button
+					variant="link"
+					size="tinyIcon"
+					tooltip="Github"
+					onClick={() => {}}
 				>
-					<GithubIcon size={iconSize} />
-				</Link>
+					<Link
+						href={"https://github.com/LittleLittleCloud/StepWise"}
+						className={cn(
+							buttonVariants({
+								variant: "ghost",
+								size: "tinyIcon",
+							}),
+						)}
+						target="_blank"
+					>
+						<GithubIcon size={iconSize} />
+					</Link>
+				</Button>
 			</div>
 			{/* vertical divider */}
 			<div className="h-6 w-0.5 bg-accent/50" />

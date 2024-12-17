@@ -33,7 +33,7 @@ export interface ChatTool {
 	type: "tool";
 	id?: string;
 	name: string;
-	arguments: string;
+	argument: string;
 	displayValue: string;
 	values?: VariableDTO[];
 	isExecuting: boolean; // whether the tool is currently executing
@@ -138,6 +138,7 @@ export const ChatToolCard: React.FC<ChatTool> = ({
 	displayValue,
 	values,
 	isExecuting,
+	argument,
 }) => {
 	const [collapsed, setCollapsed] = React.useState(true);
 	const [executing, setExecuting] = React.useState(isExecuting);
@@ -166,6 +167,7 @@ export const ChatToolCard: React.FC<ChatTool> = ({
 			</div>
 			{!collapsed && values && (
 				<div className="flex flex-col justify-between bg-accent p-2 rounded-lg overflow-x-auto">
+					<Markdown>{argument}</Markdown>
 					{values.map((value, index) => (
 						<VariableCard key={index} variable={value} />
 					))}

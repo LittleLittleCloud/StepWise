@@ -407,7 +407,7 @@ public class StepRun
     {
         if (this.Step is null && this.StepRunType == StepRunType.Variable)
         {
-            return $"{_result!.Name}[{_result!.Generation}]";
+            return $"{_result!.Name}[{_result!.Generation}]:{_result!.Value}";
         }
 
         // format [gen] stepName([gen]input1, [gen]input2, ...)
