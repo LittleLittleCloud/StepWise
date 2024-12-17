@@ -12,9 +12,7 @@ using StepWise.WebAPI;
 
 var stepwiseConfig = new StepWiseServiceConfiguration
 {
-    EnableAuth0Authentication = true,
-    Auth0Domain = "dev-7obvli7fq57vx30r.us.auth0.com",
-    Auth0ClientId = "ok4Im5Rt4blubBzvDRbM4SUixpmEGi8F",
+    EnableAuth0Authentication = false,
 };
 
 var host = Host.CreateDefaultBuilder()
