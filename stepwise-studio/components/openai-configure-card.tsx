@@ -12,45 +12,37 @@ import {
 import { Input } from "./ui/input";
 import { create } from "zustand";
 import { toast } from "sonner";
-import { LLMType, useLLMSelectorStore } from "./llm-selector";
+import { LLM, LLMType, OpenAI_LLM, useLLMSelectorStore } from "./llm-selector";
 
 export interface OpenAIConfigurationState {
 	apiKey?: string;
 	setApiKey: (apiKey: string) => void;
-	readApiKeyFromStorage: () => void;
-	saveApiKeyToStorage: () => void;
-	removeApiKeyFromStorage: () => void;
-	clearApiKey: () => void;
-	LLMTypes: LLMType[];
+	LLMs: OpenAI_LLM[];
 }
 
 export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
 	(set, get) => ({
 		apiKey: undefined,
 		setApiKey: (apiKey: string) => {
-			get().LLMTypes.forEach((llm) => {
-				useLLMSelectorStore.getState().addLLM(llm);
-			});
 			set({ apiKey });
 		},
-		readApiKeyFromStorage: () => {
-			const apiKey = localStorage.getItem("stepwise-openai-api-key");
-			if (apiKey) {
-				get().setApiKey(apiKey);
-			}
-		},
-		saveApiKeyToStorage: () => {
-			if (get().apiKey) {
-				localStorage.setItem("stepwise-openai-api-key", get().apiKey!);
-			}
-		},
-		clearApiKey: () => {
-			get().LLMTypes.forEach((llm) => {
-				useLLMSelectorStore.getState().deleteLLM(llm);
-			});
-			set({ apiKey: undefined });
-		},
-		LLMTypes: ["gpt-4o", "gpt-3.5-turbo", "gpt-4"],
+		LLMs: [
+			{
+				modelId: "gpt-4o",
+				name: "gpt-4o",
+				type: "OpenAI",
+			},
+			{
+				modelId: "gpt-4",
+				name: "gpt-4",
+				type: "OpenAI",
+			},
+			{
+				modelId: "gpt-3.5-turbo",
+				name: "gpt-3.5-turbo",
+				type: "OpenAI",
+			},
+		],
 		removeApiKeyFromStorage: () => {
 			localStorage.removeItem("stepwise-openai-api-key");
 		},
@@ -58,27 +50,47 @@ export const useOpenAIConfiguration = create<OpenAIConfigurationState>(
 );
 
 export const OpenAIConfigCard: React.FC = () => {
+	const { apiKey, setApiKey, LLMs } = useOpenAIConfiguration();
+
 	const {
-		apiKey,
-		setApiKey,
-		saveApiKeyToStorage,
-		clearApiKey,
-		removeApiKeyFromStorage,
-	} = useOpenAIConfiguration();
+		addOrUpdateLLM,
+		deleteLLM,
+		availableLLMs,
+		saveAvailableLLMsToStorage,
+		loadAvailableLLMsFromStorage,
+	} = useLLMSelectorStore();
 
 	const [showKey, setShowKey] = useState(false);
 
+	useEffect(() => {
+		const firstOpenAI = availableLLMs.find((llm) => llm.type === "OpenAI");
+		if (firstOpenAI && (firstOpenAI as OpenAI_LLM).apiKey) {
+			setApiKey((firstOpenAI as OpenAI_LLM).apiKey!);
+		}
+	}, [availableLLMs]);
+
 	const handleSave = async () => {
 		if (!apiKey) {
-			// clear the API key
-			clearApiKey();
-			removeApiKeyFromStorage();
+			const llmsToRemove = availableLLMs.filter(
+				(llm) => llm.type === "OpenAI",
+			);
+			llmsToRemove.forEach((llm) => {
+				deleteLLM(llm);
+			});
+
+			saveAvailableLLMsToStorage();
 			toast.info("OpenAI API key cleared");
 			return;
 		} else {
-			// Save the API key to local storage
-			saveApiKeyToStorage();
-			setApiKey(apiKey);
+			const llmsToAdd = LLMs.map((llm) => {
+				return { ...llm, apiKey: apiKey } as OpenAI_LLM;
+			});
+
+			llmsToAdd.forEach((llm) => {
+				addOrUpdateLLM(llm);
+			});
+
+			saveAvailableLLMsToStorage();
 			toast.success("OpenAI API key saved successfully");
 		}
 	};

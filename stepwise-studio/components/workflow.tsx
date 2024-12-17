@@ -118,7 +118,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						if (!selectedWorkflow) return;
 						executeStep(step);
 					},
-					onSubmitOutput: (output: VariableDTO) => {
+					onSubmitOutput: async (output: VariableDTO) => {
 						var completedStepRun = {
 							...stepRun,
 							status: "Completed",
@@ -135,6 +135,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						];
 
 						setSelectedStepRunHistory(completedRun);
+						await executeStep(undefined, completedRun);
 					},
 					onCancelInput: () => {
 						var notReadyStepRun = {

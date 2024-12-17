@@ -10,7 +10,7 @@ import {
 } from "./chat-history";
 import { useStepwiseServerConfiguration } from "@/hooks/useVersion";
 import { useAuth0 } from "@auth0/auth0-react";
-import { LLMSelector, useLLMSelectorStore } from "./llm-selector";
+import { LLMSelector, OpenAI_LLM, useLLMSelectorStore } from "./llm-selector";
 import { useOpenAIConfiguration } from "./openai-configure-card";
 import OpenAI from "openai";
 import Image from "next/image";
@@ -41,13 +41,8 @@ export const ChatControlBar: React.FC = () => {
 	const message = useChatBoxStore((state) => state.message);
 	const chatHistory = useChatHistoryStore((state) => state.messages);
 	const selectedLLM = useLLMSelectorStore((state) => state.selectedLLM);
-	const claudeLLMs = useClaudeConfiguration((state) => state.LLMTypes);
-	const openaiLLMs = useOpenAIConfiguration((state) => state.LLMTypes);
-	const openAIApiKey = useOpenAIConfiguration((state) => state.apiKey);
-	const claudeApiKey = useClaudeConfiguration((state) => state.apiKey);
 	const setMessage = useChatBoxStore((state) => state.setMessage);
 	const addMessage = useChatHistoryStore((state) => state.addMessage);
-	const deleteMessage = useChatHistoryStore((state) => state.deleteMessage);
 	const configuration = useStepwiseServerConfiguration();
 	const [busy, setBusy] = React.useState(false);
 	const { user } = useAuth0();
@@ -68,6 +63,11 @@ export const ChatControlBar: React.FC = () => {
 		stepRunHistory: StepRunDTO[],
 		chatHistory: ChatMessageContent[],
 	) => {
+		if (selectedLLM === undefined) {
+			toast.error("Please select a language model");
+			return;
+		}
+
 		if (message !== "") {
 			let userMessage: ChatMessage;
 			if (configuration?.enableAuth0Authentication) {
@@ -106,6 +106,8 @@ You are a helpful workflow assistant. Your name is ${llmName}.
 
 You are currently assisting user with the workflow ${workflow.name}. You can either invoke the workflow or provide assistance with the steps in the workflow.
 
+When invoking a step in workflow, you don't need to consider whether it's pre-requisite steps are executed or not. The workflow engine will take care of it. So you can directly invoke the step.
+
 Each workflow is associated with a context which contains the intermediate results of the workflow execution.
 
 ## current context:
@@ -116,12 +118,17 @@ ${
 				.map((v) => `${v.result?.name}: ${v.result?.displayValue}`)
 				.join("\n")
 }
+
+You don't need to provide the arguments if they are already available in the context. You can override the context variables by providing the arguments explicitly.
 `;
 
 		const steps = workflow.steps;
-		if (openaiLLMs.find((f) => f === selectedLLM) && openAIApiKey) {
+		if (
+			selectedLLM?.type === "OpenAI" &&
+			(selectedLLM as OpenAI_LLM).apiKey
+		) {
 			const openAIClient = new OpenAI({
-				apiKey: openAIApiKey,
+				apiKey: (selectedLLM as OpenAI_LLM).apiKey,
 				dangerouslyAllowBrowser: true,
 			});
 
@@ -147,7 +154,7 @@ ${
 								id: msg.id,
 								function: {
 									name: msg.name,
-									arguments: msg.arguments,
+									arguments: msg.argument,
 								} as ChatCompletionMessageToolCall.Function,
 							},
 						] as ChatCompletionMessageToolCall[],
@@ -175,7 +182,8 @@ ${
 											"Number",
 											"Boolean",
 											"String[]",
-											"Integer",
+											"Int32",
+											"Int64",
 											"Float",
 											"Double",
 										];
@@ -187,6 +195,8 @@ ${
 											Boolean: "boolean",
 											"String[]": "array",
 											Integer: "integer",
+											Int32: "integer",
+											Int64: "integer",
 											Float: "number",
 											Double: "number",
 										};
@@ -198,6 +208,8 @@ ${
 											Boolean: undefined,
 											"String[]": "string",
 											Integer: undefined,
+											Int32: undefined,
+											Int64: undefined,
 											Float: undefined,
 											Double: undefined,
 										};
@@ -242,7 +254,7 @@ ${
 				const chatCompletion =
 					await openAIClient.chat.completions.create({
 						messages: [systemMessage, ...openAIChatHistory],
-						model: selectedLLM as ChatModel,
+						model: (selectedLLM as OpenAI_LLM).modelId,
 						tool_choice: "auto",
 						tools: tools,
 						parallel_tool_calls: false,
@@ -296,11 +308,13 @@ ${
 						})
 						.filter((v) => v !== undefined);
 
+					console.log(argumentsArray);
+
 					// merge the arguments with the context variables
-					// remove the context variables that are overriden by the arguments
-					const mergedVariables = argumentsArray.filter(
+					// and override the context variables with the arguments
+					const mergedVariables = contextVariables.filter(
 						(v) =>
-							!contextVariables.find(
+							!argumentsArray.find(
 								(a) => a.result?.name === v.result?.name,
 							),
 					);
@@ -309,15 +323,15 @@ ${
 						type: "tool",
 						id: tool.id,
 						name: toolName,
-						arguments: argumentJson,
+						argument: argumentJson,
 						displayValue: "",
 						values: [],
 						isExecuting: true,
 					};
 					addMessage(toolMessage);
 					const newStepRunHistory = await executeStep(step, [
-						...contextVariables,
 						...mergedVariables,
+						...argumentsArray,
 					]);
 
 					if (newStepRunHistory.length > 0) {
@@ -452,7 +466,7 @@ ${
 						chatHistory,
 					)
 				}
-				disabled={busy || message === ""}
+				disabled={busy || message === "" || selectedLLM === undefined}
 				tooltip="Send message (Ctrl + Enter)"
 			>
 				<SendHorizonal />

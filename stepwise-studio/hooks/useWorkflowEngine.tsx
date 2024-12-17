@@ -35,8 +35,17 @@ export const useWorkflowEngine = create<WorkflowEngineState>((set, get) => ({
 		if (workflow === undefined) {
 			throw new Error("No workflow selected");
 		}
-		const stepRunHistory =
+		let stepRunHistory =
 			history ?? stepRunHistoryStoreState.selectedStepRunHistory;
+
+		if (step !== undefined) {
+			stepRunHistory = stepRunHistoryStoreState.resetStepRunResult(
+				workflow,
+				step,
+				stepRunHistory,
+				false,
+			);
+		}
 		try {
 			set({ isRunning: true });
 			toast("Running workflow", {
@@ -69,17 +78,22 @@ export const useWorkflowEngine = create<WorkflowEngineState>((set, get) => ({
 				console.log("Error", event);
 			};
 
-			const latestVariablesMap = stepRunHistory
-				.filter((run) => run.result)
-				.reduce(
-					(acc, variable) => {
-						acc[variable.result!.name!] = variable.result!;
+			const latestVariablesMap = stepRunHistory.reduce(
+				(acc, variable) => {
+					const stepName =
+						variable.step?.name ?? variable.result?.name ?? "";
+					if (stepName === "") {
 						return acc;
-					},
-					{} as { [key: string]: VariableDTO },
-				);
+					}
+					acc[stepName] = variable.result;
+					return acc;
+				},
+				{} as { [key: string]: VariableDTO | undefined },
+			);
 
-			const latestVariables = Object.values(latestVariablesMap);
+			const latestVariables = Object.values(latestVariablesMap)
+				.filter((variable) => variable !== undefined)
+				.map((variable) => variable as VariableDTO);
 			var res = await postApiV1StepWiseControllerV1ExecuteStep({
 				query: {
 					step: step?.name ?? undefined,
