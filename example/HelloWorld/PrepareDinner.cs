@@ -9,23 +9,16 @@ public class PrepareDinner
     [Step(description: """
         This example demonstrates how to use stepwise to create a simple dinner preparation workflow.
         - source code: [PrepareDinner.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/PrepareDinner.cs)
+
+        It returns the current time when the workflow starts and then simulates the preparation of dinner.
         """)]
-    public async Task<string> Start()
+    public async Task<DateTime> Start()
     {
-        await Task.Delay(1000);
-        return "Start";
+        return DateTime.Now;
     }
 
-    [Step]
-    public async Task<string> ChopVegetables()
-    {
-        var vegetables = new[] { "onion", "tomato", "bell pepper" };
-        await Task.Delay(3000);
-
-        return $"Chopped {string.Join(", ", vegetables)} in 3 seconds";
-    }
-
-    [Step]
+    [Step(description: "boil water")]
+    [DependOn(nameof(Start))]
     public async Task<string> BoilWater()
     {
         await Task.Delay(2000);
@@ -33,34 +26,49 @@ public class PrepareDinner
         return "Boiled water in 2 seconds";
     }
 
-    [Step]
-    public async Task<string> CookPasta()
+    [Step(description: "cut vegetables")]
+    [DependOn(nameof(Start))]
+    public async Task<string> CutVegetables()
     {
-        await Task.Delay(5000);
+        await Task.Delay(3000);
 
-        return "Cooked pasta in 5 seconds";
+        return "Cut vegetables in 3 seconds";
     }
 
-    [Step]
-    public async Task<string> CookSauce()
+    [Step(description: "cook vegetables")]
+    [DependOn(nameof(CutVegetables))]
+    [DependOn(nameof(BoilWater))]
+    public async Task<string> CookVegetables(
+        [FromStep(nameof(CutVegetables))] string vegetables,
+        [FromStep(nameof(BoilWater))] string water)
     {
         await Task.Delay(4000);
 
-        return "Cooked sauce in 4 seconds";
+        return $"Cooked vegetables in 4 seconds. {vegetables}, {water}";
     }
 
-    [Step]
-    [DependOn(nameof(ChopVegetables))]
-    [DependOn(nameof(BoilWater))]
-    [DependOn(nameof(CookPasta))]
-    [DependOn(nameof(CookSauce))]
-    public async Task<string> ServeDinner(
-        [FromStep(nameof(ChopVegetables))] string vegetables,
-        [FromStep(nameof(BoilWater))] string water,
-        [FromStep(nameof(CookPasta))] string pasta,
-        [FromStep(nameof(CookSauce))] string sauce)
+    [Step(description: "cook meat")]
+    [DependOn(nameof(Start))]
+    public async Task<string> CookMeat()
     {
-        return $"Dinner ready! {string.Join(", ", vegetables)}, {water}, {pasta}, {sauce}";
+        await Task.Delay(5000);
+
+        return "Cooked meat in 5 seconds";
+    }
+
+    [Step(description: """
+        Serve dinner.
+        This will call all the preparation dinner steps in parallel and return the time taken to prepare the dinner.
+        """)]
+    [DependOn(nameof(CookVegetables))]
+    [DependOn(nameof(CookMeat))]
+    public async Task<string> ServeDinner(
+        [FromStep(nameof(Start))] DateTime start,
+        [FromStep(nameof(CookVegetables))] string vegetables,
+        [FromStep(nameof(CookMeat))] string meat)
+    {
+        var time = DateTime.Now - start;
+        return $"Dinner ready in {time.TotalSeconds} seconds";
     }
 }
 
