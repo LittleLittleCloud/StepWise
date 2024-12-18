@@ -62,7 +62,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
 				for (const workflow of res.data ?? []) {
 					var nodes = workflow.steps?.map((step: StepDTO) => ({
-						id: step.name,
+						id: `${workflow.name}-${step.name}`,
 						width: 200,
 						height: 200,
 						position: { x: 0, y: 0 },
@@ -70,19 +70,26 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
 					var edges =
 						workflow.steps?.reduce((edges, step) => {
-							return edges.concat(
-								step.dependencies?.map((dep) => {
+							var variableEdges =
+								step.parameters?.map((param) => {
+									var dependencies = step.dependencies ?? [];
+									var isStepDependency =
+										dependencies.findIndex(
+											(d) => d === param.variable_name,
+										) !== -1;
 									return {
-										id: `${step.name}-${dep}`,
-										source: dep,
-										target: step.name,
-										sourceHandle: dep,
-										targetHandle: step.name + "-" + dep,
+										id: `${workflow.name}-${step.name}-${param.variable_name}`,
+										target: `${workflow.name}-${step.name}`,
+										source: `${workflow.name}-${param.variable_name}`,
+										sourceHandle: `${workflow.name}-${param.variable_name}`,
+										targetHandle: `${workflow.name}-${step.name}-${param.variable_name}`,
 										style: { stroke: "#555" },
-										animated: true,
+										type: "smoothstep",
+										animated: !isStepDependency,
 									} as Edge;
-								}) ?? [],
-							);
+								}) ?? [];
+
+							return edges.concat([...variableEdges]);
 						}, [] as Edge[]) ?? [];
 					var layout = getLayoutedElements(nodes, edges);
 

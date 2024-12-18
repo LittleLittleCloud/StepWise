@@ -24,7 +24,7 @@ var host = Host.CreateDefaultBuilder()
     .UseStepWiseServer()
     .ConfigureWebHostDefaults(webBuilder =>
     {
-        webBuilder.UseUrls("http://localhost:51234");
+        webBuilder.UseUrls("http://localhost:5123");
     })
     .Build();
 

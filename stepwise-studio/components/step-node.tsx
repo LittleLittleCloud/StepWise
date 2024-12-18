@@ -54,6 +54,7 @@ import { on } from "events";
 import { Switch } from "./ui/switch";
 import ImageUpload from "./image-upload";
 import { StepNodeStatus, ToStepNodeStatus } from "@/lib/stepRunUtils";
+import { useWorkflowStore } from "@/hooks/useWorkflow";
 
 export interface StepNodeProps extends StepRunDTO {
 	onRerunClick: (step: StepDTO) => void;
@@ -218,6 +219,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	) => {
 		return status === "Queue" && stepType !== "Ordinary";
 	};
+
+	const selectedWorkflow = useWorkflowStore(
+		(state) => state.selectedWorkflow,
+	);
 
 	const iconSize = 16;
 
@@ -433,7 +438,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				</Button>
 			</div>
 
-			{step.name && (
+			{step.name && selectedWorkflow && (
 				<div className="flex flex-col">
 					<div className="flex gap-1 items-center">
 						<div ref={titleRef} className="items-center">
@@ -450,7 +455,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							type="source"
 							position={Position.Right}
 							// id = name-variable
-							id={`${step.name}`}
+							id={`${selectedWorkflow.name}-${step.name}`}
 							className="w-2 h-2 border-none bg-green-500"
 							style={{ top: sourceHandleTopOffset, right: 5 }}
 						/>
@@ -499,7 +504,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			)}
 
 			{/* parameters */}
-			{parameters && parameters.length > 0 && (
+			{selectedWorkflow && parameters && parameters.length > 0 && (
 				<div className="w-full">
 					<div className="flex gap-1 items-center">
 						<Button
@@ -535,7 +540,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 									type="target"
 									position={Position.Left}
 									// id = name-dep
-									id={`${step.name}-${param.variable_name}`}
+									id={`${selectedWorkflow!.name}-${step.name}-${param.variable_name}`}
 									className="w-2 h-2 border-none bg-blue-500"
 									style={{
 										top: targetHandleTopOffsets.get(

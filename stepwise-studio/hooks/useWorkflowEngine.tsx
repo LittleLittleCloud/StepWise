@@ -19,19 +19,21 @@ export interface WorkflowEngineState {
 	executeStep: (
 		wstep?: StepDTO,
 		stepRunHistory?: StepRunDTO[],
+		maxParallel?: number,
+		maxSteps?: number,
 	) => Promise<StepRunDTO[]>;
 }
 
 export const useWorkflowEngine = create<WorkflowEngineState>((set, get) => ({
 	isRunning: false,
-	executeStep: async (step, history) => {
+	executeStep: async (step, history, maxParallel, maxStep) => {
 		const stepRunHistoryStoreState = useStepRunHistoryStore.getState();
 		const accessToken = useAccessTokenStore.getState().accessToken;
 		const workflowStore = useWorkflowStore.getState();
 		const runSettingStore = useRunSettingsStore.getState();
 		const workflow = workflowStore.selectedWorkflow;
-		const maxParallelRun = runSettingStore.maxParallel;
-		const maxSteps = runSettingStore.maxSteps;
+		const maxParallelRun = maxParallel ?? runSettingStore.maxParallel;
+		const maxSteps = maxStep ?? runSettingStore.maxSteps;
 		if (workflow === undefined) {
 			throw new Error("No workflow selected");
 		}
