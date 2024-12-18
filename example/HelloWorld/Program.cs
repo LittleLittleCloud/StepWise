@@ -7,6 +7,10 @@ using System.Reflection;
 using System.Security.Claims;
 using Gallery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using StepWise.Core;
@@ -15,68 +19,18 @@ using StepWise.Gallery;
 using StepWise.WebAPI;
 
 
-
-var stepwiseConfig = new StepWiseServiceConfiguration
-{
-    EnableAuth0Authentication = true,
-    Auth0Domain = "dev-7obvli7fq57vx30r.us.auth0.com",
-    Auth0ClientId = "ok4Im5Rt4blubBzvDRbM4SUixpmEGi8F",
-    Auth0Audience = "https://stepwisegallery20241128154731.azurewebsites.net/",
-};
-var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-var assemblyDirectory = Path.GetDirectoryName(assemblyLocation) ?? Environment.CurrentDirectory;
-var webRoot = Path.Combine(assemblyDirectory, "wwwroot");
-var option = new WebApplicationOptions
-{
-    WebRootPath = webRoot,
-    EnvironmentName = "Development",
-    Args = args,
-    ApplicationName = "StepWise",
-};
-var builder = WebApplication.CreateBuilder(option);
-
-builder.WebHost.UseStepWiseServer(stepwiseConfig);
-builder.WebHost.UseWebRoot(webRoot);
-builder.UseStepWiseServer(configuration: stepwiseConfig);
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.Authority = $"https://{stepwiseConfig.Auth0Domain}";
-    options.Audience = stepwiseConfig.Auth0Audience;
-    options.TokenValidationParameters = new TokenValidationParameters
+var host = Host.CreateDefaultBuilder()
+    .UseEnvironment(Environments.Development)
+    .UseStepWiseServer()
+    .ConfigureWebHostDefaults(webBuilder =>
     {
-        NameClaimType = ClaimTypes.NameIdentifier,
-        RoleClaimType = "role",
-    };
-});
-builder.Services.AddAuthorization();
+        webBuilder.UseUrls("http://localhost:51234");
+    })
+    .Build();
 
-var app = builder.Build();
+await host.StartAsync();
 
-// enable cors from the same origin
-app.UseCors(builder =>
-{
-    builder.SetIsOriginAllowed(origin => origin.Contains("localhost"))
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-});
-
-app.UseAuthentication();
-app.UseAuthorization();
-#pragma warning disable MVC1005 // Cannot use UseMvc with Endpoint Routing
-app.UseMvc();
-#pragma warning restore MVC1005 // Cannot use UseMvc with Endpoint Routing
-app.UseHttpsRedirection();
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
-await app.StartAsync();
-
-var stepWiseClient = app.Services.GetRequiredService<StepWiseClient>();
+var stepWiseClient = host.Services.GetRequiredService<StepWiseClient>();
 
 var userInputWorkflow = Workflow.CreateFromInstance(new UserInput());
 var loopWorkflow = Workflow.CreateFromInstance(new Loop());
@@ -104,7 +58,7 @@ stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(textToImage));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(checkScore));
 
 // Wait for the host to shutdown
-await app.WaitForShutdownAsync();
+await host.WaitForShutdownAsync();
 
 
 
