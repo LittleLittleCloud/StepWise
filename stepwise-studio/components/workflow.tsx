@@ -90,10 +90,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			}
 
 			var step = stepRun.step;
-			var position = workflow.stepPositions[step.name];
-			var size = workflow.stepSizes[step.name];
+			const stepNodeID = `${workflow.name}-${step.name}`;
+			var position = workflow.stepPositions[stepNodeID];
+			var size = workflow.stepSizes[stepNodeID];
 			return {
-				id: step.name,
+				id: `${workflow.name}-${step.name}`,
 				type: "stepNode",
 				position: position,
 				...(size ?? { width: 200, height: 100 }), // if size is not defined, use default size
@@ -116,7 +117,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					},
 					onRerunClick: (step: StepDTO) => {
 						if (!selectedWorkflow) return;
-						executeStep(step);
+						executeStep(step, undefined, undefined, 1);
 					},
 					onSubmitOutput: async (output: VariableDTO) => {
 						var completedStepRun = {
@@ -135,7 +136,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 						];
 
 						setSelectedStepRunHistory(completedRun);
-						await executeStep(undefined, completedRun);
 					},
 					onCancelInput: () => {
 						var notReadyStepRun = {
@@ -175,11 +175,11 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 								(d) => d === param.variable_name,
 							) !== -1;
 						return {
-							id: `${step.name}-${param.variable_name}`,
-							source: param.variable_name,
-							target: step.name,
-							sourceHandle: param.variable_name,
-							targetHandle: step.name + "-" + param.variable_name,
+							id: `${workflow.name}-${step.name}-${param.variable_name}`,
+							target: `${workflow.name}-${step.name}`,
+							source: `${workflow.name}-${param.variable_name}`,
+							sourceHandle: `${workflow.name}-${param.variable_name}`,
+							targetHandle: `${workflow.name}-${step.name}-${param.variable_name}`,
 							style: { stroke: "#555" },
 							type: "smoothstep",
 							animated: !isStepDependency,
@@ -215,6 +215,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 
 	useEffect(() => {
 		if (!selectedWorkflow) return;
+		console.log("Workflow updated", selectedWorkflow);
 		var graph = createGraphFromWorkflow(
 			selectedWorkflow,
 			selectedStepRunHistory,
@@ -245,12 +246,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					if (node) {
 						const newPosition = change.position;
 						const stepName = node.data.step?.name;
+						const stepNodeID = `${selectedWorkflow?.name}-${stepName}`;
 						if (stepName && selectedWorkflow) {
 							var updatedWorkflow = {
 								...selectedWorkflow,
 								stepPositions: {
 									...selectedWorkflow.stepPositions,
-									[stepName]: newPosition,
+									[stepNodeID]: newPosition,
 								},
 							} as WorkflowData;
 							setSelectedWorkflow(updatedWorkflow);
@@ -265,6 +267,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 	);
 
 	const onLayout = useCallback(() => {
+		if (!selectedWorkflow) return;
 		const { nodes: layoutedNodes, edges: layoutedEdges } =
 			getLayoutedElements(nodes, edges);
 		setNodes([...layoutedNodes]);
@@ -282,7 +285,6 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			},
 			{} as { [key: string]: { x: number; y: number } },
 		);
-		if (!selectedWorkflow) return;
 		setSelectedWorkflow({
 			...selectedWorkflow,
 			stepPositions: stepPositions,
