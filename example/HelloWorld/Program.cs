@@ -43,7 +43,6 @@ var ifElse = new IfElseBranching();
 var parallel = new ParallelWorkflow();
 var textToImage = new TextToImage();
 var getWeather = new GetWeatherWorkflow();
-var checkScore = new CheckScore();
 
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(sequential));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ifElse));
@@ -55,7 +54,6 @@ stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ocrWorkflow));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(textToImage));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(checkScore));
 
 // Wait for the host to shutdown
 await host.WaitForShutdownAsync();
