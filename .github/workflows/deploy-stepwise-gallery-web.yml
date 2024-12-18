@@ -10,6 +10,10 @@ env:
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
   WORKING_DIRECTORY: example\StepWIse.Gallery.Web
+
+permissions:
+  id-token: write # Require write permission to Fetch an OIDC token.
+
 jobs:
   build:
     runs-on: windows-latest
@@ -42,7 +46,9 @@ jobs:
     - name: Azure Login
       uses: azure/login@v2
       with:
-        creds: ${{ secrets.StepWiseGallery20241128154731_SPN }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
