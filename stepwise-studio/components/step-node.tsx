@@ -337,42 +337,22 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	useEffect(() => {
 		if (stepNodeRef.current) {
-			// this usually means that the content of this node has changed
-			// so we want to automatically adjust the weight to present the content in a nicer way
-			// by setting the width to undefined, the prop.data.onResize will be invoked
-			// and the new width will be re-calculated when the node is re-rendered
-			// if (
-			// 	height !== stepNodeRef.current.offsetHeight &&
-			// 	width === stepNodeRef.current.offsetWidth &&
-			// 	width !== undefined
-			// ) {
-			// 	console.log("Setting width to undefined");
-			// 	prop.data.onResize(
-			// 		undefined,
-			// 		undefined,
-			// 	);
-
-			// 	return;
-			// }
-
-			if (
-				height !== stepNodeRef.current.offsetHeight ||
-				width !== stepNodeRef.current.offsetWidth
-			) {
+			if (width === undefined && stepNodeRef.current.offsetWidth) {
+				setWidth(stepNodeRef.current.offsetWidth);
+				setHeight(stepNodeRef.current.offsetHeight);
+			} else {
 				prop.data.onResize(
-					stepNodeRef.current.offsetHeight ?? height,
-					width ?? stepNodeRef.current.offsetWidth,
+					stepNodeRef.current.offsetHeight,
+					stepNodeRef.current.offsetWidth,
 				);
-
-				return;
 			}
 		}
 	}, [
+		width,
+		height,
 		stepNodeRef.current,
 		stepNodeRef.current?.offsetHeight,
 		stepNodeRef.current?.offsetWidth,
-		width,
-		height,
 	]);
 
 	return (
@@ -785,39 +765,5 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		</div>
 	);
 };
-
-const ResizableStepNode = React.forwardRef<
-	HTMLDivElement,
-	NodeProps<StepNodeProps>
->((props, ref) => {
-	const [width, setWidth] = useState<number | undefined>(props.data.width);
-	const [height, setHeight] = useState<number | undefined>(props.data.height);
-
-	useEffect(() => {
-		if (props.data.width && props.data.height) {
-			console.log(
-				"Setting width and height: ",
-				props.data.width,
-				props.data.height,
-			);
-			setWidth(props.data.width);
-			setHeight(props.data.height);
-		}
-	}, [props.data.width, props.data.height]);
-
-	return height && width ? (
-		<div
-			ref={ref}
-			style={{
-				width: `${width}px`,
-				height: `${height}px`,
-			}}
-		>
-			<StepNode {...props} />
-		</div>
-	) : (
-		<StepNode {...props} />
-	);
-});
 
 export { StepNode };

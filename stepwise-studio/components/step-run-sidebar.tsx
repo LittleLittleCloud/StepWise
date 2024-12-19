@@ -153,7 +153,7 @@ const StepRunSidebar: React.FC<StepRunSidebarProps> = () => {
 	const { selectedStepRunHistory } = useStepRunHistoryStore();
 	const page = useChatSideBarStore((state) => state.page);
 	return (
-		<div className="flex flex-col border-2 h-screen h-max-screen p-4 shadow-xl gap-2 bg-sidebar rounded-lg">
+		<div className="flex flex-col h-screen h-max-screen p-4 shadow-xl gap-2 bg-sidebar">
 			<ChatNavigationTopBar />
 			{page === "chat" && (
 				<div className="flex flex-col grow overflow-y-auto">

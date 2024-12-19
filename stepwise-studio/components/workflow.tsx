@@ -94,7 +94,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 			var position = workflow.stepPositions[stepNodeID];
 			var size = workflow.stepSizes[stepNodeID];
 			return {
-				id: `${workflow.name}-${step.name}`,
+				id: stepNodeID,
 				type: "stepNode",
 				position: position,
 				...(size ?? { width: 200, height: 100 }), // if size is not defined, use default size
@@ -150,11 +150,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 					},
 					onResize: (height, width) => {
 						if (!selectedWorkflow) return selectedWorkflow;
+						const stepNodeID = `${workflow.name}-${step.name}`;
 						setSelectedWorkflow({
 							...selectedWorkflow,
 							stepSizes: {
 								...selectedWorkflow.stepSizes,
-								[step.name]:
+								[stepNodeID]:
 									height && width
 										? { height, width }
 										: undefined,
