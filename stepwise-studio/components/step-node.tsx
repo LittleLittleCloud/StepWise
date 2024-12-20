@@ -13,6 +13,7 @@ import {
 	useUpdateNodeInternals,
 	NodeResizer,
 	NodeResizeControl,
+	useReactFlow,
 } from "reactflow";
 import { Button, buttonVariants } from "./ui/button";
 import {
@@ -55,17 +56,10 @@ import { Switch } from "./ui/switch";
 import ImageUpload from "./image-upload";
 import { StepNodeStatus, ToStepNodeStatus } from "@/lib/stepRunUtils";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
+import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
+import { useWorkflowEngine } from "@/hooks/useWorkflowEngine";
 
-export interface StepNodeProps extends StepRunDTO {
-	onRerunClick: (step: StepDTO) => void;
-	onClearClick: (step: StepDTO) => void;
-	onSubmitOutput: (output: VariableDTO) => void;
-	onCancelInput: () => void;
-	onResize: (height?: number, width?: number) => void;
-	isWorkflowRunning: boolean;
-	width?: number;
-	height?: number;
-}
+export interface StepNodeProps extends StepRunDTO {}
 
 const StepNodeStatusIndicator: React.FC<{
 	status: StepNodeStatus;
@@ -167,7 +161,18 @@ const StepNodeStatusIndicator: React.FC<{
 };
 
 const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
+	const resetStepRunResult = useStepRunHistoryStore(
+		(state) => state.resetStepRunResult,
+	);
+	const currentStepRunHistory = useStepRunHistoryStore(
+		(state) => state.selectedStepRunHistory,
+	);
+	const setSelectedStepRunHistory = useStepRunHistoryStore(
+		(state) => state.setSelectedStepRunHistory,
+	);
 	const [step, setStep] = useState<StepDTO>(prop.data.step!);
+	const executeStep = useWorkflowEngine((state) => state.executeStep);
+	const isWorkflowRunning = useWorkflowEngine((state) => state.isRunning);
 	const stepNodeRef = React.useRef<HTMLDivElement>(null);
 	const titleRef = React.useRef<HTMLDivElement>(null);
 	const updateNodeInternals = useUpdateNodeInternals();
@@ -202,11 +207,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	);
 	const [inputSwitch, setInputSwitch] = useState<boolean>(false);
 
-	const [isWorkflowRunning, setIsWorkflowRunning] = useState<boolean>(
-		prop.data.isWorkflowRunning,
-	);
-	const [width, setWidth] = useState<number | undefined>(prop.data.width);
-	const [height, setHeight] = useState<number | undefined>(prop.data.height);
 	const [collapseDescription, setCollapseDescription] =
 		useState<boolean>(true);
 
@@ -223,7 +223,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	const selectedWorkflow = useWorkflowStore(
 		(state) => state.selectedWorkflow,
 	);
-
+	const setSelectedWorkflow = useWorkflowStore(
+		(state) => state.setSelectedWorkflow,
+	);
 	const iconSize = 16;
 
 	useEffect(() => {
@@ -239,8 +241,6 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 				return acc;
 			}, new Map<string, number>()) ?? new Map<string, number>(),
 		);
-		setWidth(prop.data.width);
-		setHeight(prop.data.height);
 		setExceptionDTO(prop.data.exception);
 		// set resize observer
 		const resizeObserver = new ResizeObserver((entries) => {
@@ -279,31 +279,25 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	}, [prop.data.status]);
 
 	useEffect(() => {
-		setIsWorkflowRunning(prop.data.isWorkflowRunning);
-	}, [prop.data.isWorkflowRunning]);
-
-	useEffect(() => {
 		setStepType(
 			ConvertStringToStepType(prop.data.step?.step_type ?? "Ordinary"),
 		);
 	}, [prop.data.step?.step_type]);
 
 	useEffect(() => {
-		if (prop.data.width && prop.data.height) {
-			setWidth(prop.data.width);
-			setHeight(prop.data.height);
-		}
-	}, [prop.data.width, prop.data.height]);
-
-	useEffect(() => {
 		updateNodeInternals(prop.id);
+		onResize(
+			stepNodeRef.current?.offsetHeight!,
+			stepNodeRef.current?.offsetWidth!,
+		);
 	}, [
 		step,
 		sourceHandleTopOffset,
 		targetHandleTopOffsets,
 		status,
-		height,
-		width,
+		stepNodeRef.current,
+		stepNodeRef.current?.offsetWidth,
+		stepNodeRef.current?.offsetHeight,
 	]);
 
 	useEffect(() => {
@@ -335,55 +329,87 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		}
 	}, [parameterRefMap.current]);
 
-	useEffect(() => {
-		if (stepNodeRef.current) {
-			if (width === undefined && stepNodeRef.current.offsetWidth) {
-				setWidth(stepNodeRef.current.offsetWidth);
-				setHeight(stepNodeRef.current.offsetHeight);
-			} else {
-				prop.data.onResize(
-					stepNodeRef.current.offsetHeight,
-					stepNodeRef.current.offsetWidth,
-				);
-			}
-		}
-	}, [
-		width,
-		height,
-		stepNodeRef.current,
-		stepNodeRef.current?.offsetHeight,
-		stepNodeRef.current?.offsetWidth,
-	]);
+	const onClearClick = async (step: StepDTO) => {
+		if (!selectedWorkflow) return;
+
+		var updatedRunSteps = resetStepRunResult(
+			selectedWorkflow,
+			step,
+			currentStepRunHistory,
+		);
+		setSelectedStepRunHistory(updatedRunSteps);
+	};
+
+	const onRerunClick = async (step: StepDTO) => {
+		if (!selectedWorkflow) return;
+		executeStep(step, undefined, undefined, 1);
+	};
+
+	const onResize = async (height: number, width: number) => {
+		if (!selectedWorkflow) return selectedWorkflow;
+		console.log("Resize", height, width);
+		const stepNodeID = `${selectedWorkflow.name}-${step.name}`;
+		setSelectedWorkflow({
+			...selectedWorkflow,
+			stepSizes: {
+				...selectedWorkflow.stepSizes,
+				[stepNodeID]: height && width ? { height, width } : undefined,
+			},
+		});
+	};
+
+	const onSubmitOutput = async (output: VariableDTO) => {
+		var completedStepRun = {
+			...prop.data,
+			status: "Completed",
+		} as StepRunDTO;
+		var variable = {
+			status: "Variable",
+			result: output,
+			generation: output.generation,
+		} as StepRunDTO;
+		var completedRun = [
+			...currentStepRunHistory,
+			completedStepRun,
+			variable,
+		];
+
+		setSelectedStepRunHistory(completedRun);
+	};
+
+	const onCancelInput = async () => {
+		var notReadyStepRun = {
+			...prop.data,
+			status: "NotReady",
+		} as StepRunDTO;
+
+		setSelectedStepRunHistory([...currentStepRunHistory, notReadyStepRun]);
+	};
 
 	return (
 		<div
 			className={cn(
-				"border-2 rounded-md shadow-md p-2 bg-background/50 group",
-				// set weight and height
-				isSelected ? "border-primary/40" : "border-transparent",
-				width ?? "max-w-80",
+				"border-2 rounded-md shadow-md p-2 bg-sidebar group",
+				isSelected ? "border-primary" : "border-transparent",
+				"max-w-lg",
 				shouldWaitForInput(status, stepType) ? "border-primary" : "",
 			)}
 			ref={stepNodeRef}
 		>
-			{/* resize control */}
-			{height && width && stepNodeRef.current && (
+			{
 				<NodeResizeControl
 					style={{
 						background: "transparent",
 						border: "none",
 					}}
-					onResize={(event, param) => {
-						if (Math.abs(param.width - width) > 10) {
-							setWidth(param.width);
-						}
-					}}
 					onResizeEnd={(event, param) => {
-						setWidth(stepNodeRef.current!.offsetWidth);
+						onResize(
+							stepNodeRef.current!.offsetHeight,
+							stepNodeRef.current!.offsetWidth,
+						);
 					}}
 					minWidth={128}
-					minHeight={height}
-					maxHeight={height}
+					maxWidth={512}
 				>
 					<Slash
 						style={{
@@ -394,7 +420,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						size={6}
 					/>
 				</NodeResizeControl>
-			)}
+			}
 			{/* settings bar */}
 			{/* appear when hover */}
 			<div className="invisible flex group-hover:visible absolute -top-7 right-0 bg-background/50 rounded gap-1 m-0 p-1">
@@ -403,7 +429,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					variant={"outline"}
 					size={"tinyIcon"}
 					className="m-0 p-0"
-					onClick={() => prop.data.onRerunClick(step)}
+					onClick={() => onRerunClick(step)}
 				>
 					<Play />
 				</Button>
@@ -412,7 +438,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					variant={"outline"}
 					size={"tinyIcon"}
 					className="m-0 p-0"
-					onClick={() => prop.data.onClearClick(step)}
+					onClick={() => onClearClick(step)}
 				>
 					<RotateCcw />
 				</Button>
@@ -441,7 +467,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						/>
 					</div>
 					{description && (
-						<div className="w-full py-1 bg-accent rounded-md hover:bg-accent/50">
+						<div className="w-full py-1 rounded-md hover:bg-accent">
 							<div
 								className="flex flex-wrap gap-x-5 gap-y-1 items-center cursor-pointer"
 								onClick={() =>
@@ -536,7 +562,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			)}
 			{output && <div className="border border-md m-1" />}
 			{output && (
-				<div className="flex flex-col items-center mt-1 bg-accent rounded-md hover:bg-accent/50">
+				<div className="flex flex-col items-center mt-1 rounded-md hover:bg-accent">
 					<ParameterCard
 						name="Result"
 						parameter_type={getDisplayType(output.type)}
@@ -602,8 +628,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 									value: inputText,
 									generation: prop.data.generation,
 								} as VariableDTO;
-								prop.data.onClearClick(step);
-								prop.data.onSubmitOutput(variable);
+								onClearClick(step);
+								onSubmitOutput(variable);
 							}}
 						>
 							Submit
@@ -613,7 +639,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							size={"tiny"}
 							className="text-base"
 							onClick={() => {
-								prop.data.onCancelInput();
+								onCancelInput();
 							}}
 						>
 							Cancel
@@ -662,8 +688,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 									value: inputNumber,
 									generation: prop.data.generation,
 								} as VariableDTO;
-								prop.data.onClearClick(step);
-								prop.data.onSubmitOutput(variable);
+								onClearClick(step);
+								onSubmitOutput(variable);
 							}}
 						>
 							Submit
@@ -673,7 +699,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							size={"tiny"}
 							className="text-base"
 							onClick={() => {
-								prop.data.onCancelInput();
+								onCancelInput();
 							}}
 						>
 							Cancel
@@ -722,8 +748,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 									generation: prop.data.generation,
 								} as VariableDTO;
 
-								prop.data.onClearClick(step);
-								prop.data.onSubmitOutput(variable);
+								onClearClick(step);
+								onSubmitOutput(variable);
 							}}
 						>
 							Submit
@@ -733,7 +759,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							size={"tiny"}
 							className="text-base"
 							onClick={() => {
-								prop.data.onCancelInput();
+								onCancelInput();
 							}}
 						>
 							Cancel
@@ -746,7 +772,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			{stepType === "StepWiseUIImageInput" && status === "Queue" && (
 				<ImageUpload
 					onCanceled={() => {
-						prop.data.onCancelInput();
+						onCancelInput();
 					}}
 					onUpload={async (file) => {
 						var variable = {
@@ -757,8 +783,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							generation: prop.data.generation,
 						} as VariableDTO;
 
-						prop.data.onClearClick(step);
-						prop.data.onSubmitOutput(variable);
+						onClearClick(step);
+						onSubmitOutput(variable);
 					}}
 				/>
 			)}

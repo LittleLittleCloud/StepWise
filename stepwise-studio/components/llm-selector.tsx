@@ -127,7 +127,9 @@ export const LLMSelector: React.FC = () => {
 				</SelectTrigger>
 				<SelectContent>
 					{Array.from(availableLLMs).map((llm) => (
-						<SelectItem value={llm.name}>{llm.name}</SelectItem>
+						<SelectItem key={llm.name} value={llm.name}>
+							{llm.name}
+						</SelectItem>
 					))}
 				</SelectContent>
 			</Select>
