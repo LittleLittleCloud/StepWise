@@ -16,14 +16,14 @@ export const getLayoutedElements = (
 	dagreGraph.setDefaultEdgeLabel(() => ({}));
 	dagreGraph.setGraph({ rankdir: direction });
 
-	var maxNodeWidth = nodes.reduce(
-		(max, node) => Math.max(max, node.width ?? 0),
-		20,
-	);
-	var maxNodeHeight = nodes.reduce(
-		(max, node) => Math.max(max, node.height ?? 0),
-		10,
-	);
+	// throw error if any node is missing width or height
+	nodes.forEach((node) => {
+		if (!node.width || !node.height) {
+			throw new Error(
+				"Each node must have a width and a height. Node: " + node.id,
+			);
+		}
+	});
 
 	nodes.forEach((node) => {
 		dagreGraph.setNode(node.id, { width: node.width, height: node.height });
@@ -34,7 +34,6 @@ export const getLayoutedElements = (
 	});
 
 	dagre.layout(dagreGraph);
-
 	nodes.forEach((node) => {
 		const nodeWithPosition = dagreGraph.node(node.id);
 		node.targetPosition = Position.Left;

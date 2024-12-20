@@ -119,6 +119,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 							},
 							{} as { [key: string]: { x: number; y: number } },
 						),
+						layoutInitialized: false,
 					} as WorkflowData);
 				}
 				var maps = new Map<string, StepRunDTO[]>();
