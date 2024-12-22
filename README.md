@@ -39,6 +39,32 @@ StepWise is a .NET framework which assists you to code, visualize and execute ev
 - **Event-Driven**: Execute steps in parallel and resolve dependencies automatically.
 - **AI-Powered**: Work with `Geeno`, a built-in AI assistant in StepWise WebUI to help you run and analyze workflows with ease.
 
+## Table of Contents
+- [Quick Start with Template](#quick-start-with-template)
+- [Quick Start](#quick-start)
+- [Visualize stepwise workflow](#visualize-stepwise-workflow)
+- [Examples](#examples)
+- [Dependency Management between Steps](#dependency-management-between-steps)
+
+
+## Quick Start with Template
+StepWise provides a list of templates to help you get started quickly. To install the template, run the following command:
+
+```bash
+dotnet new -i LittleLittleCloud.StepWise.Template
+```
+
+This will install the following templates:
+- stepwise-console: A console application template with StepWise.
+
+To create a new project using the template, run the following command. This will create a new console application project with StepWise WebUI configured.
+
+```bash
+dotnet new stepwise-console
+```
+
+After creating the project, you can run the project and visit `http://localhost:5123` to see the StepWise WebUI.
+
 ## Quick Start
 
 Here's a simple example of how to define a workflow to prepare dinner. The workflow consists of several steps, such as chopping vegetables, boiling water, cooking pasta, and cooking sauce. The final step is to serve dinner, which depends on all the previous steps. When executed, the workflow will automatically resolve the dependencies between steps and execute them in the parallel if possible.
