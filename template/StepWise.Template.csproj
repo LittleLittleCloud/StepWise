@@ -1,6 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Keep package type as 'Template' to show the package as a template package on nuget.org and make your template available in dotnet new search.-->
@@ -16,7 +14,40 @@
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     <SuppressDependenciesWhenPacking>True</SuppressDependenciesWhenPacking>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
+    <IsShippingPackage>true</IsShippingPackage>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Default description and tags. Packages can override. -->
+    <Authors>LittleLittleCloud</Authors>
+    <Product>StepWise</Product>
+    <Description>A powerful C# library for building and executing workflows</Description>
+    <PackageTags>AI, Artificial Intelligence, SDK, template</PackageTags>
+    <PackageId>LittleLittleCloud.StepWise.Template</PackageId>
+
+    <!-- Required license, copyright, and repo information. Packages can override. -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://littlelittlecloud.github.io/StepWise/</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <!-- Use icon and NUGET readme from dotnet/nuget folder -->
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageIconUrl>icon.png</PackageIconUrl>
+    <PackageReadmeFile>NUGET.md</PackageReadmeFile>
+
+    <!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Include icon.png and NUGET.md in the project. -->
+    <None Include="$(RepoRoot)/nuget/icon.png" Link="icon.png" Pack="true" PackagePath="." />
+    <None Include="$(RepoRoot)/nuget/NUGET.md" Link="NUGET.md" Pack="true" PackagePath="." />
+  </ItemGroup>
 
   <PropertyGroup>
     <LocalizeTemplates>false</LocalizeTemplates>
