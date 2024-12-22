@@ -7,97 +7,110 @@
 
 # StepWise
 
-[![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=stepwise&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fstepwisegallery20241128154731.azurewebsites.net%2F&up_message=demo&label=stepwise)](https://stepwisegallery20241128154731.azurewebsites.net/)
-[![Website](https://img.shields.io/badge/Website-StepWise-blue)](https://littlelittlecloud.github.io/StepWise/)
+<div align="center">
+ <strong> <h3> A code-first, event-driven workflow framework for .NET </h3> </strong>
+</div>
+<p align="center">
+
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=NuGet&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
+[![Doc](https://img.shields.io/badge/Doc-Online-blue)](https://littlelittlecloud.github.io/StepWise/)
+[![build](https://github.com/LittleLittleCloud/StepWise/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/LittleLittleCloud/StepWise/actions/workflows/dotnet-build.yml)
+</p>
+
+<p align="center">
+  <a href="https://stepwisegallery20241128154731.azurewebsites.net/">
+      <picture >
+        <source width="225" media="(prefers-color-scheme: dark)" srcset="./asset/try-live-demo.svg"  >
+        <source width="225" media="(prefers-color-scheme: light)" srcset="./asset/try-live-demo.svg"  >
+        <img alt="Try Live Demo" src="./asset/try-live-demo.svg" >
+      </picture>
+  </a>
+</p>
+
 </div>
 
-StepWise is a workflow engine build with C# and typescript. In StepWise, you define a workflow in C#, then visualize and execute it in StepWise UI.
+[Demo](https://github.com/user-attachments/assets/cca9d32d-1b59-455e-b19b-535943047ad0)
 
-## Demo
-[TextToImage](https://github.com/user-attachments/assets/cca9d32d-1b59-455e-b19b-535943047ad0)
+## What is StepWise?
+StepWise is a .NET framework which assists you to code, visualize and execute event-base workflow. It is designed to help you build complex workflows in a simple and efficient way. StepWise comes with the following key features:
+- **Code-First**: Define workflows using C# code in your project.
+- **WebUI** Visualize and execute workflows from your favorite browser using StepWise WebUI.
+- **Event-Driven**: Execute steps in parallel and resolve dependencies automatically.
+- **AI-Powered**: Work with `Geeno`, a built-in AI assistant in StepWise WebUI to help you run and analyze workflows with ease.
 
 ## Quick Start
 
 Here's a simple example of how to define a workflow to prepare dinner. The workflow consists of several steps, such as chopping vegetables, boiling water, cooking pasta, and cooking sauce. The final step is to serve dinner, which depends on all the previous steps. When executed, the workflow will automatically resolve the dependencies between steps and execute them in the parallel if possible.
 
 ```csharp
-using StepWise;
-
 public class PrepareDinner
 {
-    [Step]
-    public async Task<string> ChopVegetables(string[] vegetables)
-    {
-        await Task.Delay(3000);
+    [Step(description: """
+        This example demonstrates how to use stepwise to create a simple dinner preparation workflow.
+        - source code: [PrepareDinner.cs](https://github.com/LittleLittleCloud/StepWise/blob/main/example/HelloWorld/PrepareDinner.cs)
 
-        return $"Chopped {string.Join(", ", vegetables)}";
+        It returns the current time when the workflow starts and then simulates the preparation of dinner.
+        """)]
+    public async Task<DateTime> Start()
+    {
+        return DateTime.Now;
     }
 
-    [Step]
+    [Step(description: "boil water")]
+    [DependOn(nameof(Start))]
     public async Task<string> BoilWater()
     {
         await Task.Delay(2000);
 
-        return "Boiled water";
+        return "Boiled water in 2 seconds";
     }
 
-    [Step]
-    public async Task<string> CookPasta()
+    [Step(description: "cut vegetables")]
+    [DependOn(nameof(Start))]
+    public async Task<string> CutVegetables()
     {
-        await Task.Delay(5000);
+        await Task.Delay(3000);
 
-        return "Cooked pasta";
+        return "Cut vegetables in 3 seconds";
     }
 
-    [Step]
-    public async Task<string> CookSauce()
+    [Step(description: "cook vegetables")]
+    [DependOn(nameof(CutVegetables))]
+    [DependOn(nameof(BoilWater))]
+    public async Task<string> CookVegetables(
+        [FromStep(nameof(CutVegetables))] string vegetables,
+        [FromStep(nameof(BoilWater))] string water)
     {
         await Task.Delay(4000);
 
-        return "Cooked sauce";
+        return $"Cooked vegetables in 4 seconds. {vegetables}, {water}";
     }
 
-    [Step]
-    [DependOn(nameof(ChopVegetables))]
-    [DependOn(nameof(BoilWater))]
-    [DependOn(nameof(CookPasta))]
-    [DependOn(nameof(CookSauce))]
-    public async Task<string> ServeDinner(
-        [FromStep(nameof(ChopVegetables))] string[] vegetables,
-        [FromStep(nameof(BoilWater))] string water,
-        [FromStep(nameof(CookPasta))] string pasta,
-        [FromStep(nameof(CookSauce))] string sauce)
+    [Step(description: "cook meat")]
+    [DependOn(nameof(Start))]
+    public async Task<string> CookMeat()
     {
-        return $"Dinner ready!";
+        await Task.Delay(5000);
+
+        return "Cooked meat in 5 seconds";
+    }
+
+    [Step(description: """
+        Serve dinner.
+        This will call all the preparation dinner steps in parallel and return the time taken to prepare the dinner.
+        """)]
+    [DependOn(nameof(CookVegetables))]
+    [DependOn(nameof(CookMeat))]
+    public async Task<string> ServeDinner(
+        [FromStep(nameof(Start))] DateTime start,
+        [FromStep(nameof(CookVegetables))] string vegetables,
+        [FromStep(nameof(CookMeat))] string meat)
+    {
+        var time = DateTime.Now - start;
+        return $"Dinner ready in {time.TotalSeconds} seconds";
     }
 }
-
-// Usage
-var prepareDinner = new PrepareDinner();
-var workflow = Workflow.CreateFromInstance(prepareDinner);
-var engine = new WorkflowEngine(workflow, maxConcurrency: 10);
-var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-var inputVariables = new Dictionary<string, object>
-{
-    [nameof(ChopVegetables)] = StepVariable.Create(new[] { "tomato", "onion", "garlic" }),
-};
-
-await foreach (var stepResult in engine.ExecuteAsync(nameof(ServeDinner), inputVariables))
-{
-    // print every step result
-    // ChopVegetables: Chopped tomato, onion, garlic
-    // BoilWater: Boiled water
-    // CookPasta: Cooked pasta
-    // CookSauce: Cooked sauce
-    // ServeDinner: Dinner ready!
-    Console.WriteLine(stepResult);
-}
-
-stopwatch.Stop();
-
-// Because the steps are executed in parallel, the total time should be less than the sum of individual step times
-stopwatch.ElapsedMilliseconds.Should().BeLessThan(6000);
 ```
 
 ## Visualize stepwise workflow
@@ -131,8 +144,6 @@ await host.WaitForShutdownAsync();
 ```
 
 Now, you can visit `http://localhost:5123` to see the StepWise UI and execute the workflow.
-
-![StepWise UI](./asset/stepwise-ui-screenshot.png)
 
 ## Examples
 You can find more examples in the [examples](https://github.com/LittleLittleCloud/StepWise/tree/main/example) directory.
