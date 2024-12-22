@@ -37,6 +37,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise", "src\StepWise\St
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.Gallery.Web", "example\StepWIse.Gallery.Web\StepWise.Gallery.Web.csproj", "{218B897C-F0F6-4B8F-A3F4-2289B6B5415F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "template", "template", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.Template", "template\StepWise.Template.csproj", "{E2D7CB90-C283-9851-BC17-380194A3AEA5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +87,10 @@ Global
 		{218B897C-F0F6-4B8F-A3F4-2289B6B5415F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{218B897C-F0F6-4B8F-A3F4-2289B6B5415F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{218B897C-F0F6-4B8F-A3F4-2289B6B5415F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,6 +106,7 @@ Global
 		{7DD9A65A-C68D-464A-AFDB-21E9A3C6AA0E} = {19750AFD-3091-4569-9D89-8D5735C3EBFC}
 		{3D5EDF70-D0B3-4552-8185-BE5EB11C7ADA} = {19750AFD-3091-4569-9D89-8D5735C3EBFC}
 		{218B897C-F0F6-4B8F-A3F4-2289B6B5415F} = {0D861355-C022-4E1A-8C7B-7D1C3A066EE3}
+		{E2D7CB90-C283-9851-BC17-380194A3AEA5} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55953F2E-2283-4F22-9B79-17E81B54BDCE}

@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "StepWise",
+    "classifications": [
+        "Common",
+        "Console",
+        "StepWise"
+    ],
+    "identity": "StepWise.Template.Console",
+    "name": "StepWise Console Application",
+    "shortName": "stepwise-console",
+    "sourceName": "stepwise.console",
+    "tags": {
+        "language": "C#",
+        "type": "project"
+    },
+    "symbols": {
+        "TargetFrameworkOverride": {
+            "type": "parameter",
+            "description": "Overrides the target framework",
+            "replaces": "TargetFrameworkOverride",
+            "datatype": "string",
+            "defaultValue": "",
+            "displayName": "Target framework override"
+        }
+    }
+}
