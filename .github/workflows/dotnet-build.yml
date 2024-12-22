@@ -44,6 +44,7 @@ jobs:
       run: |
         echo "Build"
         dotnet build --no-restore --configuration Debug -bl /p:SignAssembly=true
+        dotnet build --no-restore --configuration Release -bl /p:SignAssembly=true
     - name: Unit Test
       run: dotnet test --no-build -bl --configuration Debug -m:3 -v d
     

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LittleLittleCloud.StepWise" Version="0.0.14" />
+    <PackageReference Include="LittleLittleCloud.StepWise" Version="0.0.15" />
   </ItemGroup>
 
 </Project>
