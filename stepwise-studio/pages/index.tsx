@@ -1,5 +1,4 @@
 import Image from "next/image";
-import localFont from "next/font/local";
 import StepWiseSidebar from "@/components/sidebar";
 import { client } from "@/stepwise-client";
 import "reactflow/dist/style.css";
@@ -16,17 +15,6 @@ import {
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { LLMConfiguration } from "@/components/llm-configuration";
-
-const geistSans = localFont({
-	src: "./fonts/GeistVF.woff",
-	variable: "--font-geist-sans",
-	weight: "100 900",
-});
-const geistMono = localFont({
-	src: "./fonts/GeistMonoVF.woff",
-	variable: "--font-geist-mono",
-	weight: "100 900",
-});
 
 // if env is development, use the local server
 if (process.env.NODE_ENV === "development") {
