@@ -29,7 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebAPI", "src\Step
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebAPI.Tests", "test\StepWise.WebAPI.Tests\StepWise.WebAPI.Tests.csproj", "{DAE8E54E-0A43-4FD7-9D75-6081792FA94E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.Gallery", "example\HelloWorld\StepWise.Gallery.csproj", "{8BD13BAB-263D-403F-93CC-FB628FA2E0C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.Gallery.Basic", "example\HelloWorld\StepWise.Gallery.Basic.csproj", "{8BD13BAB-263D-403F-93CC-FB628FA2E0C2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StepWise.WebUI", "src\StepWise.WebUI\StepWise.WebUI.csproj", "{7DD9A65A-C68D-464A-AFDB-21E9A3C6AA0E}"
 EndProject
@@ -40,6 +40,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "template", "template", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.Template", "template\StepWise.Template.csproj", "{E2D7CB90-C283-9851-BC17-380194A3AEA5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepWise.Gallery.Agentic", "example\StepWise.Gallery.Agentic\StepWise.Gallery.Agentic.csproj", "{567C38AD-31FC-4D5B-A891-DEE41AFF0AA8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +93,10 @@ Global
 		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2D7CB90-C283-9851-BC17-380194A3AEA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{567C38AD-31FC-4D5B-A891-DEE41AFF0AA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{567C38AD-31FC-4D5B-A891-DEE41AFF0AA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{567C38AD-31FC-4D5B-A891-DEE41AFF0AA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{567C38AD-31FC-4D5B-A891-DEE41AFF0AA8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -107,6 +113,7 @@ Global
 		{3D5EDF70-D0B3-4552-8185-BE5EB11C7ADA} = {19750AFD-3091-4569-9D89-8D5735C3EBFC}
 		{218B897C-F0F6-4B8F-A3F4-2289B6B5415F} = {0D861355-C022-4E1A-8C7B-7D1C3A066EE3}
 		{E2D7CB90-C283-9851-BC17-380194A3AEA5} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{567C38AD-31FC-4D5B-A891-DEE41AFF0AA8} = {0D861355-C022-4E1A-8C7B-7D1C3A066EE3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55953F2E-2283-4F22-9B79-17E81B54BDCE}

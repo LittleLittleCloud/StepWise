@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HelloWorld\StepWise.Gallery.csproj" />
+    <ProjectReference Include="..\HelloWorld\StepWise.Gallery.Basic.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
   </ItemGroup>
 
