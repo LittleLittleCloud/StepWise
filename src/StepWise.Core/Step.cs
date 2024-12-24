@@ -2,6 +2,7 @@
 // Step.cs
 
 using System;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace StepWise.Core;
@@ -64,11 +65,35 @@ public class Step
             dependencies.Add(attr.Name);
         }
 
+        // get the input parameters
         foreach (var param in parameters)
         {
             var sourceStep = param.GetCustomAttribute<FromStepAttribute>()?.Name;
+            var isStepConfiguration = param.GetCustomAttribute<StepConfigurationAttribute>() != null;
+
+            if (isStepConfiguration)
+            {
+                if (sourceStep != null)
+                {
+                    throw new ArgumentException("The parameter can't have both FromStepAttribute and StepConfigurationAttribute.");
+                }
+
+                // check if the parameter type is int, float, double, string, or bool
+                // if not, throw an exception
+                if (param.ParameterType != typeof(int) &&
+                    param.ParameterType != typeof(float) &&
+                    param.ParameterType != typeof(double) &&
+                    param.ParameterType != typeof(string) &&
+                    param.ParameterType != typeof(bool))
+                {
+                    throw new ArgumentException("The parameter type of the StepConfigurationAttribute must be int, float, double, string, or bool.");
+                }
+            }
             var hasDefaultValue = param.HasDefaultValue;
-            inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep, hasDefaultValue, param.DefaultValue));
+
+            var descriptionAttr = param.GetCustomAttribute<DescriptionAttribute>();
+            var descriptionValue = descriptionAttr?.Description ?? string.Empty;
+            inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep ?? param.Name!, name, hasDefaultValue, param.DefaultValue, isStepConfiguration, descriptionValue));
         }
 
         return new Step(name, description, inputParameters, outputType, dependencies, stepMethod, stepType);
