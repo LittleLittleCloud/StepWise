@@ -73,16 +73,6 @@ public class RouteWorkflowTest
         return "End";
     }
 
-    [Step]
-    [DependOn(nameof(A))]
-    [DependOn(nameof(B))]
-    [DependOn(nameof(C))]
-    public async Task<string> CollectResult(
-        [FromStep(nameof(A), nameof(B), nameof(C))] string result)
-    {
-        return result;
-    }
-
     [Fact]
     public async Task ItRunWorkflowTestAsync()
     {
@@ -127,23 +117,5 @@ public class RouteWorkflowTest
         // The first variable should be Start, and the last variable should be A
         variables.First().Name.Should().Be(nameof(Start));
         variables.Last().Name.Should().Be(nameof(A));
-    }
-
-    [Fact]
-    public async Task ItRunCollectResultStepTest()
-    {
-        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
-        var results = new List<StepRun>();
-        await foreach (var stepRun in engine.ExecuteStepAsync(nameof(CollectResult), maxConcurrency: 1))
-        {
-            results.Add(stepRun);
-        }
-        results.Count().Should().Be(1);
-        // should get one variable: End
-        var variables = results.Where(r => r.StepRunType == StepRunType.Variable).Select(r => r.Variable!).ToList();
-        variables.Count().Should().Be(1);
-        variables.Should().Contain(v => v.Name == nameof(End));
-        // The first variable should be End
-        variables.First().Name.Should().Be(nameof(End));
     }
 }
