@@ -584,6 +584,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						parameter_type={getDisplayType(output.type)}
 						variable_name={output.name}
 						variable={output}
+						is_configurable_from_web_ui={false}
+						step_name={step.name}
 					/>
 				</div>
 			)}
@@ -606,6 +608,8 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 							value: exceptionDTO,
 							generation: 0,
 						}}
+						is_configurable_from_web_ui={false}
+						step_name={step.name}
 					/>
 				</div>
 			)}

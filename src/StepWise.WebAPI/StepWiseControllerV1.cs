@@ -174,6 +174,9 @@ internal class StepWiseControllerV1 : ControllerBase
 
         foreach (var variable in variables)
         {
+            // the name of variables can either be one of the step names, which indicates that it's the output of that step
+            // or also can be {stepName}.{parameterName}, which indicates that it's the input parameter of that step
+            // In the second case, since we didn't record the {stepName}.{parameterName} in the stepParameterTypeMap, we get the specific type from the stepParameterTypeMap
             var stepVariable = stepVariableTypeMap.ContainsKey(variable.Name) ? VariableDTO.FromVariableDTO(variable, stepVariableTypeMap[variable.Name])
                 : VariableDTO.FromVariableDTO(variable, stepParameterTypeMap[variable.VariableType]);
 

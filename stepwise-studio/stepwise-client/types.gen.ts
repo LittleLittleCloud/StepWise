@@ -9,6 +9,9 @@ export type ParameterDTO = {
 	name: string;
 	parameter_type: string;
 	variable_name: string;
+	step_name: string;
+	is_configurable_from_web_ui: boolean;
+	readonly fullName?: string | null;
 };
 
 export type StepDTO = {

@@ -11,19 +11,23 @@ namespace StepWise.Core;
 
 public class Parameter
 {
-    public Parameter(string name, Type type, string? variableName, bool hasDefaultValue, object? defaultValue = null)
+    public Parameter(string name, Type type, string variableName, string stepName, bool hasDefaultValue, object? defaultValue = null, bool isConfigurableFromWebUI = false)
     {
         ParameterName = name;
         Type = type;
-        VariableName = variableName ?? name;
+        VariableName = variableName;
         HasDefaultValue = hasDefaultValue;
         DefaultValue = defaultValue;
+        StepName = stepName;
+        IsConfigurableFromWebUI = isConfigurableFromWebUI;
     }
 
     /// <summary>
     /// Parameter name.
     /// </summary>
     public string ParameterName { get; set; }
+
+    public string StepName { get; set; }
 
     public Type Type { get; set; }
 
@@ -35,4 +39,6 @@ public class Parameter
     public bool HasDefaultValue { get; set; }
 
     public object? DefaultValue { get; set; }
+
+    public bool IsConfigurableFromWebUI { get; set; }
 }

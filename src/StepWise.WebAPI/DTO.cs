@@ -63,6 +63,8 @@ public record ParameterDTO
             Name = parameter.ParameterName,
             ParameterType = parameter.Type.Name,
             VariableName = parameter.VariableName,
+            StepName = parameter.StepName,
+            IsConfigurableFromWebUI = parameter.IsConfigurableFromWebUI,
         };
     }
 
@@ -77,6 +79,16 @@ public record ParameterDTO
     [JsonPropertyName("variable_name")]
     [Required]
     public required string VariableName { get; init; }
+
+    [JsonPropertyName("step_name")]
+    [Required]
+    public required string StepName { get; init; }
+
+    [JsonPropertyName("is_configurable_from_web_ui")]
+    [Required]
+    public required bool IsConfigurableFromWebUI { get; init; }
+
+    public string FullName => $"{StepName}.{Name}";
 }
 
 public record StepDTO(

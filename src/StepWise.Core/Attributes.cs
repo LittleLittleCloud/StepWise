@@ -43,6 +43,28 @@ public class FromStepAttribute : Attribute
     public string Name { get; set; }
 }
 
+[AttributeUsage(AttributeTargets.Parameter)]
+public class StepConfigurationAttribute : Attribute
+{
+    /// <summary>
+    /// This attribute is used to mark a method parameter as a configurable parameter in StepWise WebUI.
+    /// The type of this parameter must be one of the following:
+    /// - int/float/double
+    /// - string
+    /// - bool
+    /// 
+    /// If a default value is provided, that value will be used as the default value in the UI.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public StepConfigurationAttribute([CallerMemberName] string? name = null)
+        : base()
+    {
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+    }
+    public string Name { get; set; }
+}
+
 [AttributeUsage(AttributeTargets.Method)]
 public class StepWiseUITextInputAttribute : Attribute
 {
