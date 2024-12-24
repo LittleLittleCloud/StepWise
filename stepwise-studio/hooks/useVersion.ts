@@ -49,16 +49,24 @@ export const useStepwiseServerConfiguration = () => {
 	return configuration;
 };
 
-export interface RunSettingsState {
+export type EdgeStyle = "default" | "smooth" | "straight" | "step";
+
+export interface WorkflowSettingsState {
 	maxParallel: number;
 	maxSteps: number;
 	setMaxParallel: (maxParallel: number) => void;
 	setMaxSteps: (maxSteps: number) => void;
+	edgeStyle: EdgeStyle;
+	setEdgeStyle: (edgeStyle: EdgeStyle) => void;
 }
 
-export const useRunSettingsStore = create<RunSettingsState>((set) => ({
-	maxParallel: 5,
-	maxSteps: 10,
-	setMaxParallel: (maxParallel: number) => set({ maxParallel }),
-	setMaxSteps: (maxSteps: number) => set({ maxSteps }),
-}));
+export const useWorkflowSettingsStore = create<WorkflowSettingsState>(
+	(set) => ({
+		maxParallel: 5,
+		maxSteps: 10,
+		setMaxParallel: (maxParallel: number) => set({ maxParallel }),
+		setMaxSteps: (maxSteps: number) => set({ maxSteps }),
+		edgeStyle: "default",
+		setEdgeStyle: (edgeStyle: EdgeStyle) => set({ edgeStyle }),
+	}),
+);

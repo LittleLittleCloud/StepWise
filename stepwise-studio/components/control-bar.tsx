@@ -8,6 +8,7 @@ import { ChangeEvent, FC, useEffect, useState } from "react";
 import { Button, buttonVariants } from "./ui/button";
 import { cn } from "@/lib/utils";
 import {
+	GitCompare,
 	GithubIcon,
 	icons,
 	Layout,
@@ -15,12 +16,15 @@ import {
 	Loader2,
 	Play,
 	RotateCcw,
+	Route,
+	Slash,
 } from "lucide-react";
 import Link from "next/link";
 import { Checkpoint, CheckpointSelector } from "./checkpoint-selector";
-import { useRunSettingsStore } from "@/hooks/useVersion";
+import { EdgeStyle, useWorkflowSettingsStore } from "@/hooks/useVersion";
 import { SidebarTrigger } from "./ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useWorkflowStore } from "@/hooks/useWorkflow";
 
 interface ControlBarProps {
 	onRunClick: () => void;
@@ -29,10 +33,62 @@ interface ControlBarProps {
 	isRunning: boolean;
 }
 
+export const EdgeStyleSwitchButton: FC = () => {
+	const edgeStyle = useWorkflowSettingsStore((state) => state.edgeStyle);
+	const setEdgeStyle = useWorkflowSettingsStore(
+		(state) => state.setEdgeStyle,
+	);
+	const iconSize = 14;
+
+	const edgeStyleOptions = [
+		{
+			value: "straight",
+			icon: <Slash size={iconSize} />,
+			tooltip:
+				"The current edge style is straight, click to switch to smooth edge style",
+		},
+		{
+			value: "smoothstep",
+			icon: <GitCompare size={iconSize} />,
+			tooltip:
+				"The current edge style is smoothstep, click to switch to bezier edge style",
+		},
+		{
+			value: "default",
+			icon: <Route size={iconSize} />,
+			tooltip:
+				"The current edge style is default, click to switch to straight edge style",
+		},
+	];
+
+	return (
+		<Button
+			variant="ghost"
+			size="tinyIcon"
+			tooltip={
+				edgeStyleOptions.find((option) => option.value === edgeStyle)
+					?.tooltip
+			}
+			onClick={() => {
+				const currentIndex = edgeStyleOptions.findIndex(
+					(option) => option.value === edgeStyle,
+				);
+				const nextIndex = (currentIndex + 1) % edgeStyleOptions.length;
+				setEdgeStyle(edgeStyleOptions[nextIndex].value as EdgeStyle);
+			}}
+		>
+			{
+				edgeStyleOptions.find((option) => option.value === edgeStyle)
+					?.icon
+			}
+		</Button>
+	);
+};
+
 export const ControlBar: FC<ControlBarProps> = (props) => {
 	const [isRunning, setIsRunning] = useState<boolean>(props.isRunning);
 	const { maxParallel, maxSteps, setMaxParallel, setMaxSteps } =
-		useRunSettingsStore();
+		useWorkflowSettingsStore();
 
 	const isMobile = useIsMobile();
 
@@ -82,6 +138,7 @@ export const ControlBar: FC<ControlBarProps> = (props) => {
 				>
 					<LayoutGrid size={iconSize} />
 				</Button>
+				<EdgeStyleSwitchButton />
 				<Button
 					variant="link"
 					size="tinyIcon"

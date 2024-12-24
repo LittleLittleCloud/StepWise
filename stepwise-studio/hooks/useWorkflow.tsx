@@ -63,8 +63,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 				for (const workflow of res.data ?? []) {
 					var nodes = workflow.steps?.map((step: StepDTO) => ({
 						id: `${workflow.name}-${step.name}`,
-						width: 200,
-						height: 200,
+						width: 256,
+						height: 128,
 						position: { x: 0, y: 0 },
 					})) as Node[];
 
@@ -84,7 +84,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 										sourceHandle: `${workflow.name}-${param.variable_name}`,
 										targetHandle: `${workflow.name}-${step.name}-${param.variable_name}`,
 										style: { stroke: "#555" },
-										type: "smoothstep",
 										animated: !isStepDependency,
 									} as Edge;
 								}) ?? [];

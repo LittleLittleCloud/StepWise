@@ -37,6 +37,13 @@ public class StepWiseClient
         _workflows.Add(workflow);
     }
 
+    public void AddWorkflowFromInstance<T>(T instance, string? name = null)
+        where T : notnull
+    {
+        var workflow = Workflow.CreateFromInstance(instance, name);
+        AddWorkflow(workflow);
+    }
+
     public void RemoveWorkflow(string workflowName)
     {
         _workflows.RemoveAll(w => w.Name == workflowName);

@@ -39,7 +39,7 @@ import { toast } from "sonner";
 import { useWorkflow } from "@/hooks/useWorkflow";
 import { useAccessToken, useAccessTokenStore } from "@/hooks/useAccessToken";
 import { v4 as uuidv4 } from "uuid";
-import { useRunSettingsStore } from "@/hooks/useVersion";
+import { useWorkflowSettingsStore } from "@/hooks/useVersion";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 import { useWorkflowEngine } from "@/hooks/useWorkflowEngine";
 
@@ -74,10 +74,12 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		}),
 		[],
 	);
+	const edgeType = useWorkflowSettingsStore((state) => state.edgeStyle);
 
 	const createGraphFromWorkflow = (
 		workflow: WorkflowData,
 		stepRunHistory: StepRunDTO[],
+		edgeType = "smoothstep",
 	) => {
 		var completedRunSteps = createLatestStepRunSnapShotFromRunHistory(
 			workflow,
@@ -120,8 +122,8 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 							sourceHandle: `${workflow.name}-${param.variable_name}`,
 							targetHandle: `${workflow.name}-${step.name}-${param.variable_name}`,
 							style: { stroke: "#555" },
-							type: "smoothstep",
 							animated: !isStepDependency,
+							type: edgeType,
 						} as Edge;
 					}) ?? [];
 
@@ -158,6 +160,7 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		var graph = createGraphFromWorkflow(
 			selectedWorkflow,
 			selectedStepRunHistory,
+			edgeType,
 		);
 		setNodes(graph.nodes);
 		setEdges(graph.edges);
@@ -165,7 +168,13 @@ const WorkflowInner: React.FC<WorkflowProps> = (props) => {
 		if (selectedWorkflow.viewPort) {
 			setViewport(selectedWorkflow.viewPort);
 		}
-	}, [selectedWorkflow, isRunning, fitView, selectedStepRunHistory]);
+	}, [
+		selectedWorkflow,
+		isRunning,
+		fitView,
+		selectedStepRunHistory,
+		edgeType,
+	]);
 
 	const onNodesChangeRestricted = useCallback(
 		(changes: NodeChange[]) => {
