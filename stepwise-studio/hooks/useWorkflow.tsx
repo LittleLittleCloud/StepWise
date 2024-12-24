@@ -9,36 +9,26 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 import { Edge, Node } from "reactflow";
 import { create } from "zustand";
-import { useStepwiseServerConfiguration } from "./useVersion";
 import { useAccessToken } from "./useAccessToken";
+import { toast } from "sonner";
+
+export interface WorkflowsState{
+	workflows: WorkflowData[];
+	fetchWorkflows: (token: string | undefined) => Promise<WorkflowData[]>;
+	updateWorkflow: (workflow: WorkflowData) => void;
+}
 
 interface WorkflowState {
-	workflows: WorkflowData[];
 	selectedWorkflow: WorkflowData | undefined;
-	updateWorkflow: (workflow: WorkflowData) => void;
-	setWorkflows: (workflows: WorkflowData[]) => void;
 	setSelectedWorkflow: (
 		workflow:
 			| WorkflowData
 			| ((prev: WorkflowData | undefined) => WorkflowData),
 	) => void;
-	fetchWorkflows: (token: string | undefined) => Promise<void>;
 }
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowsStore = create<WorkflowsState>((set, get) => ({
 	workflows: [],
-	selectedWorkflow: undefined,
-	setWorkflows: (workflows) => set({ workflows }),
-	setSelectedWorkflow: (workflow) =>
-		set((state) => {
-			var selectedWorkflow =
-				typeof workflow === "function"
-					? workflow(get().selectedWorkflow)
-					: workflow;
-
-			state.updateWorkflow(selectedWorkflow);
-			return { selectedWorkflow };
-		}),
 	updateWorkflow: (workflow) => {
 		set((state) => {
 			const workflows = state.workflows.map((w) => {
@@ -51,8 +41,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 		});
 	},
 	fetchWorkflows: async (token) => {
-		console.log("Fetching workflows");
-		getApiV1StepWiseControllerV1ListWorkflow({
+		return getApiV1StepWiseControllerV1ListWorkflow({
 			headers: {
 				Authorization: token ? `Bearer ${token}` : undefined,
 			},
@@ -129,33 +118,52 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 					maps.set(workflow.name, []);
 				});
 				set({
-					selectedWorkflow: get().selectedWorkflow ?? workflows[0],
 					workflows: workflows,
 				});
+
+				return workflows;
 			})
 			.catch((err) => {
-				console.error("Error getting workflows: ", err);
+				toast.error("Error getting workflows: " + JSON.stringify(err));
+				return [];
 			});
 	},
 }));
 
+export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+	selectedWorkflow: undefined,
+	setSelectedWorkflow: (workflow) =>
+		set((state) => {
+			var selectedWorkflow =
+				typeof workflow === "function"
+					? workflow(get().selectedWorkflow)
+					: workflow;
+
+			useWorkflowsStore.getState().updateWorkflow(selectedWorkflow);
+			return { selectedWorkflow };
+		}),
+	
+}));
+
 export const useWorkflow = () => {
-	const workflows = useWorkflowStore((state) => state.workflows);
+	const workflows = useWorkflowsStore((state) => state.workflows);
 	const selectedWorkflow = useWorkflowStore(
 		(state) => state.selectedWorkflow,
 	);
 	const setSelectedWorkflow = useWorkflowStore(
 		(state) => state.setSelectedWorkflow,
 	);
-	const updateWorkflow = useWorkflowStore((state) => state.updateWorkflow);
-	const setWorkflows = useWorkflowStore((state) => state.setWorkflows);
-	const fetchWorkflows = useWorkflowStore((state) => state.fetchWorkflows);
+	const updateWorkflow = useWorkflowsStore((state) => state.updateWorkflow);
+	const fetchWorkflows = useWorkflowsStore((state) => state.fetchWorkflows);
 	const accessToken = useAccessToken();
 
 	useEffect(() => {
 		const fetchData = async () => {
-			await fetchWorkflows(accessToken);
-			setWorkflows(workflows);
+			var workflows = await fetchWorkflows(accessToken);
+			if (workflows.length > 0)
+			{
+				setSelectedWorkflow(workflows[0]);
+			}
 		};
 
 		fetchData();
@@ -166,6 +174,5 @@ export const useWorkflow = () => {
 		selectedWorkflow,
 		setSelectedWorkflow,
 		updateWorkflow,
-		setWorkflows,
 	};
 };

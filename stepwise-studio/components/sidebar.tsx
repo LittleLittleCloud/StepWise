@@ -11,9 +11,6 @@
 import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { WorkflowDTO } from "@/stepwise-client";
-import Workflow, { WorkflowData } from "./workflow";
-import ThemeSwitch from "./theme-switch";
 import {
 	ArrowLeftSquare,
 	ArrowLeftToLineIcon,
@@ -87,9 +84,6 @@ const StepWiseSidebar: React.FC<SidebarProps> = (props) => {
 		if (theme === null && systemTheme) {
 			setTheme(systemTheme);
 		}
-
-		console.log("ThemeSwitch mounted");
-		console.log("theme", theme);
 	}, []);
 
 	if (!mounted) {
