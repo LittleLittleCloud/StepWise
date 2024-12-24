@@ -58,6 +58,8 @@ import { StepNodeStatus, ToStepNodeStatus } from "@/lib/stepRunUtils";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 import { useWorkflowEngine } from "@/hooks/useWorkflowEngine";
+import { SidebarSeparator } from "./ui/sidebar";
+import { Separator } from "./ui/separator";
 
 export interface StepNodeProps extends StepRunDTO {}
 
@@ -228,6 +230,10 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	);
 	const iconSize = 16;
 
+	const [maxWidth, setMaxWidth] = useState<
+		"max-w-64" | "max-w-96" | "max-w-lg" | "max-w-3xl"
+	>("max-w-64");
+
 	useEffect(() => {
 		if (!stepNodeRef.current) return;
 		setStep(prop.data.step!);
@@ -248,6 +254,21 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 		});
 
 		resizeObserver.observe(stepNodeRef.current);
+
+		// update max width
+		const stepNodeID = `${selectedWorkflow?.name}-${step.name}`;
+		const size = selectedWorkflow?.stepSizes[stepNodeID];
+		if (size) {
+			if (size.width > 512) {
+				setMaxWidth("max-w-3xl");
+			} else if (size.width > 384) {
+				setMaxWidth("max-w-lg");
+			} else if (size.width > 256) {
+				setMaxWidth("max-w-96");
+			} else {
+				setMaxWidth("max-w-64");
+			}
+		}
 
 		return () => {
 			resizeObserver.disconnect();
@@ -347,7 +368,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 
 	const onResize = async (height: number, width: number) => {
 		if (!selectedWorkflow) return selectedWorkflow;
-		console.log("Resize", height, width);
+
 		const stepNodeID = `${selectedWorkflow.name}-${step.name}`;
 		setSelectedWorkflow({
 			...selectedWorkflow,
@@ -389,9 +410,9 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 	return (
 		<div
 			className={cn(
-				"border-2 rounded-md shadow-md p-2 bg-sidebar group",
+				"border-2 rounded-md shadow-md p-1 bg-sidebar group",
 				isSelected ? "border-primary" : "border-transparent",
-				"max-w-lg",
+				maxWidth,
 				shouldWaitForInput(status, stepType) ? "border-primary" : "",
 			)}
 			ref={stepNodeRef}
@@ -402,14 +423,25 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						background: "transparent",
 						border: "none",
 					}}
+					onResize={(event, param) => {
+						if (param.width > 512) {
+							setMaxWidth("max-w-3xl");
+						} else if (param.width > 384) {
+							setMaxWidth("max-w-lg");
+						} else if (param.width > 256) {
+							setMaxWidth("max-w-96");
+						} else {
+							setMaxWidth("max-w-64");
+						}
+					}}
 					onResizeEnd={(event, param) => {
 						onResize(
 							stepNodeRef.current!.offsetHeight,
-							stepNodeRef.current!.offsetWidth,
+							param.width,
 						);
 					}}
 					minWidth={128}
-					maxWidth={512}
+					maxWidth={768}
 				>
 					<Slash
 						style={{
@@ -445,8 +477,13 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 			</div>
 
 			{step.name && selectedWorkflow && (
-				<div className="flex flex-col">
-					<div className="flex gap-1 items-center">
+				<div className="flex flex-col rounded-md w-full hover:bg-accent">
+					<div
+						className="flex items-center gap-1"
+						onClick={() =>
+							setCollapseDescription(!collapseDescription)
+						}
+					>
 						<div ref={titleRef} className="items-center">
 							<StepNodeStatusIndicator
 								status={status}
@@ -454,56 +491,35 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 								stepType={stepType ?? "Ordinary"}
 							/>
 						</div>
-						<h1 className="font-semibold text-nowrap pr-5 truncate">
+						<h1 className="font-semibold text-nowrap pr-5 grow truncate">
 							{step.name}
 						</h1>
 						<Handle
 							type="source"
 							position={Position.Right}
-							// id = name-variable
 							id={`${selectedWorkflow.name}-${step.name}`}
 							className="w-2 h-2 border-none bg-green-500"
-							style={{ top: sourceHandleTopOffset, right: 5 }}
+							style={{
+								top: sourceHandleTopOffset,
+								right: 5,
+							}}
 						/>
 					</div>
-					{description && (
-						<div className="w-full py-1 rounded-md hover:bg-accent">
-							<div
-								className="flex flex-wrap gap-x-5 gap-y-1 items-center cursor-pointer"
-								onClick={() =>
-									setCollapseDescription(!collapseDescription)
-								}
-							>
-								<div className="flex gap-1 flex-grow items-center">
-									<Button
-										variant={"outline"}
-										size={"tinyIcon"}
-										className="m-0 p-0"
-									>
-										<FileText size={iconSize} />
-									</Button>
-									<h1 className="font-semibold">
-										Description
-									</h1>
-								</div>
-								{!collapseDescription && (
-									<span className="bg-background max-w-[10rem] rounded-md truncate px-2">
-										{description}
-									</span>
-								)}
-							</div>
-							{collapseDescription && (
-								<div
-									className={cn(
-										"flex rounded-md m-1 bg-background items-center nodrag nopan cursor-text",
-									)}
-									style={{ userSelect: "text" }}
-								>
-									<Markdown className="w-full overflow-x-auto">
-										{description}
-									</Markdown>
-								</div>
+					{description && !collapseDescription && (
+						<span className="bg-background rounded-md truncate px-2">
+							{description}
+						</span>
+					)}
+					{description && collapseDescription && (
+						<div
+							className={cn(
+								"flex rounded-md m-1 bg-background items-center nodrag nopan cursor-text",
 							)}
+							style={{ userSelect: "text" }}
+						>
+							<Markdown className="w-full overflow-x-auto">
+								{description}
+							</Markdown>
 						</div>
 					)}
 				</div>
@@ -525,7 +541,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					<div className="flex flex-col gap-1">
 						{parameters.map((param, index) => (
 							<div
-								className="pl-4 bg-accent rounded-md hover:bg-accent/50"
+								className="pl-4 rounded-md hover:bg-accent"
 								key={index}
 								ref={(el) =>
 									el &&
@@ -560,7 +576,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 					</div>
 				</div>
 			)}
-			{output && <div className="border border-md m-1" />}
+			{output && <Separator />}
 			{output && (
 				<div className="flex flex-col items-center mt-1 rounded-md hover:bg-accent">
 					<ParameterCard

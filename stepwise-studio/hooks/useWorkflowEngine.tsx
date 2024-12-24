@@ -12,7 +12,7 @@ import { useStepRunHistoryStore } from "./useStepRunHistory";
 import { create } from "zustand/react";
 import { v4 as uuidv4 } from "uuid";
 import { useWorkflowStore } from "./useWorkflow";
-import { useRunSettingsStore } from "./useVersion";
+import { useWorkflowSettingsStore } from "./useVersion";
 
 export interface WorkflowEngineState {
 	isRunning: boolean;
@@ -30,7 +30,7 @@ export const useWorkflowEngine = create<WorkflowEngineState>((set, get) => ({
 		const stepRunHistoryStoreState = useStepRunHistoryStore.getState();
 		const accessToken = useAccessTokenStore.getState().accessToken;
 		const workflowStore = useWorkflowStore.getState();
-		const runSettingStore = useRunSettingsStore.getState();
+		const runSettingStore = useWorkflowSettingsStore.getState();
 		const workflow = workflowStore.selectedWorkflow;
 		const maxParallelRun = maxParallel ?? runSettingStore.maxParallel;
 		const maxSteps = maxStep ?? runSettingStore.maxSteps;
