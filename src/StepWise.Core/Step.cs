@@ -2,6 +2,7 @@
 // Step.cs
 
 using System;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace StepWise.Core;
@@ -89,7 +90,10 @@ public class Step
                 }
             }
             var hasDefaultValue = param.HasDefaultValue;
-            inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep ?? param.Name!, name, hasDefaultValue, param.DefaultValue, isStepConfiguration));
+
+            var descriptionAttr = param.GetCustomAttribute<DescriptionAttribute>();
+            var descriptionValue = descriptionAttr?.Description ?? string.Empty;
+            inputParameters.Add(new Parameter(param.Name!, param.ParameterType, sourceStep ?? param.Name!, name, hasDefaultValue, param.DefaultValue, isStepConfiguration, descriptionValue));
         }
 
         return new Step(name, description, inputParameters, outputType, dependencies, stepMethod, stepType);

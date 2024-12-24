@@ -18,6 +18,7 @@ export const ExceptionDTOSchema = {
 
 export const ParameterDTOSchema = {
 	required: [
+		"description",
 		"is_configurable_from_web_ui",
 		"name",
 		"parameter_type",
@@ -44,6 +45,10 @@ export const ParameterDTOSchema = {
 		},
 		is_configurable_from_web_ui: {
 			type: "boolean",
+		},
+		description: {
+			minLength: 1,
+			type: "string",
 		},
 		fullName: {
 			type: "string",

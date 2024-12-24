@@ -11,6 +11,7 @@ export type ParameterDTO = {
 	variable_name: string;
 	step_name: string;
 	is_configurable_from_web_ui: boolean;
+	description: string;
 	readonly fullName?: string | null;
 };
 

@@ -586,6 +586,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						variable={output}
 						is_configurable_from_web_ui={false}
 						step_name={step.name}
+						description=""
 					/>
 				</div>
 			)}
@@ -610,6 +611,7 @@ const StepNode: React.FC<NodeProps<StepNodeProps>> = (prop) => {
 						}}
 						is_configurable_from_web_ui={false}
 						step_name={step.name}
+						description=""
 					/>
 				</div>
 			)}
