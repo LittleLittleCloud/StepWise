@@ -10,15 +10,16 @@ import {
 import { toast } from "sonner";
 import { Checkpoint } from "@/components/checkpoint-selector";
 import { useStepwiseServerConfiguration } from "./useVersion";
-import { useWorkflow } from "./useWorkflow";
+import { useWorkflow, useWorkflowsStore, useWorkflowStore } from "./useWorkflow";
 import { useAccessToken } from "./useAccessToken";
 import { useStepRunHistoryStore } from "./useStepRunHistory";
 
 export interface CheckpointStore {}
 
 export function useCheckpoints() {
-	const { selectedWorkflow, setSelectedWorkflow, updateWorkflow, workflows } =
-		useWorkflow();
+	const selectedWorkflow = useWorkflowStore((state) => state.selectedWorkflow);
+	const setSelectedWorkflow = useWorkflowStore((state) => state.setSelectedWorkflow);
+	const workflows = useWorkflowsStore((state) => state.workflows);
 	const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
 	const {
 		setSelectedStepRunHistory,

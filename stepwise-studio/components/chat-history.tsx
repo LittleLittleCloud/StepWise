@@ -167,9 +167,13 @@ export const ChatToolCard: React.FC<ChatTool> = ({
 			</div>
 			{!collapsed && values && (
 				<div className="flex flex-col justify-between bg-accent p-2 rounded-lg overflow-x-auto">
+					<span>argument</span>
 					<Markdown>{argument}</Markdown>
 					{values.map((value, index) => (
+						<>
+						<span>{value.name}</span>
 						<VariableCard key={index} variable={value} />
+						</>
 					))}
 				</div>
 			)}

@@ -35,8 +35,11 @@ import {
 } from "openai/resources/index.mjs";
 import { useStepRunHistoryStore } from "@/hooks/useStepRunHistory";
 import { useWorkflowStore } from "@/hooks/useWorkflow";
-import { StepRunDTO, VariableDTO, WorkflowDTO } from "@/stepwise-client";
+import { StepDTO, StepRunDTO, VariableDTO, WorkflowDTO } from "@/stepwise-client";
 import { useWorkflowEngine } from "@/hooks/useWorkflowEngine";
+import { BuildOpenAIChatToolsFromSteps } from "@/lib/stepRunUtils";
+
+
 export const ChatControlBar: React.FC = () => {
 	const message = useChatBoxStore((state) => state.message);
 	const chatHistory = useChatHistoryStore((state) => state.messages);
@@ -120,6 +123,8 @@ ${
 }
 
 You don't need to provide the arguments if they are already available in the context. You can override the context variables by providing the arguments explicitly.
+
+## current status for each step:
 `;
 
 		const steps = workflow.steps;
@@ -167,82 +172,7 @@ You don't need to provide the arguments if they are already available in the con
 				}
 			}
 
-			const tools: ChatCompletionTool[] = steps.map(
-				(step) =>
-					({
-						function: {
-							name: step.name,
-							description: step.description,
-							parameters: {
-								type: "object",
-								properties: step.parameters!.reduce(
-									(acc: { [key: string]: any }, param) => {
-										const allowedTypes = [
-											"String",
-											"Number",
-											"Boolean",
-											"String[]",
-											"Int32",
-											"Int64",
-											"Float",
-											"Double",
-										];
-										const jsonTypeMap: {
-											[key: string]: string;
-										} = {
-											String: "string",
-											Number: "number",
-											Boolean: "boolean",
-											"String[]": "array",
-											Integer: "integer",
-											Int32: "integer",
-											Int64: "integer",
-											Float: "number",
-											Double: "number",
-										};
-										const itemTypeMap: {
-											[key: string]: string | undefined;
-										} = {
-											String: undefined,
-											Number: undefined,
-											Boolean: undefined,
-											"String[]": "string",
-											Integer: undefined,
-											Int32: undefined,
-											Int64: undefined,
-											Float: undefined,
-											Double: undefined,
-										};
-										if (
-											!allowedTypes.includes(
-												param.parameter_type,
-											)
-										) {
-											return acc;
-										}
-										acc[param.variable_name] = {
-											type: jsonTypeMap[
-												param.parameter_type
-											],
-											items: itemTypeMap[
-												param.parameter_type
-											]
-												? {
-														type: itemTypeMap[
-															param.parameter_type
-														],
-													}
-												: undefined,
-										};
-										return acc;
-									},
-									{},
-								),
-							},
-						},
-						type: "function",
-					}) as ChatCompletionTool,
-			);
+			const tools: ChatCompletionTool[] = BuildOpenAIChatToolsFromSteps(steps);
 
 			try {
 				const systemMessage: ChatCompletionMessageParam = {
@@ -308,8 +238,6 @@ You don't need to provide the arguments if they are already available in the con
 						})
 						.filter((v) => v !== undefined);
 
-					console.log(argumentsArray);
-
 					// merge the arguments with the context variables
 					// and override the context variables with the arguments
 					const mergedVariables = contextVariables.filter(
@@ -335,12 +263,10 @@ You don't need to provide the arguments if they are already available in the con
 					]);
 
 					if (newStepRunHistory.length > 0) {
-						const values = newStepRunHistory
-							.filter(
-								(v) =>
-									v.result !== undefined &&
-									v.status === "Completed",
-							)
+						const latestResult = newStepRunHistory
+							.filter((v) => v.result !== undefined);
+						
+						const values = latestResult
 							.map(
 								(v) =>
 									`${v.result?.name}: ${v.result?.displayValue}`,
@@ -367,7 +293,7 @@ You don't need to provide the arguments if they are already available in the con
 				}
 			} catch (error) {
 				toast.error(JSON.stringify(error));
-				return;
+				throw error;
 			} finally {
 				setBusy(false);
 			}

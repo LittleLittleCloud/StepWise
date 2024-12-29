@@ -1,0 +1,519 @@
+[
+    {
+        "description": null,
+        "name": "README",
+        "steps": [
+            {
+                "description": "This gallery includes a series of agentic stepwise workflows.",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "Ordinary",
+                "name": "README1"
+            }
+        ]
+    },
+    {
+        "description": null,
+        "name": "GetWeatherWorkflow",
+        "steps": [
+            {
+                "description": "",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "Ordinary",
+                "name": "GetCurrentDateAsync"
+            },
+            {
+                "description": "",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "StepWiseUITextInput",
+                "name": "GetCityAsync"
+            },
+            {
+                "description": "",
+                "dependencies": [
+                    "GetCurrentDateAsync",
+                    "GetCityAsync"
+                ],
+                "parameters": [
+                    {
+                        "name": "city",
+                        "parameter_type": "String",
+                        "variable_name": "GetCityAsync",
+                        "step_name": "GetWeatherAsync",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "GetWeatherAsync.city"
+                    },
+                    {
+                        "name": "date",
+                        "parameter_type": "String",
+                        "variable_name": "GetCurrentDateAsync",
+                        "step_name": "GetWeatherAsync",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "GetWeatherAsync.date"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "GetWeatherAsync"
+            }
+        ]
+    },
+    {
+        "description": null,
+        "name": "CoT",
+        "steps": [
+            {
+                "description": "This workflow is designed to help you resolve tasks by generating a chain of thoughts to break down the task into smaller sub-tasks and resolve them one by one.\r\n\r\n## Pre-requisite\r\n- env: OPENAI_API_KEY: OpenAI API key",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "Ordinary",
+                "name": "README"
+            },
+            {
+                "description": "You always resolve tasks by using a chain of thought to break down the task into smaller sub-tasks and resolve them one by one using ResolveSubTask.\r\nThen you summarize the chain of thoughts and generate the final reply.",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "Ordinary",
+                "name": "SystemMessage"
+            },
+            {
+                "description": "",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "StepWiseUITextInput",
+                "name": "GetTask"
+            },
+            {
+                "description": "Initialize chain of thoughts for the given task",
+                "dependencies": [
+                    "GetTask"
+                ],
+                "parameters": [
+                    {
+                        "name": "task",
+                        "parameter_type": "String",
+                        "variable_name": "GetTask",
+                        "step_name": "InitializeChainOfThought",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "InitializeChainOfThought.task"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "InitializeChainOfThought"
+            },
+            {
+                "description": "Resolve i-th task from the task list and return the result",
+                "dependencies": [
+                    "InitializeChainOfThought"
+                ],
+                "parameters": [
+                    {
+                        "name": "tasks",
+                        "parameter_type": "SubTasks",
+                        "variable_name": "InitializeChainOfThought",
+                        "step_name": "ResolveSubTask",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ResolveSubTask.tasks"
+                    },
+                    {
+                        "name": "index",
+                        "parameter_type": "Int32",
+                        "variable_name": "NextAsync",
+                        "step_name": "ResolveSubTask",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ResolveSubTask.index"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "ResolveSubTask"
+            },
+            {
+                "description": "Move to the next sub-task",
+                "dependencies": [],
+                "parameters": [
+                    {
+                        "name": "result",
+                        "parameter_type": "Nullable`1",
+                        "variable_name": "ResolveSubTask",
+                        "step_name": "NextAsync",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "NextAsync.result"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "NextAsync"
+            },
+            {
+                "description": "Summarize the chain of thoughts and generate final reply",
+                "dependencies": [
+                    "NextAsync"
+                ],
+                "parameters": [
+                    {
+                        "name": "index",
+                        "parameter_type": "Int32",
+                        "variable_name": "NextAsync",
+                        "step_name": "SummarizeChainOfThought",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "SummarizeChainOfThought.index"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "SummarizeChainOfThought"
+            }
+        ]
+    },
+    {
+        "description": null,
+        "name": "DocumentWriter",
+        "steps": [
+            {
+                "description": "## DocumentWriter\r\n\r\nThis workflow helps you write a document by writing outlines first, then filling in the content for each outline.\r\n\r\n![image](https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2F7418719e3dab222dccb379b8879e1dc08ad34c78-2401x1000.png&w=3840&q=75)",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "Ordinary",
+                "name": "README"
+            },
+            {
+                "description": "Please provide the title and brief description of the document you want to write",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "StepWiseUITextInput",
+                "name": "Input"
+            },
+            {
+                "description": "Write the outline of the document",
+                "dependencies": [
+                    "Input"
+                ],
+                "parameters": [
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "WriteOutline",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "WriteOutline.input"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "WriteOutline"
+            },
+            {
+                "description": "Check if the outline is to the point and well structured for the given title and brief description",
+                "dependencies": [
+                    "WriteOutline",
+                    "Input"
+                ],
+                "parameters": [
+                    {
+                        "name": "outline",
+                        "parameter_type": "String",
+                        "variable_name": "WriteOutline",
+                        "step_name": "CheckOutline",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "CheckOutline.outline"
+                    },
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "CheckOutline",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "CheckOutline.input"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "CheckOutline"
+            },
+            {
+                "description": "Invoke if the outline fails the check",
+                "dependencies": [
+                    "CheckOutline"
+                ],
+                "parameters": [
+                    {
+                        "name": "checkOutline",
+                        "parameter_type": "Boolean",
+                        "variable_name": "CheckOutline",
+                        "step_name": "OutlineCheckFail",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "OutlineCheckFail.checkOutline"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "OutlineCheckFail"
+            },
+            {
+                "description": "Fill in the content for each outline",
+                "dependencies": [
+                    "CheckOutline",
+                    "WriteOutline",
+                    "Input"
+                ],
+                "parameters": [
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "FillContent",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "FillContent.input"
+                    },
+                    {
+                        "name": "checkOutline",
+                        "parameter_type": "Boolean",
+                        "variable_name": "CheckOutline",
+                        "step_name": "FillContent",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "FillContent.checkOutline"
+                    },
+                    {
+                        "name": "outline",
+                        "parameter_type": "String",
+                        "variable_name": "WriteOutline",
+                        "step_name": "FillContent",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "FillContent.outline"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "FillContent"
+            },
+            {
+                "description": "Check if the content follows the outline and is well written",
+                "dependencies": [
+                    "FillContent",
+                    "CheckOutline"
+                ],
+                "parameters": [
+                    {
+                        "name": "outline",
+                        "parameter_type": "String",
+                        "variable_name": "WriteOutline",
+                        "step_name": "CheckContent",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "CheckContent.outline"
+                    },
+                    {
+                        "name": "checkOutline",
+                        "parameter_type": "Boolean",
+                        "variable_name": "CheckOutline",
+                        "step_name": "CheckContent",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "CheckContent.checkOutline"
+                    },
+                    {
+                        "name": "content",
+                        "parameter_type": "String",
+                        "variable_name": "FillContent",
+                        "step_name": "CheckContent",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "CheckContent.content"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "CheckContent"
+            },
+            {
+                "description": "Invoke if the content fails the check",
+                "dependencies": [
+                    "CheckContent"
+                ],
+                "parameters": [
+                    {
+                        "name": "checkContent",
+                        "parameter_type": "Boolean",
+                        "variable_name": "CheckContent",
+                        "step_name": "ContentCheckFail",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ContentCheckFail.checkContent"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "ContentCheckFail"
+            },
+            {
+                "description": "Return the final document",
+                "dependencies": [
+                    "CheckContent"
+                ],
+                "parameters": [
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "ReturnFinalDocument",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ReturnFinalDocument.input"
+                    },
+                    {
+                        "name": "checkContent",
+                        "parameter_type": "Boolean",
+                        "variable_name": "CheckContent",
+                        "step_name": "ReturnFinalDocument",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ReturnFinalDocument.checkContent"
+                    },
+                    {
+                        "name": "outline",
+                        "parameter_type": "String",
+                        "variable_name": "WriteOutline",
+                        "step_name": "ReturnFinalDocument",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ReturnFinalDocument.outline"
+                    },
+                    {
+                        "name": "content",
+                        "parameter_type": "String",
+                        "variable_name": "FillContent",
+                        "step_name": "ReturnFinalDocument",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "ReturnFinalDocument.content"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "ReturnFinalDocument"
+            }
+        ]
+    },
+    {
+        "description": null,
+        "name": "ProfanityDetector",
+        "steps": [
+            {
+                "description": "## ProfanityDetector\r\nThis workflow helps you determine if a given text contains rude or profane language.\r\n\r\n## How it works\r\n1. You provide the text you want to check.\r\n2. The workflow uses multiple LLMs to determine if the text is profane.\r\n3. The workflow uses the maximum voting result to determine if the text is profane.\r\n4. The workflow returns the result.",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "Ordinary",
+                "name": "README"
+            },
+            {
+                "description": "Please provide the text you want to check",
+                "dependencies": [],
+                "parameters": [],
+                "step_type": "StepWiseUITextInput",
+                "name": "Input"
+            },
+            {
+                "description": "Detect profane language using gpt-3.5",
+                "dependencies": [
+                    "Input"
+                ],
+                "parameters": [
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "AI1",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "AI1.input"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "AI1"
+            },
+            {
+                "description": "Detect profane language using gpt-4o",
+                "dependencies": [
+                    "Input"
+                ],
+                "parameters": [
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "AI2",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "AI2.input"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "AI2"
+            },
+            {
+                "description": "Detect profane language using gpt-4",
+                "dependencies": [
+                    "Input"
+                ],
+                "parameters": [
+                    {
+                        "name": "input",
+                        "parameter_type": "String",
+                        "variable_name": "Input",
+                        "step_name": "AI3",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "AI3.input"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "AI3"
+            },
+            {
+                "description": "Collect votes and determine the result",
+                "dependencies": [
+                    "AI1",
+                    "AI2",
+                    "AI3"
+                ],
+                "parameters": [
+                    {
+                        "name": "ai1",
+                        "parameter_type": "Boolean",
+                        "variable_name": "AI1",
+                        "step_name": "Voting",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "Voting.ai1"
+                    },
+                    {
+                        "name": "ai2",
+                        "parameter_type": "Boolean",
+                        "variable_name": "AI2",
+                        "step_name": "Voting",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "Voting.ai2"
+                    },
+                    {
+                        "name": "ai3",
+                        "parameter_type": "Boolean",
+                        "variable_name": "AI3",
+                        "step_name": "Voting",
+                        "is_configurable_from_web_ui": false,
+                        "description": "",
+                        "fullName": "Voting.ai3"
+                    }
+                ],
+                "step_type": "Ordinary",
+                "name": "Voting"
+            }
+        ]
+    }
+]

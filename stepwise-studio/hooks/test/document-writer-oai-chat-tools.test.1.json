@@ -1,0 +1,101 @@
+[
+  {
+    "function": {
+      "name": "README",
+      "description": "## DocumentWriter\r\n\r\nThis workflow helps you write a document by writing outlines first, then filling in the content for each outline.\r\n\r\n![image](https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2F7418719e3dab222dccb379b8879e1dc08ad34c78-2401x1000.png&w=3840&q=75)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "Input",
+      "description": "Please provide the title and brief description of the document you want to write",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "WriteOutline",
+      "description": "Write the outline of the document",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "CheckOutline",
+      "description": "Check if the outline is to the point and well structured for the given title and brief description",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "OutlineCheckFail",
+      "description": "Invoke if the outline fails the check",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "FillContent",
+      "description": "Fill in the content for each outline",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "CheckContent",
+      "description": "Check if the content follows the outline and is well written",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "ContentCheckFail",
+      "description": "Invoke if the content fails the check",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "name": "ReturnFinalDocument",
+      "description": "Return the final document",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    "type": "function"
+  }
+]
