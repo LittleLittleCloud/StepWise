@@ -10,7 +10,7 @@ class ChatClientProvider
 {
     public ChatClient CreateDeepSeekV3()
     {
-        var apiKey = "sk-ca170c04cb16480c986ddc9cc48b357c";
+        var apiKey = Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY") ?? throw new Exception("Please set the DEEPSEEK_API_KEY environment variable");
 
         var endpoint = "https://api.deepseek.com";
         var option = new OpenAIClientOptions
