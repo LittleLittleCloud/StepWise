@@ -13,11 +13,7 @@ public class DocumentWriter
 
     public DocumentWriter()
     {
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new Exception("Please set the OPENAI_API_KEY environment variable");
-        var chatClient = new OpenAIClient(apiKey)
-            .GetChatClient("gpt-4o");
-
-        _chatClient = chatClient;
+        _chatClient = ChatClientProvider.Instance.CreateDeepSeekV3();
     }
 
 
@@ -58,54 +54,14 @@ public class DocumentWriter
         return response.Value.Content[0].Text;
     }
 
-    [Step(description: "Check if the outline is to the point and well structured for the given title and brief description")]
-    [DependOn(nameof(WriteOutline))]
-    [DependOn(nameof(Input))]
-    public async Task<bool> CheckOutline(
-        [FromStep(nameof(WriteOutline))] string outline,
-        [FromStep(nameof(Input))] string input)
-    {
-        var prompt = $"""
-            Please check if the outline is to the point and well structured for the given title and brief description:
-            {input}
-            Outline:
-            {outline}
-            If the outline is good, please type 'good', otherwise type 'bad'
-            """;
-        var systemMessage = new SystemChatMessage(prompt);
-        var response = await _chatClient.CompleteChatAsync(systemMessage);
-
-        return response.Value.Content[0].Text.ToLower().Contains("good");
-    }
-
-    [Step(description: """
-        Invoke if the outline fails the check
-        """)]
-    [DependOn(nameof(CheckOutline))]
-    public async Task<string?> OutlineCheckFail(
-        [FromStep(nameof(CheckOutline))] bool checkOutline)
-    {
-        if (!checkOutline)
-        {
-            return "Outline check failed";
-        }
-
-        return null;
-    }
 
     [Step(description: "Fill in the content for each outline")]
-    [DependOn(nameof(CheckOutline))]
     [DependOn(nameof(WriteOutline))]
     [DependOn(nameof(Input))]
     public async Task<string?> FillContent(
         [FromStep(nameof(Input))] string input,
-        [FromStep(nameof(CheckOutline))] bool checkOutline,
         [FromStep(nameof(WriteOutline))] string outline)
     {
-        if (!checkOutline)
-        {
-            return null;
-        }
         var prompt = $"""
             Please write the content based on the outline below:
 
@@ -122,59 +78,13 @@ public class DocumentWriter
         return response.Value.Content[0].Text;
     }
 
-    [Step(description: "Check if the content follows the outline and is well written")]
-    [DependOn(nameof(FillContent))]
-    [DependOn(nameof(CheckOutline))]
-    public async Task<bool> CheckContent(
-        [FromStep(nameof(WriteOutline))] string outline,
-        [FromStep(nameof(CheckOutline))] bool checkOutline,
-        [FromStep(nameof(FillContent))] string content)
-    {
-        if (!checkOutline)
-        {
-            return false;
-        }
-        var prompt = $"""
-            Please check if the content follows the outline and is well written:
-            ## Outline:
-            {outline}
-
-            ## Content:
-            {content}
-            If the content is good, please type 'good', otherwise type 'bad'
-            """;
-        var systemMessage = new SystemChatMessage(prompt);
-        var response = await _chatClient.CompleteChatAsync(systemMessage);
-        return response.Value.Content[0].Text.ToLower().Contains("good");
-    }
-
-    [Step(description: """
-        Invoke if the content fails the check
-        """)]
-    [DependOn(nameof(CheckContent))]
-    public async Task<string?> ContentCheckFail(
-        [FromStep(nameof(CheckContent))] bool checkContent)
-    {
-        if (!checkContent)
-        {
-            return "Content check failed";
-        }
-        return null;
-    }
-
     [Step(description: "Return the final document")]
-    [DependOn(nameof(CheckContent))]
+    [DependOn(nameof(FillContent))]
     public async Task<string?> ReturnFinalDocument(
         [FromStep(nameof(Input))] string input,
-        [FromStep(nameof(CheckContent))] bool checkContent,
         [FromStep(nameof(WriteOutline))] string outline,
         [FromStep(nameof(FillContent))] string content)
     {
-        if (!checkContent)
-        {
-            return null;
-        }
-
         return $"""
             ## Title and Brief Description:
             {input}

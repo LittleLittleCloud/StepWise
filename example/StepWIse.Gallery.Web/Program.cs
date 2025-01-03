@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using StepWise.Core;
 using StepWise.Core.Extension;
 using StepWise.Gallery;
+using StepWise.Gallery.Agentic;
 using StepWise.WebAPI;
 
 var stepwiseConfig = new StepWiseServiceConfiguration
@@ -79,7 +80,6 @@ var userInputWorkflow = Workflow.CreateFromInstance(new UserInput());
 var loopWorkflow = Workflow.CreateFromInstance(new Loop());
 var cumulativeWorkflow = Workflow.CreateFromInstance(new Cumulative());
 var basicSteps = new BasicSteps();
-var releaseMaster = new ReleaseMaster();
 var ocrWorkflow = new OCR();
 var sequential = new Sequential();
 var ifElse = new IfElseBranching();
@@ -94,9 +94,12 @@ stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(parallel));
 stepWiseClient.AddWorkflow(userInputWorkflow);
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(getWeather));
 stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(new PrepareDinner()));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(releaseMaster));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(ocrWorkflow));
-stepWiseClient.AddWorkflow(Workflow.CreateFromInstance(textToImage));
+
+// add agentic workflow
+stepWiseClient.AddWorkflowFromInstance(new ProfanityDetector());
+stepWiseClient.AddWorkflowFromInstance(new DocumentWriter());
+stepWiseClient.AddWorkflowFromInstance(new CoT());
+
 
 // Wait for the host to shutdown
 await app.WaitForShutdownAsync();
