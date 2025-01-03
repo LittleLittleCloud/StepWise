@@ -1,15 +1,20 @@
 - name: Home
   href: ../index.md
 
-- name: Installation
-  href: installation.md
 
 - name: Getting Started
-- name: Define Workflow
+- name: Installation
+  href: installation.md
+- name: Quick Start
+  href: quick-start.md
+- name: Create Workflow
   href: define-workflow.md
-- name: Visualize and Run Workflow
-  href: visualize-and-run-workflow.md
-- name: Publish Workflow
+- name: Special Steps
+  href: special-steps.md
+- name: Geeno - Your Workflow AI Assistant
+  href: geeno.md
+- name: Enable Authentication
+- name: Publish workflow
   href: publish-workflow.md
 
 - name: Gallery
