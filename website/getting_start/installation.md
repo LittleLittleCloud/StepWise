@@ -1,18 +1,25 @@
-> [!Note]
-> StepWise is still under prerelease state.
-
-StepWise is published as a series of nuget packages. You can install the packages from Nuget.org.
+StepWise is published as a series of nuget packages. You can install the packages from NuGet.org.
 
 [![NuGet version](https://badge.fury.io/nu/LittleLittleCloud.StepWise.svg)](https://badge.fury.io/nu/LittleLittleCloud.StepWise)
 
-## Install StepWise as a NuGet package
+## Install StepWise
 
 ```bash
 dotnet add package LittleLittleCloud.StepWise
 ```
 
-## Package overview
-StepWise provides the following packages to better fit your needs:
-- LittleLittleCloud.StepWise: The one-stop package for using StepWise. It includes the core library, WebAPI, and WebUI.
-- LittleLittleCloud.StepWise.Core: The core library of StepWise. It provides the workflow engine and the Step attribute. You can use this package if you don't need the WebUI.
-- LittleLittleCloud.StepWise.WebUI: The WebUI of StepWise. It includes the assets for the WebUI.
+## Install StepWise Template
+StepWise provides a template to help you create a new StepWise project. You can install the template using the following command:
+
+```bash
+dotnet new -i LittleLittleCloud.StepWise.Template
+```
+
+After installing the template, you can create a new StepWise project using the following command from dotnet-cli:
+
+```bash
+dotnet new stepwise-console -n MyStepWiseProject
+```
+
+## Next Steps
+- [Quick Start](./quick-start.md)

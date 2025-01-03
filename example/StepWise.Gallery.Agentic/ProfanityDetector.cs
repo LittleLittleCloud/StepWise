@@ -12,11 +12,10 @@ namespace StepWise.Gallery.Agentic;
 /// </summary>
 public class ProfanityDetector
 {
-    private readonly OpenAIClient _oaiClient;
+    private readonly ChatClient _chatClient;
     public ProfanityDetector()
     {
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new Exception("Please set the OPENAI_API_KEY environment variable");
-        _oaiClient = new OpenAIClient(apiKey);
+        _chatClient = ChatClientProvider.Instance.CreateDeepSeekV3();
     }
 
     [Step(description: """
@@ -40,12 +39,11 @@ public class ProfanityDetector
         return null;
     }
 
-    [Step(description: "Detect profane language using gpt-3.5")]
+    [Step(description: "Detect profane language using AI1")]
     [DependOn(nameof(Input))]
     public async Task<bool> AI1(
         [FromStep(nameof(Input))] string input)
     {
-        var gpt3_5 = _oaiClient.GetChatClient("gpt-3.5-turbo");
         var prompt = $"""
             Please determine if the following text contains rude or profane language, or is inappropriate to be shared in public:
             {input}
@@ -54,40 +52,38 @@ public class ProfanityDetector
             """;
 
         var systemMessage = new SystemChatMessage(prompt);
-        var response = await gpt3_5.CompleteChatAsync(systemMessage);
+        var response = await _chatClient.CompleteChatAsync(systemMessage);
 
         return response.Value.Content[0].Text.ToLower().Contains("yes");
     }
 
-    [Step(description: "Detect profane language using gpt-4o")]
+    [Step(description: "Detect profane language using AI2")]
     [DependOn(nameof(Input))]
     public async Task<bool> AI2(
         [FromStep(nameof(Input))] string input)
     {
-        var gpt4o = _oaiClient.GetChatClient("gpt-4o");
         var prompt = $"""
             Please determine if the following text contains rude or profane language, or is inappropriate to be shared in public:
             {input}
             Answer with 'yes' or 'no'
             """;
         var systemMessage = new SystemChatMessage(prompt);
-        var response = await gpt4o.CompleteChatAsync(systemMessage);
+        var response = await _chatClient.CompleteChatAsync(systemMessage);
         return response.Value.Content[0].Text.ToLower().Contains("yes");
     }
 
-    [Step(description: "Detect profane language using gpt-4")]
+    [Step(description: "Detect profane language using AI3")]
     [DependOn(nameof(Input))]
     public async Task<bool> AI3(
         [FromStep(nameof(Input))] string input)
     {
-        var gpt4 = _oaiClient.GetChatClient("gpt-4");
         var prompt = $"""
             Please determine if the following text contains rude or profane language, or is inappropriate to be shared in public:
             {input}
             Answer with 'yes' or 'no'
             """;
         var systemMessage = new SystemChatMessage(prompt);
-        var response = await gpt4.CompleteChatAsync(systemMessage);
+        var response = await _chatClient.CompleteChatAsync(systemMessage);
         return response.Value.Content[0].Text.ToLower().Contains("yes");
     }
 

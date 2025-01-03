@@ -17,7 +17,7 @@ public class DocumentWriter
         var chatClient = new OpenAIClient(apiKey)
             .GetChatClient("gpt-4o");
 
-        _chatClient = chatClient;
+        _chatClient = ChatClientProvider.Instance.CreateDeepSeekV3();
     }
 
 
