@@ -23,5 +23,6 @@ stepWiseClient.AddWorkflowFromInstance(new README());
 stepWiseClient.AddWorkflowFromInstance(new GetWeatherWorkflow());
 stepWiseClient.AddWorkflowFromInstance(new CoT());
 stepWiseClient.AddWorkflowFromInstance(new DocumentWriter());
+stepWiseClient.AddWorkflowFromInstance(new ProfanityDetector());
 
 await host.WaitForShutdownAsync();
