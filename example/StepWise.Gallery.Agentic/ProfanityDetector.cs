@@ -21,6 +21,7 @@ public class ProfanityDetector
     [Step(description: """
         ## ProfanityDetector
         This workflow helps you determine if a given text contains rude or profane language.
+        - source code: [ProfanityDetector](https://github.com/LittleLittleCloud/StepWise/blob/main/example/StepWise.Gallery.Agentic/ProfanityDetector.cs)
 
         ## How it works
         1. You provide the text you want to check.
