@@ -16,11 +16,7 @@ public class CoT
     private SubTasks? _subTasks;
     public CoT()
     {
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new Exception("Please set the OPENAI_API_KEY environment variable");
-        var chatClient = new OpenAIClient(apiKey)
-            .GetChatClient("gpt-4o");
-
-        _chatClient = chatClient;
+        _chatClient = ChatClientProvider.Instance.CreateDeepSeekV3();
     }
 
     [Step(description: """

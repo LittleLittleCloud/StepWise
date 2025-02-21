@@ -19,6 +19,18 @@
 </p>
 
 <p align="center">
+    <a href="https://www.reddit.com/r/StepWise_AI">
+        <img src="https://img.shields.io/badge/StepWise-%23FF4500.svg?style=for-the-badge&logo=Reddit&logoColor=white" />
+    </a>
+    <a href="https://www.linkedin.com/groups/14564165">
+        <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" />
+    </a>
+    <a  href="https://twitter.com/stepwise_ai">
+        <img src="https://img.shields.io/twitter/follow/StepWise?style=social" height="28" />
+    </a>
+</p>
+
+<p align="center">
   <a href="https://stepwisegallery20241128154731.azurewebsites.net/">
       <picture >
         <source width="225" media="(prefers-color-scheme: dark)" srcset="./asset/try-live-demo.svg"  >
