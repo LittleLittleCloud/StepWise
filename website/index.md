@@ -3,63 +3,40 @@
 
 <div align="center">
 
-<img src="../asset/stepwise-logo.svg" alt="StepWise Logo" width="100">
+<img src="./asset/stepwise-logo.svg" alt="StepWise Logo" width="100">
 
 # StepWise
 
-[![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=stepwise&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fstepwisegallery20241128154731.azurewebsites.net%2F&up_message=demo&label=stepwise)](https://stepwisegallery20241128154731.azurewebsites.net/)
+<div align="center">
+ <strong> <h3> A code-first, event-driven workflow framework for .NET </h3> </strong>
+</div>
+<p align="center">
+
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![NuGet Version](https://img.shields.io/nuget/v/LittleLittleCloud.StepWIse?label=NuGet&labelColor=grey&color=green)](https://www.nuget.org/packages/LittleLittleCloud.StepWise)
+[![Doc](https://img.shields.io/badge/Doc-Online-blue)](https://littlelittlecloud.github.io/StepWise/)
+[![build](https://github.com/LittleLittleCloud/StepWise/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/LittleLittleCloud/StepWise/actions/workflows/dotnet-build.yml)
+</p>
+
+<p align="center">
+  <a href="https://stepwisegallery20241128154731.azurewebsites.net/">
+      <picture >
+        <source width="225" media="(prefers-color-scheme: dark)" srcset="./asset/try-live-demo.svg"  >
+        <source width="225" media="(prefers-color-scheme: light)" srcset="./asset/try-live-demo.svg"  >
+        <img alt="Try Live Demo" src="./asset/try-live-demo.svg" >
+      </picture>
+  </a>
+</p>
 
 </div>
 
-StepWise is a workflow engine build with C# and typescript. In StepWise, you define a workflow in C#, and visualize and execute it in StepWise UI.
 
-### Features
-- Code-first workflow definition
-- Visualize and execute workflow in StepWise UI
+## What is StepWise?
+StepWise is a .NET framework which assists you to code, visualize and execute event-base workflow. It is designed to help you build complex workflows in a simple and efficient way. StepWise comes with the following key features:
+- **Code-First**: Define workflows using C# code in your project.
+- **WebUI** Visualize and execute workflows from your favorite browser using StepWise WebUI.
+- **Event-Driven**: Execute steps in parallel and resolve dependencies automatically.
+- **AI-Powered**: Work with `Geeno`, a built-in AI assistant in StepWise WebUI to help you run and analyze workflows with ease.
 
 
-# [UI](#tab/ui)
-![StepWise UI](./image/index_hello_world_screenshot.png)
-# [Code](#tab/code)
-```csharp
-public class HelloWorld
-{
-    [Step]
-    public async Task<string> SayHelloAsync()
-    {
-        return $"Hello";
-    }
-
-    [Step]
-    [DependOn(nameof(SayHelloAsync))]
-    public async Task<string> SayHelloWorldAsync([FromStep(nameof(SayHelloAsync))] string hello)
-    {
-        return $"{hello} World!";
-    }
-
-    [Step]
-    [DependOn(nameof(SayHelloWorldAsync))]
-    public async Task<string> GetNameAsync(
-        [FromStep(nameof(SayHelloWorldAsync))] string helloWorld,
-        string name = "LittleLittleCloud")
-    {
-        return $"{helloWorld}, {name}";
-    }
-}
-```
----
-
-### Installation
-To use StepWise, you can install the LittleLittleCloud.StepWise package from NuGet.org.
-
-```bash
-dotnet add package LittleLittleCloud.StepWise
-```
-
-### Example
-You can find more examples in the [example](https://github.com/LittleLittleCloud/StepWise/tree/main/example) folder. 
-
-### Online Demo
-You can try out StepWise in the [online demo](https://stepwisegallery20241128154731.azurewebsites.net/).
-
+> [!Video https://www.youtube.com/embed/-bys_LlegX4?si=IVQpOVMFgAjSo35M]
