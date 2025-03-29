@@ -65,7 +65,7 @@ public class StepWiseEngine : IStepWiseEngine
                 continue;
             }
 
-            if (s.IsExecuctionConditionSatisfied(context))
+            if (s.IsExecutionConditionSatisfied(context))
             {
                 _logger?.LogInformation($"Adding initial step '{s.Name}' to the task queue.");
                 var stepRun = StepRun.Create(s, generation, context);
@@ -168,7 +168,7 @@ public class StepWiseEngine : IStepWiseEngine
                             continue;
                         }
 
-                        if (nextStep.IsExecuctionConditionSatisfied(filteredContext) is false)
+                        if (nextStep.IsExecutionConditionSatisfied(filteredContext) is false)
                         {
                             _logger?.LogInformation($"[StepRun Queue]: Skipping adding {nextStepRun} because of missing prerequisites.");
 

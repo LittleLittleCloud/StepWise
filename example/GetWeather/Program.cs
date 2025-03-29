@@ -5,6 +5,7 @@ using System.Text.Json;
 using AutoGen.Core;
 using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using StepWise.Core;
@@ -12,7 +13,7 @@ using StepWise.Core.Extension;
 
 var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder.AddConsole();
+    builder.AddConsole().SetMinimumLevel(LogLevel.Trace);
 });
 
 var getWeather = new GetWeatherWorkflow();
@@ -20,59 +21,37 @@ var getWeather = new GetWeatherWorkflow();
 var openAIApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new ArgumentNullException("OPENAI_API_KEY is not found");
 var model = "gpt-4o-mini";
 var openAIClient = new OpenAIClient(openAIApiKey);
-var chatClient = openAIClient.GetChatClient(model);
+var chatClient = openAIClient.AsChatClient(model);
+
+chatClient = new ChatClientBuilder(chatClient)
+    .UseFunctionInvocation(loggerFactory)
+    .UseLogging(loggerFactory)
+    .Build();
+
 var workflow = Workflow.CreateFromInstance(getWeather);
-var stepWiseMiddleware = new StepWiseMiddleware(workflow, loggerFactory.CreateLogger<StepWiseMiddleware>());
-var agent = new OpenAIChatAgent(
-    chatClient: chatClient,
-    name: "assistant")
-    .RegisterMessageConnector()
-    .RegisterMiddleware(stepWiseMiddleware)
-    .RegisterPrintMessage();
+var tools = workflow.GetAIFunctions();
 
-var question = new TextMessage(Role.User, "Get weather forecast for Seattle and Redmond");
-var chatHistory = new List<IMessage>
+var chatOption = new ChatOptions
 {
-    question
+    Tools = [.. tools],
 };
-while (true)
-{
-    var response = await agent.SendAsync(chatHistory: chatHistory);
-    if (response is TextMessage textMessage)
-    {
-        // we get a final answer
-        break;
-    }
 
-    chatHistory.Add(response);
-}
+var question = new ChatMessage(ChatRole.User, "Get weather forecast for Seattle and Redmond");
 
-//var workflowEngine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger<StepWiseEngine>());
+var response = await chatClient.GetResponseAsync(question, chatOption);
 
-//StepVariable[] input =
-//[
-//    StepVariable.Create("cities", new string[] { "Seattle", "Redmond" })
-//];
+Console.WriteLine(response);
 
-//await foreach (var stepRun in workflowEngine.ExecuteAsync(nameof(GetWeatherWorkflow.GetWeatherAsync), input, stopStrategy: null))
-//{
-//    if (stepRun.Name == nameof(GetWeatherWorkflow.GetWeatherAsync) && stepRun.Variable?.As<GetWeatherWorkflow.Weather[]>() is GetWeatherWorkflow.Weather[] weathers)
-//    {
-//        Console.WriteLine("Weather forecast:");
-//        foreach (var weather in weathers)
-//        {
-//            Console.WriteLine($"City: {weather.City}, Date: {weather.Date}, Forecast: {weather.Forecast}");
-//        }
-
-//        break;
-//    }
-//}
 public class GetWeatherWorkflow
 {
     [Step]
     public async Task<string?> GetCurrentDateAsync()
     {
-        return DateTime.Now.ToString("yyyy-MM-dd");
+        Console.WriteLine("What is the current date? Type in the format of yyyy-MM-dd and hit enter.");
+
+        var date = Console.ReadLine();
+
+        return date;
     }
 
     [Step]
