@@ -2,13 +2,11 @@
 // Program.cs
 
 using System.Text;
-using System.Text.Json;
 using AutoGen.Core;
 using AutoGen.DotnetInteractive;
 using AutoGen.DotnetInteractive.Extension;
-using AutoGen.OpenAI;
-using AutoGen.OpenAI.Extension;
 using Microsoft.DotNet.Interactive;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using StepWise.Core;
@@ -31,45 +29,49 @@ using var kernel = DotnetInteractiveKernelBuilder
 var openAIApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new ArgumentNullException("OPENAI_API_KEY is not found");
 var model = "gpt-4o-mini";
 var openAIClient = new OpenAIClient(openAIApiKey);
-var chatClient = openAIClient.GetChatClient(model);
+var chatClient = openAIClient.AsChatClient(model);
 
-var agent = new OpenAIChatAgent(
-    chatClient: chatClient,
-    name: "assistant")
-    .RegisterMessageConnector();
-
-var codeInterpreter = new Workflow(agent, kernel);
+var codeInterpreter = new Workflow(chatClient, kernel);
 var engine = StepWiseEngine.CreateFromInstance(codeInterpreter);
 
-var task = "use python to switch my system to dark mode";
-StepVariable[] input = [StepVariable.Create("task", task)];
+chatClient = new ChatClientBuilder(chatClient)
+    .UseFunctionInvocation(loggerFactory)
+    .UseLogging(loggerFactory)
+    .Build();
 
-await foreach (var stepRun in engine.ExecuteAsync(input, maxConcurrency: 1, stopStrategy: null))
+var tools = engine.GetAIFunctions();
+
+var chatOption = new ChatOptions
 {
-    Console.WriteLine(stepRun);
+    Tools = [.. tools],
+};
 
-    if (stepRun.Name == nameof(Workflow.GenerateReply) && stepRun.StepRunType == StepRunType.Completed && stepRun.Variable?.As<string>() is string reply)
-    {
-        Console.WriteLine($"Final Reply: {reply}");
-        break;
-    }
-}
+var response = await chatClient.GetResponseAsync("Do something", chatOption);
 
+Console.WriteLine(response);
+
+Console.WriteLine("Workflow completed.");
 public class Workflow
 {
-    private IAgent _agent;
     private readonly Kernel _kernel;
+    private readonly IChatClient _chatClient;
 
-    public Workflow(IAgent agent, Kernel kernel)
+    public Workflow(IChatClient client, Kernel kernel)
     {
-        _agent = agent;
         _kernel = kernel;
+        _chatClient = client;
     }
 
     [Step]
-    public async Task<string> InputTask(string task)
+    public async Task<string> InputTask()
     {
-        return task;
+        Console.WriteLine("Please input the task description. Type in the task description and hit enter.");
+
+        var task = Console.ReadLine();
+
+        Console.WriteLine($"The task is: {task}");
+
+        return task ?? "No task is provided.";
     }
 
     [Step]
@@ -115,9 +117,9 @@ public class Workflow
                 {task}
                 """;
 
-            var reply = await _agent.SendAsync(prompt);
+            var reply = await _chatClient.GetResponseAsync(prompt);
 
-            return reply.GetContent();
+            return reply.Messages[0].Text;
         }
         else if (codeResult != null)
         {
@@ -131,9 +133,9 @@ public class Workflow
                 Does the code run successfully? If yes, say 'succeed'. Otherwise, say 'fail'.
                 """;
 
-            var reply = await _agent.SendAsync(prompt);
+            var reply = await _chatClient.GetResponseAsync(prompt);
 
-            if (reply.GetContent() == "succeed")
+            if (reply.Messages[0].Text == "succeed")
             {
                 return null;
             }
@@ -157,9 +159,9 @@ public class Workflow
                     Fix the error
                     """;
 
-                reply = await _agent.SendAsync(prompt);
+                reply = await _chatClient.GetResponseAsync(prompt);
 
-                return reply.GetContent();
+                return reply.Messages[0].Text;
             }
         }
         else if (review != null)
@@ -185,9 +187,9 @@ public class Workflow
                 Fix the code according to the review.
                 """;
 
-            var reply = await _agent.SendAsync(prompt);
+            var reply = await _chatClient.GetResponseAsync(prompt);
 
-            return reply.GetContent();
+            return reply.Messages[0].Text;
         }
 
         return null;
@@ -223,7 +225,8 @@ public class Workflow
         }
         else
         {
-            Console.WriteLine("You disapprove the code");
+            Console.WriteLine("You disapprove the code, and leave a feedback.");
+            Console.WriteLine($"The feedback is: {reply}");
 
             return reply is not null ? (code, reply) : (code, "disapproved");
         }
@@ -241,9 +244,9 @@ public class Workflow
             Is this a task? If yes, say 'yes'. Otherwise, say 'no'.
             """;
 
-        var reply = await _agent.SendAsync(prompt);
+        var reply = await _chatClient.GetResponseAsync(prompt);
 
-        return reply.GetContent()?.ToLower().Contains("yes") is true;
+        return reply.Messages[0].Text.ToLower().Contains("yes") is true;
     }
 
     [Step]
@@ -351,9 +354,9 @@ public class Workflow
                 Does the code execution successfully? If yes, say 'succeed'. Otherwise, say 'fail'.
                 """;
 
-        var reply = await _agent.SendAsync(prompt);
+        var reply = await _chatClient.GetResponseAsync(prompt);
 
-        if (reply.GetContent() == "succeed")
+        if (reply.Messages[0].Text == "succeed")
         {
             prompt = $"""
                 # Task
@@ -367,9 +370,9 @@ public class Workflow
                 Please generate the final reply according to the task and the code execution result.
                 """;
 
-            reply = await _agent.SendAsync(prompt);
+            reply = await _chatClient.GetResponseAsync(prompt);
 
-            return reply.GetContent();
+            return reply.Messages[0].Text;
         }
         else
         {
