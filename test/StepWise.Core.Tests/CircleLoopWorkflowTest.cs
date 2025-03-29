@@ -74,7 +74,7 @@ public class CircleLoopWorkflowTest
     public async Task AIFunctionWorkflowTestAsync()
     {
         var engine = StepWiseEngine.CreateFromInstance(this, _logger);
-        var functions = engine.Workflow.GetAIFunctions();
+        var functions = engine.GetAIFunctions();
 
         functions.Count().Should().Be(2);
 

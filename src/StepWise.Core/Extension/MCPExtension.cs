@@ -11,9 +11,9 @@ namespace StepWise.Core.Extension;
 
 public static class MCPExtension
 {
-    public static McpServerToolCollection GetMcpServerToolCollection(this Workflow workflow)
+    public static McpServerToolCollection GetMcpServerToolCollection(this IStepWiseEngine engine)
     {
-        var aiFunctions = workflow.GetAIFunctions();
+        var aiFunctions = engine.GetAIFunctions();
 
         var collection = new McpServerToolCollection();
         foreach (var aiFunction in aiFunctions)

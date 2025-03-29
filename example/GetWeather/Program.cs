@@ -29,7 +29,8 @@ chatClient = new ChatClientBuilder(chatClient)
     .Build();
 
 var workflow = Workflow.CreateFromInstance(getWeather);
-var tools = workflow.GetAIFunctions();
+var engine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger("workflow"));
+var tools = engine.GetAIFunctions();
 
 var chatOption = new ChatOptions
 {
@@ -55,7 +56,7 @@ public class GetWeatherWorkflow
     }
 
     [Step]
-    [DependOn(nameof(GetCurrentDateAsync))]
+    //[DependOn(nameof(GetCurrentDateAsync))]
     public async Task<string?> GetWeatherAsync(
         string[] cities,
         [FromStep(nameof(GetCurrentDateAsync))] string date)
