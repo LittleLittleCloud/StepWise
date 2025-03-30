@@ -4,6 +4,7 @@
   <PropertyGroup>
     <!-- Enable .NET code analysis (this is necessary for projects that target 3.1 or earlier). -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
