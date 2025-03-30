@@ -40,8 +40,7 @@ builder.Services
             },
         };
     })
-    .WithStdioServerTransport()
-    .WithToolsFromAssembly();
+    .WithStdioServerTransport();
 
 var app = builder.Build();
 

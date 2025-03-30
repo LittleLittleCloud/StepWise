@@ -93,9 +93,6 @@ static (string command, string arguments) GetCommandAndArguments(string[] args)
 {
     return args switch
     {
-        [var script] when script.EndsWith(".py") => ("python", script),
-        [var script] when script.EndsWith(".js") => ("node", script),
-        [var script] when Directory.Exists(script) || (File.Exists(script) && script.EndsWith(".csproj")) => ("dotnet", $"run --project {script} --no-build"),
         _ => ("dotnet", "run --project ../../../../WeatherServer --no-build")
     };
 }
