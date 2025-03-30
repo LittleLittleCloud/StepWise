@@ -6,3 +6,5 @@ obj
 *.nupkg
 *.snupkg
 pkgs
+
+artifacts/
