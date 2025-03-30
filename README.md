@@ -50,6 +50,8 @@ StepWise is a .NET framework which assists you to code, visualize and execute ev
 - **WebUI** Visualize and execute workflows from your favorite browser using StepWise WebUI.
 - **Event-Driven**: Execute steps in parallel and resolve dependencies automatically.
 - **AI-Powered**: Work with `Geeno`, a built-in AI assistant in StepWise WebUI to help you run and analyze workflows with ease.
+- **MCP Integration**: Create machine-callable workflows by turning StepWise workflows into MCP servers.
+- **Microsoft.Extensions.AI Support**: Seamlessly integrate StepWise Workflow with Microsoft.Extensions.AI `IChatClient` to utilize AI capabilities.
 
 ## Table of Contents
 - [Quick Start](#quick-start)
