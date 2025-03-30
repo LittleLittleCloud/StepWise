@@ -20,13 +20,6 @@ var getWeather = new GetWeatherWorkflow();
 
 var workflow = Workflow.CreateFromInstance(getWeather);
 var engine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger("workflow"));
-var tools = engine.GetAIFunctions();
-
-var chatOption = new ChatOptions
-{
-    Tools = [.. tools],
-};
-
 var builder = Host.CreateEmptyApplicationBuilder(settings: null);
 
 builder.Services

@@ -77,23 +77,5 @@ public class CircleLoopWorkflowTest
         var functions = engine.GetAIFunctions();
 
         functions.Count().Should().Be(2);
-
-        IChatClient client =
-            new OpenAIClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY")!)
-            .AsChatClient("gpt-4o-mini");
-
-        client = new ChatClientBuilder(client)
-            .UseFunctionInvocation(_loggerFactory)
-            .UseLogging(_loggerFactory)
-            .Build();
-
-        var chatOption = new ChatOptions
-        {
-            Tools = [.. functions],
-        };
-
-        var chatMessage = new ChatMessage(ChatRole.User, "what's a+1+1+1 when a is 10");
-        var response = await client.GetResponseAsync([chatMessage], chatOption);
-        response.Should().NotBeNull();
     }
 }
