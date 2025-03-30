@@ -3,7 +3,9 @@
 
 using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using OpenAI;
 using StepWise.Core.Extension;
 using Xunit;
 using Xunit.Abstractions;
@@ -12,13 +14,15 @@ namespace StepWise.Core.Tests;
 
 public class CircleLoopWorkflowTest
 {
-    private readonly ITestOutputHelper _testOutputHelper;
     private readonly ILogger _logger;
+    private readonly LoggerFactory _loggerFactory;
 
     public CircleLoopWorkflowTest(ITestOutputHelper testOutputHelper)
     {
-        _testOutputHelper = testOutputHelper;
         _logger = new XUnitLoggerProvider(testOutputHelper).CreateLogger(nameof(CircleLoopWorkflowTest));
+        _loggerFactory = new LoggerFactory();
+
+        _loggerFactory.AddProvider(new XUnitLoggerProvider(testOutputHelper));
     }
 
     [Step]
@@ -34,7 +38,7 @@ public class CircleLoopWorkflowTest
     }
 
     [Fact]
-    public async Task CirculeLoopWorkflowTestAsync()
+    public async Task CircleLoopWorkflowTestAsync()
     {
         var engine = StepWiseEngine.CreateFromInstance(this, _logger);
         var variables = new List<StepVariable>();
@@ -64,5 +68,14 @@ public class CircleLoopWorkflowTest
         variables.Count().Should().Be(3);
         variables[1].Value.Should().Be(0);
         variables[2].Value.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AIFunctionWorkflowTestAsync()
+    {
+        var engine = StepWiseEngine.CreateFromInstance(this, _logger);
+        var functions = engine.GetAIFunctions();
+
+        functions.Count().Should().Be(2);
     }
 }

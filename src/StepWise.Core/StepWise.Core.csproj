@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="System.Memory.Data" />
     <PackageReference Include="AutoGen" />
+    <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>
 
 </Project>

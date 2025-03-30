@@ -164,7 +164,7 @@ public class Step
     /// </summary>
     public StepType StepType { get; }
 
-    public bool IsExecuctionConditionSatisfied(IDictionary<string, StepVariable> inputs)
+    public bool IsExecutionConditionSatisfied(IDictionary<string, StepVariable> inputs)
     {
         foreach (var param in InputParameters)
         {
@@ -182,7 +182,7 @@ public class Step
         return true;
     }
 
-    private bool IsExecuctionConditionSatisfied(Dictionary<string, object> inputs)
+    private bool IsExecutionConditionSatisfied(Dictionary<string, object> inputs)
     {
         foreach (var param in InputParameters)
         {
@@ -212,7 +212,7 @@ public class Step
         inputs ??= new Dictionary<string, object>();
 
         // check if all dependencies are met
-        if (!IsExecuctionConditionSatisfied(inputs))
+        if (!IsExecutionConditionSatisfied(inputs))
         {
             return null;
         }

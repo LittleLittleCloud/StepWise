@@ -2,11 +2,11 @@
 // Program.cs
 
 using System.Text.Json;
-using AutoGen.Core;
-using AutoGen.OpenAI;
-using AutoGen.OpenAI.Extension;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol;
 using OpenAI;
 using StepWise.Core;
 using StepWise.Core.Extension;
@@ -18,49 +18,34 @@ var loggerFactory = LoggerFactory.Create(builder =>
 
 var getWeather = new GetWeatherWorkflow();
 
-var openAIApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new ArgumentNullException("OPENAI_API_KEY is not found");
-var model = "gpt-4o-mini";
-var openAIClient = new OpenAIClient(openAIApiKey);
-var chatClient = openAIClient.AsChatClient(model);
-
-chatClient = new ChatClientBuilder(chatClient)
-    .UseFunctionInvocation(loggerFactory)
-    .UseLogging(loggerFactory)
-    .Build();
-
 var workflow = Workflow.CreateFromInstance(getWeather);
 var engine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger("workflow"));
-var tools = engine.GetAIFunctions();
+var builder = Host.CreateEmptyApplicationBuilder(settings: null);
 
-var chatOption = new ChatOptions
-{
-    Tools = [.. tools],
-};
+builder.Services
+    .AddMcpServer(option =>
+    {
+        option.Capabilities = new()
+        {
+            Tools = new ModelContextProtocol.Protocol.Types.ToolsCapability
+            {
+                ToolCollection = engine.GetMcpServerToolCollection(),
+            },
+        };
+    })
+    .WithStdioServerTransport();
 
-var question = new ChatMessage(ChatRole.User, "Get weather forecast for Seattle and Redmond");
+var app = builder.Build();
 
-var response = await chatClient.GetResponseAsync(question, chatOption);
-
-Console.WriteLine(response);
+await app.RunAsync();
 
 public class GetWeatherWorkflow
 {
     [Step]
-    public async Task<string?> GetCurrentDateAsync()
-    {
-        Console.WriteLine("What is the current date? Type in the format of yyyy-MM-dd and hit enter.");
-
-        var date = Console.ReadLine();
-
-        return date;
-    }
-
-    [Step]
-    //[DependOn(nameof(GetCurrentDateAsync))]
     public async Task<string?> GetWeatherAsync(
-        string[] cities,
-        [FromStep(nameof(GetCurrentDateAsync))] string date)
+        string[] cities)
     {
+        var date = DateTime.Now.ToString("yyyy-MM-dd");
         var weathers = cities.Select(city => new Weather(city, date, "Sunny")).ToArray();
 
         return JsonSerializer.Serialize(weathers);

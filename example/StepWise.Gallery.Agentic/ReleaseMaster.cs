@@ -73,7 +73,7 @@ public class ReleaseMaster
             IssueInQualifier.Title,
             IssueInQualifier.Body,
             IssueInQualifier.Comment,
-            ];
+        ];
         request.Repos.Add(owner, repoName);
 
         request.State = ItemState.Closed;

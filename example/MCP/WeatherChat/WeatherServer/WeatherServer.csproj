@@ -9,14 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
-    <ProjectReference Include="..\..\src\StepWise.Core\StepWise.Core.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoGen" />
-    <PackageReference Include="AutoGen.DotnetInteractive" />
-    <PackageReference Include="AutoGen.SourceGenerator" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <ProjectReference Include="..\..\..\..\src\StepWise\StepWise.csproj" />
   </ItemGroup>
 
 </Project>

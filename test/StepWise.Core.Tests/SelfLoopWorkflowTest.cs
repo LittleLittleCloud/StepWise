@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.Logging;
+using StepWise.Core.Extension;
 using Xunit;
 using Xunit.Abstractions;
-using StepWise.Core.Extension;
 
 namespace StepWise.Core.Tests;
 

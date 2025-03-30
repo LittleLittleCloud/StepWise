@@ -5,17 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AutoGen.Core;
-using OpenAI.Images;
-using OpenAI;
-using StepWise.Core;
 using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
-using OpenAI.Chat;
 using Json.Schema;
 using Json.Schema.Generation;
-using System.Text.Json;
+using OpenAI;
+using OpenAI.Chat;
+using OpenAI.Images;
+using StepWise.Core;
 
 namespace StepWise.Gallery;
 
