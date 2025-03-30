@@ -9,16 +9,17 @@
   href: quick-start.md
 - name: Create Workflow
   href: define-workflow.md
-- name: Special Steps
-  href: special-steps.md
-- name: Geeno - Your Workflow AI Assistant
-  href: geeno.md
-- name: Enable Authentication
+- name: Consume StepWise Workflow with Microsoft.Extensions.AI chat client
+- href: wip.md
+- name: Consume StepWise Workflow as MCP server
+  href: wip.md
+# - name: Special Steps
+  # href: special-steps.md
+# - name: Geeno - Your Workflow AI Assistant
+  # href: geeno.md
+# - name: Enable Authentication
 - name: Publish workflow
   href: publish-workflow.md
-
-- name: Gallery
-  href: gallery.yml
 
 - name: Further Reading
 - name: Deep Dive to Stepwise Engine
