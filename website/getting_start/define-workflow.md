@@ -1,7 +1,7 @@
 The following example shows how to create a stepwise workflow in C#. To better illustrate the concept, we will create a simple workflow that prepares dinner.
 
-[!NOTE]
-[You can try-out this workfow at [StepWise Live Demo](https://stepwisegallery20241128154731.azurewebsites.net/)]
+> [!NOTE]
+> [You can try-out this workfow at [StepWise Live Demo](https://stepwisegallery20241128154731.azurewebsites.net/)]
 
 ## Prepare dinner overview
 The dinner preparation workflow consists of the following steps:
@@ -16,7 +16,7 @@ graph TD
     E --> F
 ```
 
-[!Video https://www.youtube.com/embed/4UmGGQbTdmU?si=Zj6WrnW2b_oYq2-l]
+> [!Video https://www.youtube.com/embed/4UmGGQbTdmU?si=Zj6WrnW2b_oYq2-l]
 
 Where we can notice that some steps can be executed in parallel, such as `CutVegetables()` and `BoilWater()`, and some steps depend on the previous steps, such as `CookVegetables()` and `CookMeat()`. When all the steps are completed, the `ServeDinner()` step can be executed. This dependency can be automatically resolved by the StepWise engine after the prepare dinner workflow is defined.
 
