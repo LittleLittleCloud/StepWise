@@ -50,32 +50,18 @@ StepWise is a .NET framework which assists you to code, visualize and execute ev
 - **WebUI** Visualize and execute workflows from your favorite browser using StepWise WebUI.
 - **Event-Driven**: Execute steps in parallel and resolve dependencies automatically.
 - **AI-Powered**: Work with `Geeno`, a built-in AI assistant in StepWise WebUI to help you run and analyze workflows with ease.
+- **MCP Integration**: Create machine-callable workflows by turning StepWise workflows into MCP servers.
+- **Microsoft.Extensions.AI Support**: Seamlessly integrate StepWise Workflow with Microsoft.Extensions.AI `IChatClient` to utilize AI capabilities.
 
 ## Table of Contents
-- [Quick Start with Template](#quick-start-with-template)
 - [Quick Start](#quick-start)
-- [Visualize stepwise workflow](#visualize-stepwise-workflow)
+  - [Quick Start with Template](#quick-start-with-template)
+  - [Quick Start with StepWise WebUI](#quick-start-with-stepwise-webui)
+  - [Quick Start with Microsoft.Extensions.AI](#quick-start-with-microsoftextensionsai)
+  - [Quick Start with MCP](#quick-start-with-mcp)
 - [Examples](#examples)
 - [Dependency Management between Steps](#dependency-management-between-steps)
 
-
-## Quick Start with Template
-StepWise provides a list of templates to help you get started quickly. To install the template, run the following command:
-
-```bash
-dotnet new -i LittleLittleCloud.StepWise.Template
-```
-
-This will install the following templates:
-- stepwise-console: A console application template with StepWise.
-
-To create a new project using the template, run the following command. This will create a new console application project with StepWise WebUI configured.
-
-```bash
-dotnet new stepwise-console
-```
-
-After creating the project, you can run the project and visit `http://localhost:5123` to see the StepWise WebUI.
 
 ## Quick Start
 
@@ -151,9 +137,27 @@ public class PrepareDinner
 }
 ```
 
-## Visualize stepwise workflow
+### Quick Start with Template
+StepWise provides a list of templates to help you get started quickly. To install the template, run the following command:
 
-StepWise UI is a built-in WebUI for visualizing and executing workflows. To use StepWise UI, simply add the following code to your project:
+```bash
+dotnet new -i LittleLittleCloud.StepWise.Template
+```
+
+This will install the following templates:
+- stepwise-console: A console application template with StepWise.
+
+To create a new project using the template, run the following command. This will create a new console application project with StepWise WebUI configured.
+
+```bash
+dotnet new stepwise-console
+```
+
+After creating the project, you can run the project and visit `http://localhost:5123` to see the StepWise WebUI.
+
+### Quick Start with StepWise WebUI
+
+StepWise WebUI is a built-in WebUI for visualizing and executing workflows. To use StepWise WebUI, simply add the following code to your project:
 
 ```csharp
 // program.cs
@@ -182,6 +186,12 @@ await host.WaitForShutdownAsync();
 ```
 
 Now, you can visit `http://localhost:5123` to see the StepWise UI and execute the workflow.
+
+### Quick Start with Microsoft.Extensions.AI
+Please visit [M.E.AI Examples](example/MEAI/) to learn how to integrate StepWise with Microsoft.Extensions.AI `IChatClient`. This will allow you to use AI capabilities in your workflows, such as generating text or analyzing data using AI models.
+
+### Quick Start with MCP
+Please visit [MCP Examples](example/MCP/README.md) to learn how to create a StepWise workflow and turn it into an MCP server.
 
 ## Examples
 You can find more examples in the [examples](https://github.com/LittleLittleCloud/StepWise/tree/main/example) directory.
