@@ -4,11 +4,17 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol.Transport;
 using OpenAI;
 
 var builder = Host.CreateEmptyApplicationBuilder(settings: null);
+
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
 
 builder.Configuration
     .AddEnvironmentVariables()
@@ -25,8 +31,8 @@ await using var mcpClient = await McpClientFactory.CreateAsync(new()
     {
         ["command"] = command,
         ["arguments"] = arguments,
-    }
-});
+    },
+}, loggerFactory: loggerFactory);
 
 var tools = await mcpClient.ListToolsAsync();
 foreach (var tool in tools)
@@ -93,6 +99,6 @@ static (string command, string arguments) GetCommandAndArguments(string[] args)
 {
     return args switch
     {
-        _ => ("dotnet", "run --project ../../../../WeatherServer --no-build")
+        _ => ("dotnet", "run --project ../../../../example/MCP/WeatherChat/WeatherServer")
     };
 }
