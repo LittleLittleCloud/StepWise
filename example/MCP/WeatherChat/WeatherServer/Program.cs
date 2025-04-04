@@ -7,19 +7,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Server;
 using OpenAI;
 using StepWise.Core;
 using StepWise.Core.Extension;
 
-var loggerFactory = LoggerFactory.Create(builder =>
-{
-    builder.AddConsole().SetMinimumLevel(LogLevel.Trace);
-});
-
 var getWeather = new GetWeatherWorkflow();
 
 var workflow = Workflow.CreateFromInstance(getWeather);
-var engine = StepWiseEngine.CreateFromInstance(getWeather, loggerFactory.CreateLogger("workflow"));
+var engine = StepWiseEngine.CreateFromInstance(getWeather);
 var builder = Host.CreateEmptyApplicationBuilder(settings: null);
 
 builder.Services
@@ -39,13 +36,30 @@ var app = builder.Build();
 
 await app.RunAsync();
 
-public class GetWeatherWorkflow
+public class GetWeatherWorkflow()
 {
     [Step]
+    public async Task<string?> GetCurrentDateAsync(IMcpServer? server = null)
+    {
+        Console.WriteLine("What is the current date? Type in the format of yyyy-MM-dd and hit enter.");
+
+        var date = Console.ReadLine();
+
+        return date;
+    }
+
+    [Step]
     public async Task<string?> GetWeatherAsync(
-        string[] cities)
+        string[] cities,
+        IMcpServer? server = null)
     {
         var date = DateTime.Now.ToString("yyyy-MM-dd");
+        if (server is not null)
+        {
+            var client = server.AsSamplingChatClient();
+            var response = await client.GetResponseAsync("what is the current date?");
+            date = response.Text;
+        }
         var weathers = cities.Select(city => new Weather(city, date, "Sunny")).ToArray();
 
         return JsonSerializer.Serialize(weathers);

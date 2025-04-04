@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Server;
 
 namespace StepWise.Core.Extension;
 
@@ -21,6 +23,13 @@ public static class AIFunctionExtension
             var mapping = new Dictionary<string, string>();
             foreach (var parameter in step.InputParameters)
             {
+                // filter CancellationToken, IMcpServer, IMcpClient
+                if (parameter.Type == typeof(CancellationToken) ||
+                    parameter.Type == typeof(IMcpServer) ||
+                    parameter.Type == typeof(IMcpClient))
+                {
+                    continue;
+                }
                 mapping[parameter.ParameterName] = parameter.VariableName;
             }
 
@@ -88,16 +97,23 @@ public class StepAIFunction(IStepWiseEngine engine, Step step, AIFunction functi
     protected override async Task<object?> InvokeCoreAsync(IEnumerable<KeyValuePair<string, object?>> arguments, CancellationToken cancellationToken)
     {
         var variables = new List<StepVariable>();
-        foreach (var argument in arguments)
+        foreach (var parameter in step.InputParameters)
         {
-            if (argument.Value is null)
+            var parameterType = parameter.Type;
+
+            // if type is IMcpServer, trying fetching it from arguments
+            if (parameterType == typeof(IMcpServer) && arguments.FirstOrDefault(kv => kv.Value?.GetType().IsGenericType is true && kv.Value.GetType().GetGenericTypeDefinition() == typeof(RequestContext<>)) is var mcpServerArgument)
             {
+                // get Server property from RequestContext using reflection
+                var server = mcpServerArgument.Value?.GetType().GetProperty("Server")?.GetValue(mcpServerArgument.Value) as IMcpServer;
+                if (server is not null)
+                {
+                    variables.Add(StepVariable.Create(parameter.VariableName, server));
+                }
                 continue;
             }
-
-            var parameterType = step.InputParameters.FirstOrDefault(x => x.VariableName == argument.Key)?.Type;
-
-            if (parameterType is null)
+            var argument = arguments.FirstOrDefault(x => x.Key == parameter.VariableName);
+            if (argument.Value is null)
             {
                 continue;
             }
@@ -114,10 +130,27 @@ public class StepAIFunction(IStepWiseEngine engine, Step step, AIFunction functi
                 variables.Add(StepVariable.Create(argument.Key, argument.Value));
                 continue;
             }
+            else if (argument.Value.GetType().IsGenericType && argument.Value.GetType().GetGenericTypeDefinition() == typeof(RequestContext<>))
+            {
+                // the 
+            }
+            else
+            {
+                throw new InvalidOperationException($"Failed to convert argument {argument.Key} to {parameterType}");
+            }
         }
 
         var steps = await engine.ExecuteStepAsync(step.Name, variables).ToArrayAsync(cancellationToken);
 
-        return steps.Last(step => step.StepRunType == StepRunType.Variable).Variable?.Value ?? "No result";
+        var isFailed = steps.Any(step => step.StepRunType == StepRunType.Failed);
+        var failedReason = steps.FirstOrDefault(step => step.StepRunType == StepRunType.Failed)?.Exception?.Message;
+        if (failedReason != null)
+        {
+            return failedReason;
+        }
+        else
+        {
+            return steps.Last(step => step.StepRunType == StepRunType.Variable).Variable?.Value ?? "No result";
+        }
     }
 }
