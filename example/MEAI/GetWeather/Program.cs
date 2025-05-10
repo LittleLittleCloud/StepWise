@@ -7,6 +7,7 @@ using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Server;
 using OpenAI;
 using StepWise.Core;
 using StepWise.Core.Extension;
